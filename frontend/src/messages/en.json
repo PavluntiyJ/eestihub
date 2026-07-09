@@ -15,6 +15,11 @@
       "ru": "RU"
     }
   },
+  "nav": {
+    "home": "Home",
+    "calculator": "Calculator",
+    "housing": "Rent"
+  },
   "home": {
     "hero": {
       "eyebrow": "MVP foundation",

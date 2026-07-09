@@ -15,6 +15,11 @@
       "ru": "RU"
     }
   },
+  "nav": {
+    "home": "Главная",
+    "calculator": "Калькулятор",
+    "housing": "Аренда"
+  },
   "home": {
     "hero": {
       "eyebrow": "Основа MVP",
