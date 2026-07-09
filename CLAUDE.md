@@ -27,7 +27,7 @@ against their acceptance criteria and `docs/CONTEXT.md` before accepting.
 
 ## Project
 
-EstiHub — web service for expats/entrepreneurs in Estonia. MVP: Estonian
+EestiHub — web service for expats/entrepreneurs in Estonia. MVP: Estonian
 tax-regime comparison calculator and a Tallinn rent-prices dashboard.
 Trilingual (en default / et / ru) via next-intl. Portfolio project — clean
 architecture matters.

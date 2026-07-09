@@ -1,6 +1,6 @@
-# EstiHub
+# EestiHub
 
-EstiHub is an interactive web service for expats and entrepreneurs in Estonia. The MVP will include a tax comparison calculator and a Tallinn rental housing dashboard.
+EestiHub is an interactive web service for expats and entrepreneurs in Estonia. The MVP will include a tax comparison calculator and a Tallinn rental housing dashboard.
 
 ## Stack
 

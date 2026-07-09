@@ -1,6 +1,6 @@
 # AGENTS.md — rules for AI workers (opencode)
 
-You are a worker on the EstiHub project. Work is directed by the
+You are a worker on the EestiHub project. Work is directed by the
 orchestrator (Tech Lead) through task files. Your duties:
 
 1. **Before any work**, read `docs/CONTEXT.md` in full — it defines the

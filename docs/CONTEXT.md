@@ -6,7 +6,7 @@
 
 ## 1. What we are building
 
-**EstiHub** (working title) — an interactive web service for expats and
+**EestiHub** (working title) — an interactive web service for expats and
 entrepreneurs in Estonia. Goals: high performance, SEO, clean
 architecture (the project goes into a portfolio/CV).
 

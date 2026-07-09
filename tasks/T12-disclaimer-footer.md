@@ -14,6 +14,14 @@ site-wide footer carrying that note and a GitHub link.
 
 ## Steps
 
+0. **Brand rename EstiHub → EestiHub** (owner's decision, matches the
+   repo name and correct Estonian): every occurrence in
+   `src/messages/{en,et,ru}.json` (header brand, metadata titles, hero
+   copy) and the FastAPI title in `backend/app/main.py`
+   (`"EstiHub API"` → `"EestiHub API"` — this one line is an explicit
+   exception to the backend non-goal below). Do NOT rename
+   infrastructure identifiers (`estihub` DB user/database in
+   docker-compose and `.env.example` stay as they are).
 1. A disclaimer on the calculator page (`/[locale]/calculator`), Server
    Component, below the form/results: the calculation is an estimate and
    not tax or legal advice; rates are Estonia 2026; verify decisions
@@ -23,7 +31,7 @@ site-wide footer carrying that note and a GitHub link.
    reflect the real market. Visible but not shouting (muted text under
    the title or in the Dataset status card).
 3. `src/components/site-footer.tsx` — Server Component, mounted in the
-   layout: © {current year} EstiHub · a short disclaimer line · a link
+   layout: © {current year} EestiHub · a short disclaimer line · a link
    to the GitHub repository (github.com/PavluntiyJ/eestihub) · a link to
    EMTA. No navigation, no social icons.
 4. All strings — a `footer` namespace plus additions to
@@ -35,7 +43,8 @@ site-wide footer carrying that note and a GitHub link.
 
 ## Non-goals
 
-- Do not change the calculator form, api client, backend, or `.github/`.
+- Do not change the calculator form, api client, backend (except the
+  single FastAPI title line from step 0), or `.github/`.
 - No cookie banners, analytics, or terms-of-service — only the
   disclaimer.
 - No new dependencies and no `any`.
