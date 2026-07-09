@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "title": "EstiHub - Estonia tax and housing insights",
+    "description": "Compare Estonian tax regimes and explore Tallinn rental data for expats and entrepreneurs."
+  },
+  "header": {
+    "brand": "EstiHub",
+    "tagline": "Estonia essentials for builders and expats"
+  },
+  "languageSwitcher": {
+    "label": "Choose language",
+    "locales": {
+      "en": "EN",
+      "et": "ET",
+      "ru": "RU"
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "MVP foundation",
+      "title": "Plan your work, taxes, and next apartment in Estonia.",
+      "description": "EstiHub brings practical tax comparisons and Tallinn rental signals into one fast, multilingual workspace for people building their life or company in Estonia."
+    },
+    "proof": {
+      "tax": "Compare employment, board member, FIE, and entrepreneur account regimes.",
+      "housing": "Explore district-level Tallinn rent data as the housing dashboard grows.",
+      "i18n": "Use the product in English, Estonian, or Russian from day one."
+    },
+    "status": {
+      "title": "Backend status",
+      "description": "Server-rendered health check from the FastAPI service.",
+      "api": "API health",
+      "online": "online",
+      "offline": "offline",
+      "onlineHelp": "The API responded successfully and is ready for frontend integrations.",
+      "offlineHelp": "The page is still available; start the backend locally to restore live data."
+    }
+  }
+}

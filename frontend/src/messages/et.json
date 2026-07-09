@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "title": "EstiHub - Eesti maksude ja üürituru ülevaade",
+    "description": "Võrdle Eesti maksurežiime ja vaata Tallinna üüriandmeid välismaalastele ning ettevõtjatele."
+  },
+  "header": {
+    "brand": "EstiHub",
+    "tagline": "Eesti põhiteave tegijatele ja välismaalastele"
+  },
+  "languageSwitcher": {
+    "label": "Vali keel",
+    "locales": {
+      "en": "EN",
+      "et": "ET",
+      "ru": "RU"
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "MVP alus",
+      "title": "Planeeri oma tööd, makse ja järgmist kodu Eestis.",
+      "description": "EstiHub koondab praktilised maksuvõrdlused ja Tallinna üürituru signaalid kiiresse mitmekeelsesse tööruumi inimestele, kes loovad Eestis elu või ettevõtet."
+    },
+    "proof": {
+      "tax": "Võrdle töölepingu, juhatuse liikme, FIE ja ettevõtluskonto režiime.",
+      "housing": "Uuri Tallinna linnaosade üüriandmeid, kui eluaseme töölaud kasvab.",
+      "i18n": "Kasuta toodet kohe inglise, eesti või vene keeles."
+    },
+    "status": {
+      "title": "Backend'i olek",
+      "description": "Serveris renderdatud FastAPI tervisekontroll.",
+      "api": "API tervis",
+      "online": "töös",
+      "offline": "maas",
+      "onlineHelp": "API vastas edukalt ja on valmis frontend'i integratsioonideks.",
+      "offlineHelp": "Leht on endiselt saadaval; käivita backend lokaalselt, et live-andmed taastada."
+    }
+  }
+}
