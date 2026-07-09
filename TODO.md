@@ -38,7 +38,7 @@ Rules for workers:
 |---|------|-------|--------|--------|------------|
 | T10 | CI on GitHub Actions (pytest + build + e2e) | tasks/T10-ci.md | `[x]` | gpt-5.5 | T09 |
 | T12 | Calculator disclaimer + site footer | tasks/T12-disclaimer-footer.md | `[x]` | deepseek | T06, T07 |
-| T11 | README + MIT license + SEO (x-default, sitemap, robots, OG) | tasks/T11-readme-seo.md | `[ ]` | — | T10, T12 |
+| T11 | README + MIT license + SEO (x-default, sitemap, robots, OG) | tasks/T11-readme-seo.md | `[>]` | deepseek-pro-v4 | T10, T12 |
 
 ## Journal (newest first)
 

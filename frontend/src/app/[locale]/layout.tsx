@@ -35,11 +35,19 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
   return {
     title: t("title"),
     description: t("description"),
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      type: "website",
+    },
     alternates: {
       canonical: `/${locale}`,
-      languages: Object.fromEntries(
-        locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}`])
-      ),
+      languages: {
+        ...Object.fromEntries(
+          locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}`])
+        ),
+        "x-default": "/en",
+      },
     },
   };
 }

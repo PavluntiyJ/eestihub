@@ -43,9 +43,12 @@ export async function generateMetadata({ params }: HousingPageParams): Promise<M
     description: t("description"),
     alternates: {
       canonical: `/${locale}/housing`,
-      languages: Object.fromEntries(
-        locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}/housing`])
-      ),
+      languages: {
+        ...Object.fromEntries(
+          locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}/housing`])
+        ),
+        "x-default": "/en/housing",
+      },
     },
   };
 }

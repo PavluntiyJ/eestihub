@@ -29,9 +29,12 @@ export async function generateMetadata({ params }: CalculatorPageParams): Promis
     description: t("description"),
     alternates: {
       canonical: `/${locale}/calculator`,
-      languages: Object.fromEntries(
-        locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}/calculator`])
-      ),
+      languages: {
+        ...Object.fromEntries(
+          locales.map((alternateLocale) => [alternateLocale, `/${alternateLocale}/calculator`])
+        ),
+        "x-default": "/en/calculator",
+      },
     },
   };
 }
