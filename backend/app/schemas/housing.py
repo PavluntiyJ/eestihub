@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -13,5 +15,5 @@ class DistrictRent(BaseModel):
 
 class HousingRentsResponse(BaseModel):
     city: str
-    updated_at: str
+    updated_at: date
     districts: list[DistrictRent]
