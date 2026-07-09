@@ -13,8 +13,8 @@
 | # | Задача | Файл брифа | Статус | Исполнитель | Зависит от |
 |---|--------|-----------|--------|-------------|------------|
 | T01 | Скаффолд monorepo: git, папки, docker-compose, конфиги | tasks/T01-scaffold.md | `[x]` | gpt-5.5 | — |
-| T02 | Скелет FastAPI + GET /api/v1/health | tasks/T02-backend-skeleton.md | `[R]` | gpt-5.5-codex | T01 |
-| T03 | Сервис расчёта налогов + POST /api/v1/calculate-taxes + тесты | tasks/T03-tax-calculator.md | `[ ]` | — | T02 |
+| T02 | Скелет FastAPI + GET /api/v1/health | tasks/T02-backend-skeleton.md | `[x]` | gpt-5.5-codex | T01 |
+| T03 | Сервис расчёта налогов + POST /api/v1/calculate-taxes + тесты | tasks/T03-tax-calculator.md | `[R]` | gpt-5.5-codex | T02 |
 | T04 | Базовая страница Next.js с fetch к бэкенду | tasks/T04-frontend-base.md | `[ ]` | — | T02 |
 
 ## Итерация 2 — фичи (не начинать без команды оркестратора)
@@ -26,6 +26,8 @@
 
 ## Журнал (новые записи сверху)
 
+- 2026-07-09 · gpt-5.5-codex · Выполнен T03: сверены ставки EMTA 2026, добавлены `tax_rates.py` с источниками, Pydantic-схемы, сервис сравнения 4 режимов, тонкий `POST /api/v1/calculate-taxes`, тесты с ручными выкладками · Проверено: `pytest` → 13 passed; `curl -X POST localhost:8000/api/v1/calculate-taxes` с примером из CONTEXT.md → 4 результата, Tööleping net 2409.76, employer_total_cost 4014.00.
+- 2026-07-09 · оркестратор · Ревью T02: принята `[x]`. Проверено независимо в чистом venv: pytest 1 passed; uvicorn стартует; `GET /api/v1/health` → 200 `{"status":"ok"}`; `/docs` → 200; CORS-заголовки для localhost:3000 корректны. Код: фабрика create_app, кешированные настройки, тонкий роут, Literal-схема — соответствует правилам. Не блокер: starlette предупреждает о deprecation httpx в testclient (upstream, следить при обновлениях). НАЗНАЧЕНИЕ: T03 (tasks/T03-tax-calculator.md) → gpt-5.5-codex; после сдачи T03 — сразу T04, не дожидаясь ревью (T04 от T03 не зависит).
 - 2026-07-09 · gpt-5.5-codex · Выполнен T02: добавлены FastAPI `create_app()`, pydantic-settings конфиг, CORS, v1 router, `GET /api/v1/health`, Pydantic-схема и тест · Проверено: `uvicorn app.main:app --reload` стартует, `curl localhost:8000/api/v1/health` → `{ "status": "ok" }`, `/docs` → 200 и OpenAPI содержит `/api/v1/health`, `pytest` → 1 passed.
 - 2026-07-09 · оркестратор · Решение владельца: все задачи выполняет GPT 5.5 Codex (раскладка DeepSeek/Grok отменена). T02 в работе у gpt-5.5-codex.
 - 2026-07-09 · оркестратор · НАЗНАЧЕНИЕ: T02 (tasks/T02-backend-skeleton.md) → deepseek-pro-v4. Зависимость T01 закрыта. Дополнительно: включить в коммит T02 незакоммиченную правку docker-compose.yml (полное имя образа) отдельным коммитом `fix: use fully qualified postgres image name for podman compatibility`.
@@ -39,6 +41,8 @@
 ## Заметки для оркестратора
 
 _(исполнители пишут сюда вопросы и найденные проблемы вне скоупа)_
+
+- 2026-07-09 · gpt-5.5-codex · При сверке T03 найдено расхождение с прежним предположением CONTEXT.md/T03 по ettevõtluskonto: EMTA Entrepreneur account page (проверено 2026-07-09) указывает, что ставка 40% больше не применяется с 01.01.2025; ставка business income tax в 2026 — 20%, а регистрационный порог — 40 000 €/год. В реализации использована актуальная ставка EMTA 20%.
 
 - 2026-07-09 · gpt-5.5 · В текущей среде отсутствует команда `docker`, поэтому критерий `docker compose up -d db` и healthcheck Postgres не удалось проверить локально.
   - ↳ оркестратор: подтверждаю, Docker/Podman на хосте нет — не вина исполнителя. Compose проверен статически, живой запуск отложен до первой задачи с БД. РЕШЕНО.
