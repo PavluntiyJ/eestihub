@@ -4,13 +4,11 @@ from app.core.tax_rates import (
     BASIC_EXEMPTION_MONTHLY,
     EFFECTIVE_TAX_RATE_QUANT,
     ENTREPRENEUR_ACCOUNT_TAX_RATE,
-    FULL_RATE,
     INCOME_TAX_RATE,
     MONEY_QUANT,
     SOCIAL_TAX_RATE,
     UNEMPLOYMENT_INSURANCE_EMPLOYEE_RATE,
     UNEMPLOYMENT_INSURANCE_EMPLOYER_RATE,
-    ZERO_AMOUNT,
 )
 from app.schemas.taxes import (
     RegimeResult,
@@ -89,10 +87,13 @@ def calculate_fie(gross_income: Decimal | float | int) -> RegimeResult:
     )
 
 
-def calculate_ettevotluskonto(gross_income: Decimal | float | int) -> RegimeResult:
+def calculate_ettevotluskonto(
+    gross_income: Decimal | float | int, pension_pillar_rate: Decimal | float | int
+) -> RegimeResult:
     gross_income = _decimal(gross_income)
+    pension_pillar_rate = _decimal(pension_pillar_rate)
 
-    business_income_tax = gross_income * ENTREPRENEUR_ACCOUNT_TAX_RATE
+    business_income_tax = gross_income * (ENTREPRENEUR_ACCOUNT_TAX_RATE + pension_pillar_rate)
     net_income = gross_income - business_income_tax
 
     return _result(
@@ -115,7 +116,7 @@ def compare_regimes(request: TaxCalculationRequest) -> TaxCalculationResponse:
             calculate_tooleping(gross_income, pension_pillar_rate),
             calculate_juhatuse_liige(gross_income),
             calculate_fie(gross_income),
-            calculate_ettevotluskonto(gross_income),
+            calculate_ettevotluskonto(gross_income, pension_pillar_rate),
         ],
     )
 
@@ -123,7 +124,7 @@ def compare_regimes(request: TaxCalculationRequest) -> TaxCalculationResponse:
 def _income_tax(income_before_basic_exemption: Decimal) -> Decimal:
     taxable_income = max(
         income_before_basic_exemption - BASIC_EXEMPTION_MONTHLY,
-        ZERO_AMOUNT,
+        Decimal("0"),
     )
     return taxable_income * INCOME_TAX_RATE
 
@@ -156,5 +157,5 @@ def _money(value: Decimal) -> float:
 
 
 def _effective_tax_rate(net_income: Decimal, employer_total_cost: Decimal) -> float:
-    rate = FULL_RATE - (net_income / employer_total_cost)
+    rate = Decimal("1") - (net_income / employer_total_cost)
     return float(rate.quantize(EFFECTIVE_TAX_RATE_QUANT, rounding=ROUND_HALF_UP))

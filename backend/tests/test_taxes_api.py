@@ -23,6 +23,7 @@ def test_calculate_taxes_api_returns_four_results() -> None:
     by_regime = {result["regime"]: result for result in payload["results"]}
     assert by_regime["tooleping"]["net_income"] == 2409.76
     assert by_regime["tooleping"]["employer_total_cost"] == 4014.0
+    assert by_regime["ettevotluskonto"]["net_income"] == 2340.0
 
 
 def test_calculate_taxes_api_rejects_negative_income() -> None:

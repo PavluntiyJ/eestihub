@@ -94,13 +94,13 @@ def test_fie_below_basic_exemption_after_social_tax() -> None:
     assert result.net_income == 335.0
 
 
-def test_ettevotluskonto_current_2026_rate() -> None:
+def test_ettevotluskonto_without_pension_pillar() -> None:
     # Manual calculation for 3000 entrepreneur account receipts:
     # annual receipts = 3000 * 12 = 36000, which is above the old 25000 threshold.
     # EMTA states the 40% business income tax rate no longer applies from 01.01.2025.
-    # business income tax = 3000 * 20% = 600.00
+    # with 0% pension pillar, business income tax = 3000 * 20% = 600.00
     # net = 3000 - 600 = 2400.00
-    result = calculate_ettevotluskonto(gross_income=3000)
+    result = calculate_ettevotluskonto(gross_income=3000, pension_pillar_rate=0.0)
 
     assert result.employer_total_cost == 3000.0
     assert breakdown_amount(result, "business_income_tax") == 600.0
@@ -108,14 +108,16 @@ def test_ettevotluskonto_current_2026_rate() -> None:
     assert result.effective_tax_rate == 0.2
 
 
-def test_ettevotluskonto_small_receipts() -> None:
-    # Manual calculation for 1000 entrepreneur account receipts:
-    # business income tax = 1000 * 20% = 200.00
-    # net = 1000 - 200 = 800.00
-    result = calculate_ettevotluskonto(gross_income=1000)
+def test_ettevotluskonto_with_default_pension_pillar() -> None:
+    # Manual calculation for 3000 entrepreneur account receipts:
+    # EMTA 2026 rate for a 2% pension pillar participant = 20% + 2% = 22%.
+    # business income tax = 3000 * 22% = 660.00
+    # net = 3000 - 660 = 2340.00
+    result = calculate_ettevotluskonto(gross_income=3000, pension_pillar_rate=0.02)
 
-    assert breakdown_amount(result, "business_income_tax") == 200.0
-    assert result.net_income == 800.0
+    assert breakdown_amount(result, "business_income_tax") == 660.0
+    assert result.net_income == 2340.0
+    assert result.effective_tax_rate == 0.22
 
 
 def test_compare_regimes_returns_all_four_regimes() -> None:
