@@ -18,6 +18,9 @@ produced by external AI workers executing the briefs in `tasks/`.
 - `tasks/T##-*.md` — self-contained briefs: goal, steps, explicit
   non-goals, acceptance criteria. Orchestrator writes them; workers execute
   and flip the task to `[R]` for review.
+- All project documentation (docs, briefs, TODO board and journal) is
+  written in English — the repo is public and goes into a portfolio.
+  Conversation with the owner stays in Russian.
 
 When resuming a session: read `TODO.md` first, then review any `[R]` tasks
 against their acceptance criteria and `docs/CONTEXT.md` before accepting.

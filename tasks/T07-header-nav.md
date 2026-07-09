@@ -1,51 +1,52 @@
-# T07 — Навигация в header на /calculator и /housing
+# T07 — Header navigation to /calculator and /housing
 
-**Прочитай сначала:** `docs/CONTEXT.md` (§4, §6).
-**Зависимости:** T05, T06 приняты (обе страницы уже в `master`).
-**Роль:** Frontend (TS/React). **Ветка:** работай в `master`.
+**Read first:** `docs/CONTEXT.md` (§4, §6).
+**Dependencies:** T05, T06 accepted (both pages are already in `master`).
+**Role:** Frontend (TS/React). **Branch:** work in `master`.
 
-## Цель
+## Goal
 
-Обе фичи готовы, но недостижимы из UI — добавить в header навигацию
-на главную, калькулятор и housing-дашборд, с подсветкой активного
-раздела, в трёх языках.
+Both features are done but unreachable from the UI — add header
+navigation to the home page, the calculator and the housing dashboard,
+with active-section highlighting, in three languages.
 
-## Что сделать
+## Steps
 
-1. `src/components/site-nav.tsx` — клиентский листовой компонент
-   (по образцу `language-switcher.tsx`): ссылки Главная (`/`),
-   Калькулятор (`/calculator`), Аренда (`/housing`) через `Link` из
-   `@/i18n/navigation`; активный раздел определяй через `usePathname`
-   и помечай стилем + `aria-current="page"`. Для `/` активность —
-   точное совпадение, для остальных — префикс пути.
-2. Подключить `SiteNav` в `site-header.tsx` между брендом и
-   переключателем языка. На узких экранах header не должен ломаться
-   (допустимо перенести навигацию на вторую строку; бургер-меню НЕ делать).
-3. Подписи — namespace `nav` в `src/messages/{en,et,ru}.json`
-   (`home`, `calculator`, `housing`), самостоятельный аккуратный перевод.
-4. Проверка: prod-сборка (`npm run build` + `next start`), клики по
-   ссылкам сохраняют локаль (с `/et/calculator` ссылка «Аренда» ведёт
-   на `/et/housing`), активный пункт подсвечен.
-5. Коммит: `feat(frontend): header navigation with active section state`.
+1. `src/components/site-nav.tsx` — a client leaf component (modeled on
+   `language-switcher.tsx`): links Home (`/`), Calculator
+   (`/calculator`), Rent (`/housing`) via `Link` from
+   `@/i18n/navigation`; determine the active section with `usePathname`
+   and mark it with styling + `aria-current="page"`. For `/` match the
+   path exactly; for the others match by prefix.
+2. Mount `SiteNav` in `site-header.tsx` between the brand and the
+   language switcher. The header must not break on narrow screens
+   (wrapping the nav onto a second row is fine; do NOT build a burger
+   menu).
+3. Labels — a `nav` namespace in `src/messages/{en,et,ru}.json`
+   (`home`, `calculator`, `housing`), translate carefully yourself.
+4. Verification: prod build (`npm run build` + `next start`), link
+   clicks preserve the locale (from `/et/calculator` the "Rent" link
+   goes to `/et/housing`), the active item is highlighted.
+5. Commit: `feat(frontend): header navigation with active section state`.
 
-## Чего НЕ делать
+## Non-goals
 
-- Не трогать backend, страницы, словарные ключи вне `nav`,
+- Do not touch the backend, pages, dictionary keys outside `nav`,
   `language-switcher.tsx`, `lib/api.ts`, `types/api.ts`.
-- Никаких новых зависимостей, бургер-меню, дропдаунов, `any`.
+- No new dependencies, burger menus, dropdowns, or `any`.
 
-## Критерии приёмки
+## Acceptance criteria
 
-- [ ] `npm run build` проходит без ошибок типов и ESLint.
-- [ ] Во всех трёх локалях в header есть 3 переведённые ссылки; переход
-      сохраняет текущую локаль.
-- [ ] Активный раздел помечен `aria-current="page"` (на `/et/housing`
-      подсвечена «Аренда», на `/en` — «Главная»).
-- [ ] `'use client'` — только в `site-nav.tsx` из нового кода;
-      `site-header.tsx` остался Server Component.
-- [ ] Header не ломается на ширине ~360px (проверить хотя бы через
-      разумные Tailwind-брейкпоинты в коде).
+- [ ] `npm run build` passes with no type or ESLint errors.
+- [ ] All three locales show 3 translated header links; navigation
+      preserves the current locale.
+- [ ] The active section carries `aria-current="page"` (on
+      `/et/housing` "Rent" is highlighted, on `/en` — "Home").
+- [ ] `'use client'` — only in `site-nav.tsx` among the new code;
+      `site-header.tsx` stays a Server Component.
+- [ ] The header holds up at ~360px width (verify at least through
+      sensible Tailwind breakpoints in the code).
 
-## По завершении
+## On completion
 
-Обнови T07 в `TODO.md` на `[R]` + запись в журнал (что проверено и как).
+Set T07 to `[R]` in `TODO.md` + a journal entry (what was verified and how).

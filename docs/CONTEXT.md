@@ -1,95 +1,99 @@
-# CONTEXT.md — Архитектурный контекст проекта
+# CONTEXT.md — project architecture context
 
-> Этот файл — единый источник правды для всех ИИ-исполнителей.
-> Прочитай его ПОЛНОСТЬЮ перед выполнением любой задачи из `tasks/`.
-> Менять этот файл может только оркестратор (Tech Lead).
+> This file is the single source of truth for all AI workers.
+> Read it IN FULL before executing any task from `tasks/`.
+> Only the orchestrator (Tech Lead) may edit this file.
 
-## 1. Что мы строим
+## 1. What we are building
 
-**EstiHub** (рабочее название) — интерактивный веб-сервис для экспатов и
-предпринимателей в Эстонии. Цели: высокая производительность, SEO,
-чистая архитектура (проект идёт в портфолио/CV).
+**EstiHub** (working title) — an interactive web service for expats and
+entrepreneurs in Estonia. Goals: high performance, SEO, clean
+architecture (the project goes into a portfolio/CV).
 
-MVP — две фичи:
-1. **Калькулятор налогов** — сравнение net-дохода при 4 режимах:
-   Tööleping (трудовой договор), Juhatuse liige (член правления),
-   FIE (ИП), Ettevõtluskonto (личный бизнес-счёт LHV).
-2. **Дашборд аренды жилья** — мок-данные о средних ценах аренды по
-   районам Таллина, API + интерактивная визуализация.
+MVP — two features:
+1. **Tax calculator** — net-income comparison across 4 regimes:
+   Tööleping (employment contract), Juhatuse liige (management board
+   member), FIE (sole proprietor), Ettevõtluskonto (entrepreneur
+   account).
+2. **Housing rent dashboard** — average rent prices by Tallinn
+   district, API + interactive visualization.
 
-## 2. Стек (зафиксирован, не менять)
+## 2. Stack (fixed, do not change)
 
-| Слой      | Технология |
+| Layer     | Technology |
 |-----------|-----------|
 | Frontend  | Next.js 15 (App Router), TypeScript strict, Tailwind CSS, shadcn/ui |
-| Графики   | Recharts — только через shadcn/ui chart-компоненты, клиентские листовые компоненты |
-| E2E       | Playwright (`@playwright/test`, только chromium), тесты в `frontend/e2e/` |
+| Charts    | Recharts — only via shadcn/ui chart components, client leaf components |
+| E2E       | Playwright (`@playwright/test`, chromium only), tests in `frontend/e2e/` |
 | Backend   | FastAPI, Python 3.11+, Pydantic v2, SQLAlchemy 2.x |
 | DB        | PostgreSQL 16 (Docker) |
-| Dev-среда | Docker Compose (пока только для Postgres; фронт и бэк запускаются локально) |
+| Dev env   | Docker Compose (Postgres only for now; frontend and backend run locally) |
 
-## 3. Структура репозитория (monorepo)
+## 3. Repository structure (monorepo)
 
 ```
 new_site_project/
 ├── frontend/                  # Next.js 15
 │   └── src/
-│       ├── app/               # App Router: страницы = Server Components
-│       ├── components/ui/     # shadcn/ui (генерируется CLI)
-│       ├── features/          # фичи: tax-calculator/, housing/
+│       ├── app/               # App Router: pages = Server Components
+│       ├── components/ui/     # shadcn/ui (CLI-generated)
+│       ├── features/          # features: tax-calculator/, housing/
 │       │   └── <feature>/     #   components/, hooks/, api.ts
-│       ├── lib/               # утилиты, api-client
-│       └── types/             # типы, зеркалящие Pydantic-схемы
+│       ├── lib/               # utilities, api client
+│       └── types/             # types mirroring Pydantic schemas
 ├── backend/
 │   ├── app/
-│   │   ├── main.py            # создание FastAPI app, CORS, роутеры
-│   │   ├── core/config.py     # настройки (pydantic-settings), env
-│   │   ├── core/tax_rates.py  # налоговые ставки — ТОЛЬКО здесь
-│   │   ├── api/v1/routes/     # тонкие роуты: health.py, taxes.py, housing.py
-│   │   ├── schemas/           # Pydantic v2 схемы запросов/ответов
-│   │   ├── services/          # бизнес-логика: tax_service.py, housing_service.py
-│   │   └── models/            # SQLAlchemy модели
+│   │   ├── main.py            # FastAPI app factory, CORS, routers
+│   │   ├── core/config.py     # settings (pydantic-settings), env
+│   │   ├── core/tax_rates.py  # tax rates — ONLY here
+│   │   ├── api/v1/routes/     # thin routes: health.py, taxes.py, housing.py
+│   │   ├── schemas/           # Pydantic v2 request/response schemas
+│   │   ├── services/          # business logic: tax_service.py, housing_service.py
+│   │   └── models/            # SQLAlchemy models
+│   ├── scripts/               # maintenance scripts (housing seed)
 │   ├── tests/
 │   ├── requirements.txt
 │   └── .env.example
-├── docker-compose.yml         # postgres (+ позже backend/frontend)
-├── docs/CONTEXT.md            # этот файл
-├── tasks/                     # брифы задач для исполнителей
-├── TODO.md                    # доска задач и журнал
+├── docker-compose.yml         # postgres (+ backend/frontend later)
+├── docs/CONTEXT.md            # this file
+├── tasks/                     # task briefs for workers
+├── TODO.md                    # task board and journal
 └── CLAUDE.md
 ```
 
-## 4. Правила кода (обязательны для всех задач)
+## 4. Code rules (mandatory for every task)
 
-- **Никаких `any`** в TypeScript. `tsconfig` strict.
-- Роуты FastAPI — тонкие: валидация + вызов сервиса. Вся математика — в `services/`.
-- Server Components по умолчанию; `'use client'` только для интерактива
-  (формы, графики, локальный стейт).
-- TS-типы в `frontend/src/types/` должны 1:1 соответствовать Pydantic-схемам
-  бэкенда (имена полей snake_case как в API).
-- Код, идентификаторы, комментарии, коммиты — **на английском**
-  (проект для портфолио). Комментировать только неочевидные архитектурные решения.
-- Налоговые ставки/константы — только в `backend/app/core/tax_rates.py`,
-  никаких магических чисел в сервисах.
-- Каждый эндпоинт под префиксом `/api/v1/`.
+- **No `any`** in TypeScript. `tsconfig` strict.
+- FastAPI routes are thin: validation + service call. All math lives in
+  `services/`.
+- Server Components by default; `'use client'` only for interactivity
+  (forms, charts, local state).
+- TS types in `frontend/src/types/` must match backend Pydantic schemas
+  1:1 (snake_case field names as in the API).
+- Code, identifiers, comments, commits — **in English** (portfolio
+  project). Comment only non-obvious architectural decisions.
+- Tax rates/constants — only in `backend/app/core/tax_rates.py`,
+  no magic numbers in services.
+- Every endpoint lives under the `/api/v1/` prefix.
+- All project documentation (docs, briefs, TODO) is in English.
 
-## 5. Контракт API (v1)
+## 5. API contract (v1)
 
 ### GET /api/v1/health
-Ответ `200`: `{ "status": "ok" }`
+Response `200`: `{ "status": "ok" }`
 
 ### POST /api/v1/calculate-taxes
-Запрос:
+Request:
 ```json
 {
   "gross_monthly_income": 3000.0,
   "pension_pillar_rate": 0.02
 }
 ```
-- `gross_monthly_income`: float > 0 — брутто-доход в месяц, EUR.
-- `pension_pillar_rate`: 0.0 | 0.02 | 0.04 | 0.06 (II ступень пенсии; default 0.02).
+- `gross_monthly_income`: float > 0 — gross monthly income, EUR.
+- `pension_pillar_rate`: 0.0 | 0.02 | 0.04 | 0.06 (II pension pillar; default 0.02).
 
-Ответ `200` — сравнение по всем 4 режимам:
+Response `200` — comparison across all 4 regimes:
 ```json
 {
   "input": { "gross_monthly_income": 3000.0, "pension_pillar_rate": 0.02 },
@@ -112,28 +116,32 @@ new_site_project/
 ```
 - `regime`: `"tooleping" | "juhatuse_liige" | "fie" | "ettevotluskonto"`.
 - `effective_tax_rate` = 1 − net_income / employer_total_cost.
-- Числа в примере иллюстративные, точность расчёта — 2 знака (Decimal, округление банковское не нужно — стандартный ROUND_HALF_UP).
+- Numbers in the example are illustrative; calculation precision — 2
+  decimal places (Decimal, standard ROUND_HALF_UP).
 
-### Налоговая логика (Эстония, 2026 — ставки ПРОВЕРИТЬ на emta.ee перед реализацией)
-Предполагаемые значения для `tax_rates.py` (исполнитель задачи T03 обязан
-сверить с актуальными данными и записать источник в комментарий):
-- Подоходный налог: 22%.
-- Необлагаемый минимум: 700 €/мес (универсальный с 2026).
-- Социальный налог: 33% (платит работодатель; для FIE — сам FIE).
-- Страхование от безработицы: 1.6% работник + 0.8% работодатель (только tööleping).
-- II пенсионная ступень: 2/4/6% (tööleping; для juhatuse liige — не применяется по умолчанию).
-- Juhatuse liige: 22% подоходный + 33% соцналог, БЕЗ страхования от безработицы.
-- FIE: соцналог 33% с чистого дохода (упрощённо, без потолка в MVP), затем подоходный 22%.
-- Ettevõtluskonto (проверено оркестратором по emta.ee 2026-07-09):
-  ставка 40% ОТМЕНЕНА с 01.01.2025. Базовая ставка — 20% с поступлений;
-  для участников II пенсионной ступени ставка выше: 22% / 24% / 26%
-  при взносе 2% / 4% / 6% соответственно (т.е. 20% + pension_pillar_rate).
-  При поступлениях свыше 40 000 €/год физлицо обязано зарегистрироваться
-  предпринимателем (для MVP — только справочный факт, в расчёте не участвует).
-  Других налогов нет.
+### Tax logic (Estonia, 2026 — rates VERIFIED against emta.ee)
+Values for `tax_rates.py` (T03 worker verified against current data and
+recorded sources in comments):
+- Income tax: 22%.
+- Basic exemption: €700/month (universal from 2026).
+- Social tax: 33% (paid by the employer; FIE pays it themselves).
+- Unemployment insurance: 1.6% employee + 0.8% employer (tööleping only).
+- II pension pillar: 2/4/6% (tööleping; not applied to juhatuse liige
+  by default).
+- Juhatuse liige: 22% income tax + 33% social tax, NO unemployment
+  insurance.
+- FIE: 33% social tax on net income (simplified, no cap in the MVP),
+  then 22% income tax.
+- Ettevõtluskonto (verified by the orchestrator on emta.ee 2026-07-09):
+  the 40% rate was ABOLISHED on 2025-01-01. Base rate — 20% of receipts;
+  for II pension pillar members the rate is higher: 22% / 24% / 26%
+  for 2% / 4% / 6% contributions respectively (i.e. 20% +
+  pension_pillar_rate). Above €40,000/year of receipts the person must
+  register as an entrepreneur (reference fact only in the MVP, not used
+  in the calculation). No other taxes.
 
-### GET /api/v1/housing/rents  (фича 2, задача T05)
-Ответ: список районов Таллина с мок-данными:
+### GET /api/v1/housing/rents
+Response: Tallinn districts served from Postgres (seeded data):
 ```json
 {
   "city": "Tallinn",
@@ -144,31 +152,34 @@ new_site_project/
   ]
 }
 ```
+Returns 503 when the database is unavailable or not seeded.
 
-## 6. Интернационализация (i18n) — обязательное требование
+## 6. Internationalization (i18n) — hard requirement
 
-Сайт триязычный: **английский (en, default), эстонский (et), русский (ru)**.
+The site is trilingual: **English (en, default), Estonian (et), Russian (ru)**.
 
-- Библиотека: **next-intl** (App Router-нативная, SSR/SEO-совместимая).
-- Роутинг с локалью в пути: `/{locale}/...` → структура `src/app/[locale]/...`;
-  middleware next-intl для редиректа `/` → `/en` и определения локали.
-- Словари: `frontend/src/messages/{en,et,ru}.json`. Никаких захардкоженных
-  пользовательских строк в компонентах — только ключи переводов.
-- SEO: `hreflang`-альтернативы в metadata, `lang` в `<html>` по локали.
-- Переключатель языка — в header (клиентский листовой компонент).
-- API бэкенда локале-нейтрален: возвращает машинные ключи/числа
-  (`regime: "tooleping"`), человекочитаемые подписи (`label`) фронтенд берёт
-  из словарей. Поле `label` в ответе API — служебное/отладочное, для UI не использовать.
+- Library: **next-intl** (App Router-native, SSR/SEO-friendly).
+- Locale-prefixed routing: `/{locale}/...` → `src/app/[locale]/...`
+  structure; next-intl middleware redirects `/` → `/en` and detects the
+  locale.
+- Dictionaries: `frontend/src/messages/{en,et,ru}.json`. No hardcoded
+  user-facing strings in components — translation keys only.
+- SEO: `hreflang` alternates in metadata, `lang` on `<html>` per locale.
+- Language switcher — in the header (client leaf component).
+- The backend API is locale-neutral: it returns machine keys/numbers
+  (`regime: "tooleping"`); human-readable labels come from the frontend
+  dictionaries. The `label` field in API responses is service/debug
+  data — never use it in the UI.
 
-## 7. Локальный запуск (после T01–T02)
+## 7. Local development (after T01–T02)
 
 ```bash
-docker compose up -d db                      # Postgres на :5432
-cd backend && python -m scripts.seed_housing # сид housing-данных (после T08)
-cd backend && uvicorn app.main:app --reload  # API на :8000
-cd frontend && npm run dev                   # UI на :3000
-cd frontend && npm run e2e                   # e2e-смоки (нужен API на :8000; после T09)
+docker compose up -d db                      # Postgres on :5432
+cd backend && python -m scripts.seed_housing # seed housing data (after T08)
+cd backend && uvicorn app.main:app --reload  # API on :8000
+cd frontend && npm run dev                   # UI on :3000
+cd frontend && npm run e2e                   # e2e smokes (needs API on :8000; after T09)
 ```
-CORS: бэкенд разрешает `http://localhost:3000`.
-Фронтенд ходит на бэкенд через `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
-Бэкенд ходит в Postgres через `DATABASE_URL` (default — compose-БД, см. `backend/.env.example`).
+CORS: the backend allows `http://localhost:3000`.
+The frontend reaches the backend via `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
+The backend reaches Postgres via `DATABASE_URL` (default — the compose DB, see `backend/.env.example`).

@@ -1,50 +1,57 @@
-# T03 — Сервис расчёта налогов + POST /api/v1/calculate-taxes
+# T03 — Tax calculation service + POST /api/v1/calculate-taxes
 
-**Прочитай сначала:** `docs/CONTEXT.md` (разделы 4, 5 — контракт и налоговая логика).
-**Зависимости:** T02 принята. **Роль:** Backend (Python), нужна аккуратность в математике.
+**Read first:** `docs/CONTEXT.md` (sections 4, 5 — contract and tax
+logic). **Dependencies:** T02 accepted. **Role:** Backend (Python),
+careful math required.
 
-## Цель
-Эндпоинт `POST /api/v1/calculate-taxes`, который по брутто-доходу сравнивает
-4 налоговых режима Эстонии. Контракт запроса/ответа — строго по CONTEXT.md §5.
+## Goal
+A `POST /api/v1/calculate-taxes` endpoint that compares 4 Estonian tax
+regimes for a given gross income. Request/response contract — strictly
+per CONTEXT.md §5.
 
-## Что сделать
+## Steps
 
-1. **Сверить ставки.** Проверить актуальные ставки 2026 на emta.ee
-   (подоходный, соцналог, страхование от безработицы, необлагаемый минимум,
-   ставки ettevõtluskonto). В `app/core/tax_rates.py` — все константы
-   с комментарием-источником (URL + дата проверки). Никаких чисел вне этого файла.
-2. `app/schemas/taxes.py`: Pydantic-схемы `TaxCalculationRequest`,
-   `TaxCalculationResponse`, `RegimeResult`, `TaxLine` — поля по контракту.
-   Валидация: `gross_monthly_income > 0`, `pension_pillar_rate` из
-   допустимого множества.
-3. `app/services/tax_service.py`: чистые функции расчёта, по одной на режим
-   (`calculate_tooleping`, `calculate_juhatuse_liige`, `calculate_fie`,
-   `calculate_ettevotluskonto`) + агрегатор `compare_regimes()`.
-   Деньги считать через `Decimal`, округление до 2 знаков ROUND_HALF_UP
-   только на выходе. Учесть необлагаемый минимум в подоходном налоге.
-   Для ettevõtluskonto годовой оборот считать как `gross_monthly_income * 12`
-   для определения ставки 20/40%.
-4. `app/api/v1/routes/taxes.py`: тонкий роут, подключить в агрегатор v1.
-5. **Тесты** `tests/test_tax_service.py` + `tests/test_taxes_api.py`:
-   - по 1–2 теста на режим с известными вручную посчитанными ожиданиями
-     (в комментарии — выкладка расчёта);
-   - граничные случаи: доход ниже необлагаемого минимума;
-     ettevõtluskonto с превышением 25 000 €/год; `pension_pillar_rate = 0`;
-   - API-тест: 422 на отрицательный доход.
-6. Коммит: `feat(backend): estonian tax comparison service and endpoint`.
+1. **Verify the rates.** Check current 2026 rates on emta.ee (income
+   tax, social tax, unemployment insurance, basic exemption,
+   ettevõtluskonto rates). Put all constants in
+   `app/core/tax_rates.py` with a source comment (URL + check date).
+   No numbers anywhere else.
+2. `app/schemas/taxes.py`: Pydantic schemas `TaxCalculationRequest`,
+   `TaxCalculationResponse`, `RegimeResult`, `TaxLine` — fields per the
+   contract. Validation: `gross_monthly_income > 0`,
+   `pension_pillar_rate` from the allowed set.
+3. `app/services/tax_service.py`: pure calculation functions, one per
+   regime (`calculate_tooleping`, `calculate_juhatuse_liige`,
+   `calculate_fie`, `calculate_ettevotluskonto`) + a
+   `compare_regimes()` aggregator. Use `Decimal` for money, round to 2
+   places ROUND_HALF_UP only at the output. Apply the basic exemption in
+   income tax. For ettevõtluskonto compute annual turnover as
+   `gross_monthly_income * 12` for rate determination.
+4. `app/api/v1/routes/taxes.py`: thin route, mount into the v1
+   aggregator.
+5. **Tests** `tests/test_tax_service.py` + `tests/test_taxes_api.py`:
+   - 1–2 tests per regime with hand-calculated expected values (the
+     derivation in a comment);
+   - edge cases: income below the basic exemption; ettevõtluskonto above
+     the annual threshold; `pension_pillar_rate = 0`;
+   - API test: 422 on negative income.
+6. Commit: `feat(backend): estonian tax comparison service and endpoint`.
 
-## Чего НЕ делать
-- Не трогать фронтенд.
-- Не усложнять: без потолка соцналога FIE, без прогрессивного вычета —
-  упрощения зафиксированы в CONTEXT.md §5. Найдёшь расхождение с реальностью,
-  ломающее упрощение, — запиши в «Заметки для оркестратора» в TODO.md.
+## Non-goals
+- Do not touch the frontend.
+- Do not over-engineer: no FIE social tax cap, no progressive exemption
+  phase-out — the simplifications are recorded in CONTEXT.md §5. If you
+  find a real-world discrepancy that breaks a simplification, write it
+  to "Notes for the orchestrator" in TODO.md.
 
-## Критерии приёмки
-- [ ] `pytest` зелёный, тесты покрывают все 4 режима и граничные случаи.
-- [ ] `curl -X POST localhost:8000/api/v1/calculate-taxes` с примером из
-      CONTEXT.md возвращает 4 результата, суммы сходятся с ручной выкладкой.
-- [ ] Вся математика в сервисе, роут тонкий, ставки только в `tax_rates.py`.
-- [ ] В `tax_rates.py` у каждой ставки — источник и дата проверки.
+## Acceptance criteria
+- [ ] `pytest` green; tests cover all 4 regimes and edge cases.
+- [ ] `curl -X POST localhost:8000/api/v1/calculate-taxes` with the
+      CONTEXT.md example returns 4 results matching the hand
+      calculation.
+- [ ] All math in the service, thin route, rates only in `tax_rates.py`.
+- [ ] Every rate in `tax_rates.py` has a source and check date.
 
-## По завершении
-Обнови T03 в `TODO.md` на `[R]`; в журнал — вывод pytest и пример ответа API.
+## On completion
+Set T03 to `[R]` in `TODO.md`; put the pytest output and a sample API
+response in the journal.

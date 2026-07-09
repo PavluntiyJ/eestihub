@@ -1,25 +1,31 @@
-# AGENTS.md — правила для ИИ-исполнителей (opencode)
+# AGENTS.md — rules for AI workers (opencode)
 
-Ты — исполнитель в проекте EstiHub. Работой управляет оркестратор (Tech Lead)
-через файлы задач. Твои обязанности:
+You are a worker on the EstiHub project. Work is directed by the
+orchestrator (Tech Lead) through task files. Your duties:
 
-1. **Перед любой работой** прочитай полностью `docs/CONTEXT.md` — там стек,
-   структура, правила кода, контракты API и требования i18n. Они обязательны.
-2. Выполняй **только** задачу, которую тебе назначили (файл `tasks/T##-*.md`).
-   Бриф самодостаточен: цель, шаги, «чего НЕ делать», критерии приёмки.
-3. Перед сдачей прогони все проверки из «Критериев приёмки» и убедись,
-   что они проходят.
-4. По завершении обнови `TODO.md`: статус своей задачи → `[R]`, впиши себя
-   в колонку «Исполнитель» (имя модели), добавь запись в журнал сверху:
-   дата · модель · что сделано · как проверено.
-5. Вопросы, блокеры и найденные проблемы вне скоупа — в раздел
-   «Заметки для оркестратора» в `TODO.md`. Не чини чужое и не расширяй скоуп.
+1. **Before any work**, read `docs/CONTEXT.md` in full — it defines the
+   stack, repo structure, code rules, API contracts and i18n
+   requirements. They are mandatory.
+2. Execute **only** the task assigned to you (a `tasks/T##-*.md` file).
+   The brief is self-contained: goal, steps, explicit non-goals,
+   acceptance criteria.
+3. Before handing off, run every check in the acceptance criteria and
+   make sure they pass.
+4. When done, update `TODO.md`: set your task's status to `[R]`, put
+   your model name in the "Worker" column, and add a journal entry at
+   the top: date · model · what was done · how it was verified.
+5. Questions, blockers and out-of-scope findings go to the
+   "Notes for the orchestrator" section in `TODO.md`. Do not fix other
+   people's code and do not expand scope.
 
-Запрещено:
-- редактировать `docs/CONTEXT.md`, `CLAUDE.md`, `AGENTS.md` и файлы в `tasks/`;
-- ставить статус `[x]` (это делает только оркестратор после ревью);
-- менять стек, структуру папок и контракты API;
-- коммитить `.env`, `node_modules`, артефакты сборки.
+Forbidden:
+- editing `docs/CONTEXT.md`, `CLAUDE.md`, `AGENTS.md` or files in `tasks/`;
+- setting the `[x]` status (only the orchestrator does, after review);
+- changing the stack, folder structure or API contracts;
+- committing `.env`, `node_modules` or build artifacts.
 
-Коммиты: на английском, conventional commits (`feat:`, `chore:`, `fix:`),
-один осмысленный коммит на задачу (или несколько логичных).
+Commits: English, conventional commits (`feat:`, `chore:`, `fix:`),
+one meaningful commit per task (or several logical ones).
+
+All project documentation (docs, task briefs, TODO board and journal)
+is written in English.

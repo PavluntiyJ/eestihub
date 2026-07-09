@@ -1,37 +1,37 @@
-# T02 — Скелет FastAPI + health-эндпоинт
+# T02 — FastAPI skeleton + health endpoint
 
-**Прочитай сначала:** `docs/CONTEXT.md` (разделы 3, 4, 5, 6).
-**Зависимости:** T01 принята. **Роль:** Backend (Python).
+**Read first:** `docs/CONTEXT.md` (sections 3, 4, 5, 6).
+**Dependencies:** T01 accepted. **Role:** Backend (Python).
 
-## Цель
-Работающее FastAPI-приложение с чистой модульной структурой и первым
-эндпоинтом `GET /api/v1/health`.
+## Goal
+A working FastAPI application with a clean modular structure and the
+first endpoint, `GET /api/v1/health`.
 
-## Что сделать
+## Steps
 
-1. `app/core/config.py`: класс `Settings` на pydantic-settings
-   (DATABASE_URL, CORS_ORIGINS), кешированный `get_settings()`.
-2. `app/main.py`: фабрика `create_app()` — создаёт FastAPI
-   (title, version), вешает CORSMiddleware (origins из настроек),
-   подключает роутер v1 с префиксом `/api/v1`.
+1. `app/core/config.py`: `Settings` class on pydantic-settings
+   (DATABASE_URL, CORS_ORIGINS), cached `get_settings()`.
+2. `app/main.py`: `create_app()` factory — creates FastAPI (title,
+   version), attaches CORSMiddleware (origins from settings), mounts the
+   v1 router under the `/api/v1` prefix.
 3. `app/api/v1/routes/health.py`: `GET /health` → `{"status": "ok"}`,
-   схема ответа — Pydantic-модель в `app/schemas/health.py`.
-4. Агрегирующий роутер `app/api/v1/__init__.py` (или `router.py`),
-   куда подключаются все роуты v1.
-5. Тест `tests/test_health.py` через `httpx` + `fastapi.testclient`:
-   статус 200 и тело `{"status": "ok"}`.
-6. Коммит: `feat(backend): fastapi skeleton with health endpoint`.
+   response schema — a Pydantic model in `app/schemas/health.py`.
+4. Aggregating router in `app/api/v1/__init__.py` (or `router.py`) that
+   collects all v1 routes.
+5. Test `tests/test_health.py` via `httpx` + `fastapi.testclient`:
+   status 200 and body `{"status": "ok"}`.
+6. Commit: `feat(backend): fastapi skeleton with health endpoint`.
 
-## Чего НЕ делать
-- Не подключать SQLAlchemy к реальной БД (модели/сессии — позже, когда понадобятся).
-- Не реализовывать налоговую логику (T03).
+## Non-goals
+- Do not wire SQLAlchemy to a real DB (models/sessions come later).
+- Do not implement tax logic (T03).
 
-## Критерии приёмки
-- [ ] `uvicorn app.main:app --reload` из `backend/` стартует без ошибок.
+## Acceptance criteria
+- [ ] `uvicorn app.main:app --reload` from `backend/` starts cleanly.
 - [ ] `curl localhost:8000/api/v1/health` → `{"status":"ok"}`.
-- [ ] `/docs` (Swagger) открывается и показывает эндпоинт.
-- [ ] `pytest` из `backend/` — зелёный.
-- [ ] Роут тонкий, структура папок соответствует CONTEXT.md §3.
+- [ ] `/docs` (Swagger) opens and shows the endpoint.
+- [ ] `pytest` from `backend/` is green.
+- [ ] The route is thin; folder structure matches CONTEXT.md §3.
 
-## По завершении
-Обнови T02 в `TODO.md` на `[R]` + запись в журнал с выводом `pytest`.
+## On completion
+Set T02 to `[R]` in `TODO.md` + journal entry with the `pytest` output.

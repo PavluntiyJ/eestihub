@@ -1,68 +1,73 @@
-# T08 — Housing из Postgres (SQLAlchemy + сид)
+# T08 — Housing from Postgres (SQLAlchemy + seed)
 
-**Прочитай сначала:** `docs/CONTEXT.md` (§2, §3, §5 — контракт
-`GET /api/v1/housing/rents`, §7).
-**Зависимости:** T05 принята. **Роль:** Backend (Python).
-**Ветка:** работай в `master` (параллельно в ветке `feat/t09-e2e` идёт
-T09 — frontend-тесты; backend-файлы не пересекаются).
+**Read first:** `docs/CONTEXT.md` (§2, §3, §5 — the
+`GET /api/v1/housing/rents` contract, §7).
+**Dependencies:** T05 accepted. **Role:** Backend (Python).
+**Branch:** work in `master` (T09 — frontend tests — runs in parallel on
+`feat/t09-e2e`; backend files do not overlap).
 
-## Цель
+## Goal
 
-Заявленный в стеке Postgres начинает работать: данные аренды переезжают
-из хардкода в БД. Модель SQLAlchemy, идемпотентный сид из текущих моков,
-сервис читает из БД. **Контракт API v1 не меняется** — фронтенд не в
-курсе перемен, кроме одного уточнения: `updated_at` становится настоящей
-датой (сериализация в ту же строку `YYYY-MM-DD`).
+The Postgres declared in the stack starts doing real work: rent data
+moves from hardcode into the DB. A SQLAlchemy model, an idempotent seed
+from the current mocks, the service reads from the DB. **The v1 API
+contract does not change** — the frontend notices nothing, except one
+refinement: `updated_at` becomes a real date (serialized to the same
+`YYYY-MM-DD` string).
 
-Postgres поднимается через `docker compose up -d db` (в среде podman,
-алиас `docker` работает; параметры подключения — в `.env.example`).
+Postgres runs via `docker compose up -d db` (podman environment, the
+`docker` alias works; connection parameters are in `.env.example`).
 
-## Что сделать
+## Steps
 
-1. Зависимости в `requirements.txt`: `sqlalchemy` 2.x и `psycopg[binary]`
-   (запинить версии, как принято в файле).
-2. `app/core/config.py`: настройка `database_url` (из env `DATABASE_URL`,
-   дефолт — локальный Postgres из docker-compose). Обнови `.env.example`.
-3. `app/core/db.py`: engine + `session factory` (синхронные — для MVP
-   достаточно), FastAPI-dependency `get_session`.
-4. `app/models/housing.py`: модель `DistrictRent` (таблица
-   `district_rents`): `id` PK, `name` уникальный, четыре ценовых поля
-   int, `lat`/`lon` float, `updated_at` date. `Base` — в `app/models/`.
-5. Сид `backend/scripts/seed_housing.py`: создаёт таблицы
-   (`Base.metadata.create_all` — Alembic в MVP не заводим, это решение
-   оркестратора) и **идемпотентно** (upsert по `name`) заливает данные из
-   `app/services/housing_data.py` — модуль моков остаётся источником
-   сида. Запуск: `python -m scripts.seed_housing` из `backend/`.
-6. `app/services/housing_service.py`: читает районы из БД (сортировка по
-   `name`), `updated_at` ответа = max по строкам. Схема
-   `HousingRentsResponse.updated_at` → `datetime.date`.
-7. Роут: при недоступной БД — HTTP 503 (`Service Unavailable`), без
-   стектрейса в ответе. Фронтенд уже показывает unavailable-состояние на
-   любой не-2xx/сетевой ошибке — его не трогаем.
-8. Тесты: без живого Postgres (SQLite in-memory через override
-   `get_session`; учти отличия типов — модель должна быть совместима):
-   форма ответа, 8 районов после сида тестовой сессии, 503 при
-   недоступной БД. Плюс живая проверка вручную: compose-Postgres, сид,
-   `curl` — результат идентичен прежнему мок-ответу (кроме типа даты).
-9. Коммит: `feat(backend): serve housing rents from postgres`.
+1. Dependencies in `requirements.txt`: `sqlalchemy` 2.x and
+   `psycopg[binary]` (pin versions per the file's convention).
+2. `app/core/config.py`: a `database_url` setting (from the
+   `DATABASE_URL` env var, defaulting to the local compose Postgres).
+   Update `.env.example`.
+3. `app/core/db.py`: engine + session factory (synchronous — enough for
+   the MVP), a `get_session` FastAPI dependency.
+4. `app/models/housing.py`: `DistrictRent` model (`district_rents`
+   table): `id` PK, unique `name`, four int price fields, `lat`/`lon`
+   float, `updated_at` date. `Base` lives in `app/models/`.
+5. Seed `backend/scripts/seed_housing.py`: creates tables
+   (`Base.metadata.create_all` — no Alembic in the MVP, orchestrator's
+   decision) and **idempotently** (upsert by `name`) loads data from
+   `app/services/housing_data.py` — the mock module remains the seed
+   source. Run as `python -m scripts.seed_housing` from `backend/`.
+6. `app/services/housing_service.py`: reads districts from the DB
+   (ordered by `name`), response `updated_at` = max across rows. Change
+   `HousingRentsResponse.updated_at` to `datetime.date`.
+7. Route: with the DB unavailable — HTTP 503 (`Service Unavailable`),
+   no stack trace in the response. The frontend already renders an
+   unavailable state on any non-2xx/network error — leave it alone.
+8. Tests: without a live Postgres (SQLite in-memory via a `get_session`
+   override; mind type differences — the model must stay compatible):
+   response shape, 8 districts after seeding the test session, 503 when
+   the DB is down. Plus a manual live check: compose Postgres, seed,
+   `curl` — the result is identical to the previous mock response
+   (except the date type).
+9. Commit: `feat(backend): serve housing rents from postgres`.
 
-## Чего НЕ делать
+## Non-goals
 
-- Не менять контракт §5, роуты v1, налоговый код, frontend (совсем).
-- Не заводить Alembic, async-движок, пулы, ORM-модели для налогов.
-- Не удалять `housing_data.py` — он теперь источник сида.
+- Do not change the §5 contract, v1 routes, tax code, or the frontend
+  (at all).
+- No Alembic, async engine, connection pools, or ORM models for taxes.
+- Do not delete `housing_data.py` — it is now the seed source.
 
-## Критерии приёмки
+## Acceptance criteria
 
-- [ ] `pytest` зелёный без запущенного Postgres.
-- [ ] Живой прогон: `docker compose up -d db` → сид → `curl
-      /api/v1/housing/rents` → 200, 8 районов, значения совпадают с
-      прежними моками, `updated_at: "2026-07-01"`.
-- [ ] Повторный запуск сида не дублирует строки (идемпотентность).
-- [ ] БД остановлена → эндпоинт отвечает 503 (не 500 со стектрейсом);
-      `/api/v1/health` и калькулятор работают без БД как раньше.
-- [ ] Никаких изменений в `frontend/`.
+- [ ] `pytest` green without a running Postgres.
+- [ ] Live run: `docker compose up -d db` → seed → `curl
+      /api/v1/housing/rents` → 200, 8 districts, values match the old
+      mocks, `updated_at: "2026-07-01"`.
+- [ ] Re-running the seed does not duplicate rows (idempotency).
+- [ ] DB stopped → the endpoint answers 503 (not a 500 with a stack
+      trace); `/api/v1/health` and the calculator keep working without
+      the DB as before.
+- [ ] No changes under `frontend/`.
 
-## По завершении
+## On completion
 
-Обнови T08 в `TODO.md` на `[R]` + запись в журнал (что проверено и как).
+Set T08 to `[R]` in `TODO.md` + a journal entry (what was verified and how).
