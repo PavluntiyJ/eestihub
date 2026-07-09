@@ -14,8 +14,8 @@
 |---|--------|-----------|--------|-------------|------------|
 | T01 | Скаффолд monorepo: git, папки, docker-compose, конфиги | tasks/T01-scaffold.md | `[x]` | gpt-5.5 | — |
 | T02 | Скелет FastAPI + GET /api/v1/health | tasks/T02-backend-skeleton.md | `[x]` | gpt-5.5-codex | T01 |
-| T03 | Сервис расчёта налогов + POST /api/v1/calculate-taxes + тесты | tasks/T03-tax-calculator.md | `[R]` | gpt-5.5-codex | T02 |
-| T04 | Базовая страница Next.js с fetch к бэкенду | tasks/T04-frontend-base.md | `[ ]` | — | T02 |
+| T03 | Сервис расчёта налогов + POST /api/v1/calculate-taxes + тесты | tasks/T03-tax-calculator.md | `[x]` | gpt-5.5-codex | T02 |
+| T04 | Базовая страница Next.js с fetch к бэкенду | tasks/T04-frontend-base.md | `[ ]` | назначен: gpt-5.5-codex | T02 |
 
 ## Итерация 2 — фичи (не начинать без команды оркестратора)
 
@@ -26,6 +26,7 @@
 
 ## Журнал (новые записи сверху)
 
+- 2026-07-09 · оркестратор · Повторное ревью T03: принята `[x]`. Все 3 пункта доработки выполнены: ettevõtluskonto считает 20% + pension_pillar_rate (проверено независимо, включая непокрытый тестами случай 6% → налог 780, net 2220), тесты 0%/2% с выкладками добавлены, мусорные константы и комментарии убраны. pytest 13 passed, живой API корректен, fix-коммит на месте. НАЗНАЧЕНИЕ: T04 (tasks/T04-frontend-base.md) → gpt-5.5-codex. Напоминание исполнителю: в T04 обязателен i18n-каркас (CONTEXT.md §6), бэкенд для проверки поднимать из backend/ (venv + uvicorn). Также: закоммитить текущие незакоммиченные правки оркестрационных файлов (TODO.md, docs/CONTEXT.md) коммитом `docs: update context and board after T03 review` перед началом T04.
 - 2026-07-09 · gpt-5.5-codex · Доработан T03 по ревью: для ettevõtluskonto применяется ставка 20% + `pension_pillar_rate`, добавлены/обновлены ручные тесты для 0% и 2%, удалены лишние source-комментарии и неиспользуемые константы · Проверено: `pytest` → 13 passed.
 - 2026-07-09 · оркестратор · Ревью T03: НА ДОРАБОТКУ (`[>]`). Проверено независимо: 13 тестов зелёные, живой API корректен, ручные выкладки tööleping/juhatuse liige/FIE сошлись с моим пересчётом, отмена ставки 40% и порог 40 000 € подтверждены по emta.ee. НАЙДЕНА ОШИБКА: на той же странице EMTA — для участников II пенсионной ступени ставка ettevõtluskonto равна 20% + ставка взноса (22%/24%/26% при 2%/4%/6%); `calculate_ettevotluskonto` игнорирует `pension_pillar_rate` и всегда считает 20%, завышая net при дефолтном входе 0.02. ТРЕБУЕТСЯ: (1) передать pension_pillar_rate в расчёт ettevõtluskonto по формуле 20% + rate, источник — та же страница EMTA; (2) обновить/добавить тесты с ручными выкладками (мин. случаи 0% и 2%); (3) убрать бессмысленные комментарии-источники у тривиальных констант (ZERO_AMOUNT, FULL_RATE и т.п.) и неиспользуемые константы, если они не нужны. CONTEXT.md §5 уже обновлён оркестратором. Коммит доработки: `fix(backend): apply pension pillar surcharge to entrepreneur account rate`.
 - 2026-07-09 · gpt-5.5-codex · Выполнен T03: сверены ставки EMTA 2026, добавлены `tax_rates.py` с источниками, Pydantic-схемы, сервис сравнения 4 режимов, тонкий `POST /api/v1/calculate-taxes`, тесты с ручными выкладками · Проверено: `pytest` → 13 passed; `curl -X POST localhost:8000/api/v1/calculate-taxes` с примером из CONTEXT.md → 4 результата, Tööleping net 2409.76, employer_total_cost 4014.00.
