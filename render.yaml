@@ -1,7 +1,7 @@
 services:
   - type: web
     name: eestihub-api
-    env: python
+    runtime: python
     rootDir: backend
     plan: free
     region: frankfurt

@@ -22,7 +22,7 @@ in order. Every step is a dashboard action — no CLI or code changes needed.
    ```
    postgresql://neondb_owner:npg_xxxxx@ep-xxxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
    ```
-4. **Adapt it for SQLAlchemy/psycopg2**: replace the scheme with
+4. **Adapt it for SQLAlchemy/psycopg**: replace the scheme with
    `postgresql+psycopg://` and keep `?sslmode=require`. Example:
    ```
    postgresql+psycopg://neondb_owner:npg_xxxxx@ep-xxxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
