@@ -1,6 +1,6 @@
 # EestiHub
 
-<!-- TODO: live demo URL -->
+**Live demo: [eestihub.vercel.app](https://eestihub.vercel.app)** · API docs: [eestihub-api.onrender.com/docs](https://eestihub-api.onrender.com/docs)
 
 [![CI](https://github.com/PavluntiyJ/eestihub/actions/workflows/ci.yml/badge.svg)](https://github.com/PavluntiyJ/eestihub/actions/workflows/ci.yml)
 
