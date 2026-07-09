@@ -23,6 +23,7 @@ MVP — две фичи:
 |-----------|-----------|
 | Frontend  | Next.js 15 (App Router), TypeScript strict, Tailwind CSS, shadcn/ui |
 | Графики   | Recharts — только через shadcn/ui chart-компоненты, клиентские листовые компоненты |
+| E2E       | Playwright (`@playwright/test`, только chromium), тесты в `frontend/e2e/` |
 | Backend   | FastAPI, Python 3.11+, Pydantic v2, SQLAlchemy 2.x |
 | DB        | PostgreSQL 16 (Docker) |
 | Dev-среда | Docker Compose (пока только для Postgres; фронт и бэк запускаются локально) |
@@ -163,8 +164,11 @@ new_site_project/
 
 ```bash
 docker compose up -d db                      # Postgres на :5432
+cd backend && python -m scripts.seed_housing # сид housing-данных (после T08)
 cd backend && uvicorn app.main:app --reload  # API на :8000
 cd frontend && npm run dev                   # UI на :3000
+cd frontend && npm run e2e                   # e2e-смоки (нужен API на :8000; после T09)
 ```
 CORS: бэкенд разрешает `http://localhost:3000`.
 Фронтенд ходит на бэкенд через `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
+Бэкенд ходит в Postgres через `DATABASE_URL` (default — compose-БД, см. `backend/.env.example`).
