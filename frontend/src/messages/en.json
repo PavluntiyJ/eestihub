@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "EstiHub - Estonia tax and housing insights",
+    "title": "EestiHub - Estonia tax and housing insights",
     "description": "Compare Estonian tax regimes and explore Tallinn rental data for expats and entrepreneurs."
   },
   "header": {
-    "brand": "EstiHub",
+    "brand": "EestiHub",
     "tagline": "Estonia essentials for builders and expats"
   },
   "languageSwitcher": {
@@ -24,7 +24,7 @@
     "hero": {
       "eyebrow": "MVP foundation",
       "title": "Plan your work, taxes, and next apartment in Estonia.",
-      "description": "EstiHub brings practical tax comparisons and Tallinn rental signals into one fast, multilingual workspace for people building their life or company in Estonia."
+      "description": "EestiHub brings practical tax comparisons and Tallinn rental signals into one fast, multilingual workspace for people building their life or company in Estonia."
     },
     "proof": {
       "tax": "Compare employment, board member, FIE, and entrepreneur account regimes.",
@@ -43,7 +43,7 @@
   },
   "housing": {
     "metadata": {
-      "title": "Tallinn rent dashboard - EstiHub",
+      "title": "Tallinn rent dashboard - EestiHub",
       "description": "Compare mock 2026 Tallinn rent levels by district for one-, two-, and three-room apartments."
     },
     "hero": {
@@ -73,6 +73,7 @@
         "utilities": "Utilities"
       }
     },
+    "mockNote": "The data on this page is demo (mock) values and does not reflect the real Tallinn rental market.",
     "states": {
       "unavailable": "Data unavailable",
       "unavailableTitle": "Housing data is unavailable",
@@ -81,7 +82,7 @@
   },
   "calculator": {
     "metadata": {
-      "title": "Estonian tax calculator - EstiHub",
+      "title": "Estonian tax calculator - EestiHub",
       "description": "Compare net income across Estonian employment, board member, FIE, and entrepreneur account tax regimes."
     },
     "hero": {
@@ -138,6 +139,15 @@
       "pension_pillar_ii": "II pension pillar",
       "social_tax": "Social tax",
       "business_income_tax": "Business income tax"
+    },
+    "disclaimer": {
+      "title": "Not tax advice",
+      "text": "This calculator provides an estimate based on Estonia 2026 tax rates. It is not tax, legal, or financial advice. Verify your decisions with the Estonian Tax and Customs Board."
     }
+  },
+  "footer": {
+    "line": "EestiHub provides an informational tax estimate and demo housing data — not professional advice.",
+    "github": "GitHub",
+    "emta": "EMTA"
   }
 }

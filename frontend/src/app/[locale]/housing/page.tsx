@@ -77,6 +77,9 @@ export default async function HousingPage({ params }: HousingPageParams) {
               <p className="max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl">
                 {t("hero.description")}
               </p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {t("mockNote")}
+              </p>
             </div>
           </div>
           <Card className="border-border/70 bg-background/90 shadow-sm">

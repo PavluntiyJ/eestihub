@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CalculatorForm } from "@/features/tax-calculator/components/calculator-form";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
 
@@ -53,6 +59,23 @@ export default async function CalculatorPage({ params }: CalculatorPageParams) {
         </section>
 
         <CalculatorForm locale={currentLocale} />
+
+        <Card className="border-dashed bg-background/80 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">{t("disclaimer.title")}</CardTitle>
+            <CardDescription>
+              {t("disclaimer.text")}{" "}
+              <a
+                href="https://www.emta.ee"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline transition-colors hover:text-foreground"
+              >
+                EMTA
+              </a>
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     </main>
   );

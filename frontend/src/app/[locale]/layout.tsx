@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import "../globals.css";
 
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
 
 const geistSans = Geist({
@@ -66,6 +67,7 @@ export default async function LocaleLayout({
           <div className="flex min-h-screen flex-col">
             <SiteHeader />
             {children}
+            <SiteFooter />
           </div>
         </NextIntlClientProvider>
       </body>

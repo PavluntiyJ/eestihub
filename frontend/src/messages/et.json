@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "EstiHub - Eesti maksude ja üürituru ülevaade",
+    "title": "EestiHub - Eesti maksude ja üürituru ülevaade",
     "description": "Võrdle Eesti maksurežiime ja vaata Tallinna üüriandmeid välismaalastele ning ettevõtjatele."
   },
   "header": {
-    "brand": "EstiHub",
+    "brand": "EestiHub",
     "tagline": "Eesti põhiteave tegijatele ja välismaalastele"
   },
   "languageSwitcher": {
@@ -24,7 +24,7 @@
     "hero": {
       "eyebrow": "MVP alus",
       "title": "Planeeri oma tööd, makse ja järgmist kodu Eestis.",
-      "description": "EstiHub koondab praktilised maksuvõrdlused ja Tallinna üürituru signaalid kiiresse mitmekeelsesse tööruumi inimestele, kes loovad Eestis elu või ettevõtet."
+      "description": "EestiHub koondab praktilised maksuvõrdlused ja Tallinna üürituru signaalid kiiresse mitmekeelsesse tööruumi inimestele, kes loovad Eestis elu või ettevõtet."
     },
     "proof": {
       "tax": "Võrdle töölepingu, juhatuse liikme, FIE ja ettevõtluskonto režiime.",
@@ -43,7 +43,7 @@
   },
   "housing": {
     "metadata": {
-      "title": "Tallinna üüri töölaud - EstiHub",
+      "title": "Tallinna üüri töölaud - EestiHub",
       "description": "Võrdle 2026. aasta mock-andmetega Tallinna üüritasemeid linnaosade kaupa ühe-, kahe- ja kolmetoaliste korterite jaoks."
     },
     "hero": {
@@ -73,6 +73,7 @@
         "utilities": "Kommunaalid"
       }
     },
+    "mockNote": "Selle lehe andmed on demo (mock) väärtused ega kajasta tegelikku Tallinna üüriturgu.",
     "states": {
       "unavailable": "Andmed pole saadaval",
       "unavailableTitle": "Eluaseme andmed pole saadaval",
@@ -81,7 +82,7 @@
   },
   "calculator": {
     "metadata": {
-      "title": "Eesti maksukalkulaator - EstiHub",
+      "title": "Eesti maksukalkulaator - EestiHub",
       "description": "Võrdle netosissetulekut Eesti töölepingu, juhatuse liikme, FIE ja ettevõtluskonto maksurežiimides."
     },
     "hero": {
@@ -138,6 +139,15 @@
       "pension_pillar_ii": "II pensionisammas",
       "social_tax": "Sotsiaalmaks",
       "business_income_tax": "Ettevõtlustulu maks"
+    },
+    "disclaimer": {
+      "title": "Pole maksunõuanne",
+      "text": "See kalkulaator annab hinnangu Eesti 2026. aasta maksumäärade alusel. See ei ole maksu-, juriidiline ega finantsnõustamine. Kontrolli oma otsused Maksu- ja Tolliametiga."
     }
+  },
+  "footer": {
+    "line": "EestiHub pakub informatiivset maksuhinnangut ja demo eluasemeandmeid — mitte professionaalset nõu.",
+    "github": "GitHub",
+    "emta": "EMTA"
   }
 }
