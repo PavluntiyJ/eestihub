@@ -44,7 +44,7 @@ Rules for workers:
 
 | # | Task | Brief | Status | Worker | Depends on |
 |---|------|-------|--------|--------|------------|
-| T13 | Deploy config: Render blueprint, keep-alive, runbook | tasks/T13-deploy.md | `[ ]` | — | T11 |
+| T13 | Deploy config: Render blueprint, keep-alive, runbook | tasks/T13-deploy.md | `[>]` | deepseek-pro-v4 | T11 |
 
 ## Journal (newest first)
 

@@ -1,5 +1,7 @@
 # EestiHub
 
+<!-- TODO: live demo URL -->
+
 [![CI](https://github.com/PavluntiyJ/eestihub/actions/workflows/ci.yml/badge.svg)](https://github.com/PavluntiyJ/eestihub/actions/workflows/ci.yml)
 
 Interactive web service for expats and entrepreneurs in Estonia: compare tax regimes, explore Tallinn rent data, all in English, Estonian or Russian.
@@ -52,6 +54,10 @@ cd frontend && npm run e2e           # Playwright chromium smokes (needs backend
 ```
 
 Backend tests (17) cover the health endpoint, tax service arithmetic and the housing API. The Playwright suite (6 browser tests) covers redirect/home, language switch, header nav active state, calculator submit, housing table and chart rendering, and disabled submit on invalid input.
+
+## Deployment
+
+The project is configured for free-tier hosting: Vercel Hobby (frontend), Render Free (backend), and Neon Free (PostgreSQL). The repo includes a Render Blueprint (`render.yaml`), a keep-alive cron workflow (`.github/workflows/keepalive.yml`), and a step-by-step deploy runbook — see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Project structure
 
