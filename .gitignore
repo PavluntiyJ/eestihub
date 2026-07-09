@@ -38,3 +38,7 @@ pnpm-debug.log*
 
 # Docker / local data
 postgres_data/
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
