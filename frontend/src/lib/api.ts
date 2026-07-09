@@ -1,4 +1,4 @@
-import type { HealthResponse } from "@/types/api";
+import type { HealthResponse, HousingRentsResponse } from "@/types/api";
 
 const DEFAULT_API_URL = "http://localhost:8000";
 
@@ -31,6 +31,10 @@ export async function fetchJson<TResponse>(
 
 export function getHealth(init?: RequestInit): Promise<HealthResponse> {
   return fetchJson<HealthResponse>("/api/v1/health", init);
+}
+
+export function getHousingRents(init?: RequestInit): Promise<HousingRentsResponse> {
+  return fetchJson<HousingRentsResponse>("/api/v1/housing/rents", init);
 }
 
 async function parseJson(response: Response): Promise<unknown> {

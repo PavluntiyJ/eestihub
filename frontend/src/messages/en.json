@@ -35,5 +35,43 @@
       "onlineHelp": "The API responded successfully and is ready for frontend integrations.",
       "offlineHelp": "The page is still available; start the backend locally to restore live data."
     }
+  },
+  "housing": {
+    "metadata": {
+      "title": "Tallinn rent dashboard - EstiHub",
+      "description": "Compare mock 2026 Tallinn rent levels by district for one-, two-, and three-room apartments."
+    },
+    "hero": {
+      "eyebrow": "Housing dashboard",
+      "title": "Tallinn rents by district, shaped for quick decisions.",
+      "description": "A compact mock-data view of average apartment rents and utilities across eight Tallinn districts for the MVP housing slice."
+    },
+    "summary": {
+      "title": "Dataset status",
+      "updated": "Updated {date}",
+      "city": "City",
+      "districts": "Districts"
+    },
+    "chart": {
+      "title": "Average 2-room rent",
+      "description": "Monthly rent in euros by district.",
+      "valueLabel": "2-room rent"
+    },
+    "table": {
+      "title": "District rent table",
+      "description": "Average monthly rent and utility estimates. Coordinates stay in the API response and are not shown here.",
+      "columns": {
+        "district": "District",
+        "oneRoom": "1-room",
+        "twoRoom": "2-room",
+        "threeRoom": "3-room",
+        "utilities": "Utilities"
+      }
+    },
+    "states": {
+      "unavailable": "Data unavailable",
+      "unavailableTitle": "Housing data is unavailable",
+      "unavailableDescription": "The page is still available. Start the backend locally to restore the Tallinn rent dashboard."
+    }
   }
 }

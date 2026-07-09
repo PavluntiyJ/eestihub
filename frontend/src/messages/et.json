@@ -35,5 +35,43 @@
       "onlineHelp": "API vastas edukalt ja on valmis frontend'i integratsioonideks.",
       "offlineHelp": "Leht on endiselt saadaval; käivita backend lokaalselt, et live-andmed taastada."
     }
+  },
+  "housing": {
+    "metadata": {
+      "title": "Tallinna üüri töölaud - EstiHub",
+      "description": "Võrdle 2026. aasta mock-andmetega Tallinna üüritasemeid linnaosade kaupa ühe-, kahe- ja kolmetoaliste korterite jaoks."
+    },
+    "hero": {
+      "eyebrow": "Eluaseme töölaud",
+      "title": "Tallinna üürid linnaosade kaupa kiireteks otsusteks.",
+      "description": "Kompaktne mock-andmete vaade keskmistele korteriüüridele ja kommunaalidele kaheksas Tallinna linnaosas MVP eluaseme lõigu jaoks."
+    },
+    "summary": {
+      "title": "Andmestiku olek",
+      "updated": "Uuendatud {date}",
+      "city": "Linn",
+      "districts": "Linnaosad"
+    },
+    "chart": {
+      "title": "Keskmine 2-toalise üür",
+      "description": "Kuuüür eurodes linnaosa kaupa.",
+      "valueLabel": "2-toalise üür"
+    },
+    "table": {
+      "title": "Linnaosade üüritabel",
+      "description": "Keskmine kuuüür ja kommunaalide hinnang. Koordinaadid jäävad API vastusesse ja neid siin ei näidata.",
+      "columns": {
+        "district": "Linnaosa",
+        "oneRoom": "1-toaline",
+        "twoRoom": "2-toaline",
+        "threeRoom": "3-toaline",
+        "utilities": "Kommunaalid"
+      }
+    },
+    "states": {
+      "unavailable": "Andmed pole saadaval",
+      "unavailableTitle": "Eluaseme andmed pole saadaval",
+      "unavailableDescription": "Leht on endiselt saadaval. Käivita backend lokaalselt, et Tallinna üüri töölaud taastada."
+    }
   }
 }
