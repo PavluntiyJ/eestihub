@@ -22,6 +22,7 @@ MVP — две фичи:
 | Слой      | Технология |
 |-----------|-----------|
 | Frontend  | Next.js 15 (App Router), TypeScript strict, Tailwind CSS, shadcn/ui |
+| Графики   | Recharts — только через shadcn/ui chart-компоненты, клиентские листовые компоненты |
 | Backend   | FastAPI, Python 3.11+, Pydantic v2, SQLAlchemy 2.x |
 | DB        | PostgreSQL 16 (Docker) |
 | Dev-среда | Docker Compose (пока только для Postgres; фронт и бэк запускаются локально) |
