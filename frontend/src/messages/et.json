@@ -73,5 +73,66 @@
       "unavailableTitle": "Eluaseme andmed pole saadaval",
       "unavailableDescription": "Leht on endiselt saadaval. Käivita backend lokaalselt, et Tallinna üüri töölaud taastada."
     }
+  },
+  "calculator": {
+    "metadata": {
+      "title": "Eesti maksukalkulaator - EstiHub",
+      "description": "Võrdle netosissetulekut Eesti töölepingu, juhatuse liikme, FIE ja ettevõtluskonto maksurežiimides."
+    },
+    "hero": {
+      "eyebrow": "Maksukalkulaator",
+      "title": "Võrdle Eesti maksurežiime enne töövormi valimist.",
+      "description": "Sisesta kuine brutotulu ja pensionisamba valik, et näha nelja MVP režiimi netotulu, tööandja kulu, efektiivset määra ja maksude jaotust."
+    },
+    "form": {
+      "title": "Sisendid",
+      "description": "API arvutab kõik režiimid sama kuise brutotulu põhjal.",
+      "grossIncomeLabel": "Kuine brutotulu, EUR",
+      "grossIncomePlaceholder": "3000.00",
+      "invalidIncome": "Sisesta summa, mis on suurem kui 0.",
+      "pensionPillarLabel": "II pensionisamba makse",
+      "pensionOptions": {
+        "zero": "0%",
+        "two": "2%",
+        "four": "4%",
+        "six": "6%"
+      },
+      "submit": "Arvuta võrdlus",
+      "loading": "Arvutan..."
+    },
+    "empty": {
+      "title": "Arvutust veel pole",
+      "description": "Saada vorm, et võrrelda netotulu nelja režiimi vahel."
+    },
+    "errors": {
+      "title": "Arvutus ebaõnnestus",
+      "api": "API lükkas päringu tagasi. Kontrolli sisendit ja proovi uuesti.",
+      "network": "Backend pole saadaval. Käivita FastAPI teenus lokaalselt ja proovi uuesti."
+    },
+    "comparison": {
+      "title": "Netotulu võrdlus",
+      "description": "Tulbad on skaleeritud parima netotulu tulemuse järgi."
+    },
+    "results": {
+      "best": "Parim neto",
+      "cardDescription": "Maksu API tagastatud kuised väärtused.",
+      "netIncome": "Netotulu",
+      "employerTotalCost": "Tööandja kogukulu",
+      "effectiveTaxRate": "Efektiivne maksumäär"
+    },
+    "regime": {
+      "tooleping": "Tööleping",
+      "juhatuse_liige": "Juhatuse liige",
+      "fie": "Füüsilisest isikust ettevõtja (FIE)",
+      "ettevotluskonto": "Ettevõtluskonto"
+    },
+    "breakdown": {
+      "title": "Maksude jaotus",
+      "income_tax": "Tulumaks",
+      "unemployment_insurance_employee": "Töötaja töötuskindlustus",
+      "pension_pillar_ii": "II pensionisammas",
+      "social_tax": "Sotsiaalmaks",
+      "business_income_tax": "Ettevõtlustulu maks"
+    }
   }
 }

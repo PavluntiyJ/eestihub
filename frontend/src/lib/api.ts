@@ -1,4 +1,9 @@
-import type { HealthResponse, HousingRentsResponse } from "@/types/api";
+import type {
+  HealthResponse,
+  HousingRentsResponse,
+  TaxCalculationRequest,
+  TaxCalculationResponse,
+} from "@/types/api";
 
 const DEFAULT_API_URL = "http://localhost:8000";
 
@@ -35,6 +40,21 @@ export function getHealth(init?: RequestInit): Promise<HealthResponse> {
 
 export function getHousingRents(init?: RequestInit): Promise<HousingRentsResponse> {
   return fetchJson<HousingRentsResponse>("/api/v1/housing/rents", init);
+}
+
+export function calculateTaxes(
+  request: TaxCalculationRequest,
+  init: RequestInit = {}
+): Promise<TaxCalculationResponse> {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+
+  return fetchJson<TaxCalculationResponse>("/api/v1/calculate-taxes", {
+    ...init,
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  });
 }
 
 async function parseJson(response: Response): Promise<unknown> {

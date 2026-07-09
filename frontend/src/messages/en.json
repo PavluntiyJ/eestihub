@@ -73,5 +73,66 @@
       "unavailableTitle": "Housing data is unavailable",
       "unavailableDescription": "The page is still available. Start the backend locally to restore the Tallinn rent dashboard."
     }
+  },
+  "calculator": {
+    "metadata": {
+      "title": "Estonian tax calculator - EstiHub",
+      "description": "Compare net income across Estonian employment, board member, FIE, and entrepreneur account tax regimes."
+    },
+    "hero": {
+      "eyebrow": "Tax calculator",
+      "title": "Compare Estonian tax regimes before you choose how to work.",
+      "description": "Enter monthly gross income and pension pillar settings to see net income, employer cost, effective rate, and tax breakdown for four MVP regimes."
+    },
+    "form": {
+      "title": "Inputs",
+      "description": "The API calculates all regimes from the same monthly gross income.",
+      "grossIncomeLabel": "Monthly gross income, EUR",
+      "grossIncomePlaceholder": "3000.00",
+      "invalidIncome": "Enter an amount greater than 0.",
+      "pensionPillarLabel": "II pension pillar contribution",
+      "pensionOptions": {
+        "zero": "0%",
+        "two": "2%",
+        "four": "4%",
+        "six": "6%"
+      },
+      "submit": "Calculate comparison",
+      "loading": "Calculating..."
+    },
+    "empty": {
+      "title": "No calculation yet",
+      "description": "Submit the form to compare net income across the four regimes."
+    },
+    "errors": {
+      "title": "Calculation failed",
+      "api": "The API rejected the request. Check the input and try again.",
+      "network": "The backend is unavailable. Start the FastAPI service locally and try again."
+    },
+    "comparison": {
+      "title": "Net income comparison",
+      "description": "Bars are scaled against the best net income result."
+    },
+    "results": {
+      "best": "Best net",
+      "cardDescription": "Monthly values returned by the tax API.",
+      "netIncome": "Net income",
+      "employerTotalCost": "Employer total cost",
+      "effectiveTaxRate": "Effective tax rate"
+    },
+    "regime": {
+      "tooleping": "Employment contract (Tööleping)",
+      "juhatuse_liige": "Management board member",
+      "fie": "Self-employed person (FIE)",
+      "ettevotluskonto": "Entrepreneur account"
+    },
+    "breakdown": {
+      "title": "Tax breakdown",
+      "income_tax": "Income tax",
+      "unemployment_insurance_employee": "Employee unemployment insurance",
+      "pension_pillar_ii": "II pension pillar",
+      "social_tax": "Social tax",
+      "business_income_tax": "Business income tax"
+    }
   }
 }
