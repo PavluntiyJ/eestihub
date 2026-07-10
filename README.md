@@ -74,12 +74,12 @@ Backend tests (17) cover the health endpoint, tax service arithmetic and the hou
 
 ## Deployment
 
-Live on free tiers: Vercel Hobby (frontend), Render Free (backend, kept warm by a [cron ping](.github/workflows/keepalive.yml)), Neon Free (PostgreSQL). The repo includes a Render Blueprint (`render.yaml`) and a step-by-step runbook — see [docs/DEPLOY.md](docs/DEPLOY.md).
+Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down when idle, first request after a pause takes ~1 min), Neon Free (PostgreSQL). The repo includes a Render Blueprint (`render.yaml`) and a step-by-step runbook — see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Project structure
 
 ```
-├── .github/workflows/          # ci.yml, keepalive.yml
+├── .github/workflows/          # ci.yml
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/routes/      # health, taxes, housing

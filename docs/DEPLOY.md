@@ -94,24 +94,7 @@ Now that you have the real Vercel domain, update CORS on the backend:
 
 ---
 
-## 5. GitHub — keep-alive variable
-
-The backend on Render Free spins down after 15 minutes of inactivity.
-A GitHub Actions workflow (already in the repo) pings the health
-endpoint every 10 minutes to prevent this.
-
-1. Go to your GitHub repository → **Settings** → **Secrets and
-   variables** → **Actions** → **Variables** tab.
-2. Click **New repository variable**:
-   - Name: `BACKEND_URL`
-   - Value: your **Render URL**, without a trailing slash
-     (e.g. `https://eestihub-api.onrender.com`)
-3. The workflow `keepalive.yml` starts running on the next cron tick.
-   Until the variable is set it skips gracefully (green).
-
----
-
-## 6. Smoke checks
+## 5. Smoke checks
 
 | Check | What to do | Expected result |
 |---|---|---|
@@ -120,27 +103,21 @@ endpoint every 10 minutes to prevent this.
 | Housing dashboard | Go to **Rent** | Table with 8 Tallinn districts, bar chart, "Updated 2026-07-01" |
 | i18n | Switch language to ET, then RU | Every string translated, URLs are `/et/...` and `/ru/...` |
 | Sitemap | Open `<vercel-url>/sitemap.xml` | 9 `<url>` entries (3 pages × 3 locales) with alternates |
-| Keep-alive | GitHub Actions tab → Keep-alive workflow → latest run | Green; log shows `{"status":"ok"}` from Render |
 
 If the backend shows a cold start (~30–60 s on first request after a
-pause), wait a moment and retry. The keep-alive cron prevents this for
-subsequent visitors.
+pause), wait a moment and retry.
 
 ---
 
 ## Free-tier caveats
 
 - **Render Free** spins down the backend after 15 minutes of no
-  inbound traffic. The GitHub keep-alive cron pings every 10 minutes to
-  keep it warm. The first request after a missed interval may take
-  ~1 minute (cold start).
+  inbound traffic. The first request after a pause takes ~1 minute
+  (cold start) while the service wakes up.
 - **Neon Free** scales compute to zero after inactivity. The
   database resumes in under a second on the next query, but the
   very first connection after a long idle period can time out once —
   the API returns 503 for housing and the frontend shows an unavailable
   state. A page refresh resolves it.
-- **GitHub Actions** disables scheduled workflows after 60 days of
-  repository inactivity. Pushing any commit or running the workflow
-  manually (from the Actions tab) resets the counter.
 - **Neon Free** has a 0.5 GiB storage limit and a 100-hour monthly
   compute limit — more than enough for a portfolio project.
