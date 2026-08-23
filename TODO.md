@@ -46,7 +46,27 @@ Rules for workers:
 |---|------|-------|--------|--------|------------|
 | T13 | Deploy config: Render blueprint, keep-alive, runbook | tasks/T13-deploy.md | `[x]` | deepseek-pro-v4 | T11 |
 
+## Iteration 6 — usefulness pass (planned 2026-08-23, owner-approved brainstorm)
+
+| # | Task | Brief | Status | Worker | Depends on |
+|---|------|-------|--------|--------|------------|
+| T14 | Affordability link: net salary → affordable districts | tasks/T14-affordability-link.md | `[ ]` | — | — |
+| T15 | Housing real data: snapshots, ingest, trends API | tasks/T15-housing-real-data.md | `[ ]` | — | — |
+| T16 | e-Residency first-year cost calculator | tasks/T16-eresidency-calculator.md | `[ ]` | — | — |
+
+Tasks are independent and may run in parallel; file zones are separated
+in the briefs (shared files: `messages/*.json` — each adds only its own
+namespace; only T16 touches the nav/sitemap).
+
 ## Journal (newest first)
+
+- 2026-08-23 · gpt-5.6-sol · Owner approved the improvement brainstorm:
+  drafted iteration 6 with briefs T14 (affordability link),
+  T15 (housing snapshot history + trends API), T16 (e-Residency cost
+  calculator). Created `tasks/T14..T16`, added the board section and the
+  backlog to Notes. No application code touched; statuses left `[ ]`
+  pending assignment. T15/T16 each propose API-contract additions that
+  need an orchestrator review into CONTEXT §5 before acceptance.
 
 - 2026-07-10 · orchestrator · Keep-alive removed (owner's decision: the cron spammed the Actions tab with failing runs and a warm backend isn't needed). Deleted `.github/workflows/keepalive.yml`; scrubbed references from README (deployment note + structure tree) and docs/DEPLOY.md (dropped the BACKEND_URL setup section, the keep-alive smoke check, and the 60-day scheduled-workflow caveat; renumbered smoke checks to section 5). The `BACKEND_URL` repo variable on GitHub is now unused and can be deleted in Settings → Actions → Variables (harmless if left). Consequence: Render Free cold start (~1 min) on the first request after 15 idle minutes — documented in README and DEPLOY.md caveats. Historical journal/brief mentions left as-is.
 - 2026-07-09 · orchestrator · DEPLOYED TO PRODUCTION. ITERATION 5 CLOSED — the MVP is live: frontend https://eestihub.vercel.app (Vercel Hobby), backend https://eestihub-api.onrender.com (Render Free, Frankfurt), Postgres on Neon Free (eu-central-1, seeded — 8 rows verified by direct SQL). Executed via CLIs/APIs by the orchestrator with the owner doing browser logins (neonctl auth, vercel login) and providing a Render API key; one deviation from the runbook — Render now requires a card on file even for the free plan (owner added one; no charges on free). The Render service was created through the REST API with settings identical to render.yaml (the Blueprint itself was not applied — API path instead). Smoke checks all green: health 200; housing 8 districts from Neon; calculate-taxes €3000/2% → Tööleping net 2409.76; CORS preflight from the Vercel origin → allow-origin echoed; all pages 200 with the online badge; sitemap 9 URLs and robots on the prod domain; a real browser submit on the prod calculator (via the screenshots script) rendered results end-to-end (Vercel → CORS → Render → Neon); `BACKEND_URL` repo variable set, keep-alive dispatched and pinged Render successfully. README: live-demo links replace the placeholder; calculator/housing screenshots refreshed from prod. Post-deploy notes: the owner should ROTATE the Render API key (it transited the chat); Neon created the project on Postgres 17 vs compose's 16 — harmless for this app, alignment optional. The MVP roadmap is complete; anything further (real housing data, custom domain, analytics) is a new iteration on the owner's initiative.
@@ -97,6 +117,16 @@ Rules for workers:
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-08-23 · gpt-5.6-sol · Backlog from the owner-approved brainstorm
+  (candidates for later iterations, not scheduled): real dividends-vs-
+  salary OÜ comparison (extends T16); year switcher (2025/2026) + URL-
+  shareable calculator scenarios; Tallinn rent heatmap map view (lat/lon
+  already in the schema); Plausible/Umami privacy-friendly analytics;
+  response caching to soften Render cold starts; Tartu/Pärnu districts.
+  T15 deliberately scopes the data source to published aggregate stats +
+  CSV (ToS-safe); an automated listing-site scraper was considered and
+  rejected for now — revisit only with a licensed source.
 
 - 2026-07-09 · gpt-5.5-codex · Codex suggestions for the orchestrator to evaluate before iteration 2 (not project rules): check T04 in a real browser beyond curl (`/`, `/en`, `/et`, `/ru`, the language switcher, `lang`, hreflang, online/offline); for T05 decide up front whether housing mock data lives in `housing_service.py` or JSON — with the current architecture a service module is simpler; add/document backend/frontend smoke commands for reviews; keep the Server Components pattern for pages in future frontend tasks with client components only for interactivity; reuse `frontend/src/types/api.ts` in T06 and do not duplicate types; do not use the backend `label` in the UI — take regime names from next-intl dictionaries; format percentages and money on the frontend without changing the API; add response-shape and district-count tests in T05; route all new visible frontend strings through `src/messages/{en,et,ru}.json`; remember that the EMTA ettevõtluskonto case proved the value of keeping tax constants only in `tax_rates.py` next to their sources.
 
