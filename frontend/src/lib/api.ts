@@ -1,4 +1,6 @@
 import type {
+  EResidencyCalculationRequest,
+  EResidencyCalculationResponse,
   HealthResponse,
   HousingRentsResponse,
   TaxCalculationRequest,
@@ -6,6 +8,7 @@ import type {
 } from "@/types/api";
 
 const DEFAULT_API_URL = "http://localhost:8000";
+const DEFAULT_REQUEST_TIMEOUT_MS = 5_000;
 
 export class ApiError extends Error {
   constructor(
@@ -24,7 +27,10 @@ export async function fetchJson<TResponse>(
 ): Promise<TResponse> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
   const url = `${baseUrl.replace(/\/$/, "")}${path}`;
-  const response = await fetch(url, init);
+  const response = await fetch(url, {
+    ...init,
+    signal: init.signal ?? AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS),
+  });
   const body = await parseJson(response);
 
   if (!response.ok) {
@@ -50,6 +56,21 @@ export function calculateTaxes(
   headers.set("Content-Type", "application/json");
 
   return fetchJson<TaxCalculationResponse>("/api/v1/calculate-taxes", {
+    ...init,
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  });
+}
+
+export function calculateEResidency(
+  request: EResidencyCalculationRequest,
+  init: RequestInit = {}
+): Promise<EResidencyCalculationResponse> {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+
+  return fetchJson<EResidencyCalculationResponse>("/api/v1/calculate-eresidency", {
     ...init,
     method: "POST",
     headers,

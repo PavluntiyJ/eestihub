@@ -54,7 +54,7 @@ Render reads it automatically.
 5. Wait for the deploy to finish, then note the **`onrender.com` URL**
    (something like `https://eestihub-api.onrender.com`).
 6. Verify: open `https://<your-url>.onrender.com/api/v1/health` in a
-   browser — you should see `{"status":"ok"}`.
+   browser — you should see `{"status":"ok","database":"ok"}`.
 
 ---
 
@@ -98,7 +98,7 @@ Now that you have the real Vercel domain, update CORS on the backend:
 
 | Check | What to do | Expected result |
 |---|---|---|
-| Backend health | Open `<render-url>/api/v1/health` | `{"status":"ok"}` |
+| Backend health | Open `<render-url>/api/v1/health` | `{"status":"ok","database":"ok"}` |
 | Calculator | Visit the Vercel URL, go to **Calculator**, submit with €3000/2% | 4 regimes, best badge, `€2,409.76` net for Tööleping |
 | Housing dashboard | Go to **Rent** | Table with 8 Tallinn districts, bar chart, "Updated 2026-07-01" |
 | i18n | Switch language to ET, then RU | Every string translated, URLs are `/et/...` and `/ru/...` |
@@ -115,9 +115,10 @@ pause), wait a moment and retry.
   inbound traffic. The first request after a pause takes ~1 minute
   (cold start) while the service wakes up.
 - **Neon Free** scales compute to zero after inactivity. The
-  database resumes in under a second on the next query, but the
-  very first connection after a long idle period can time out once —
-  the API returns 503 for housing and the frontend shows an unavailable
-  state. A page refresh resolves it.
+  database resumes on the next query. The API validates pooled
+  connections before use and replaces stale ones automatically. The
+  health endpoint returns 503 with `database: "unavailable"` if Neon
+  cannot be reached, while tax calculations remain available because
+  they do not depend on the database.
 - **Neon Free** has a 0.5 GiB storage limit and a 100-hour monthly
   compute limit — more than enough for a portfolio project.

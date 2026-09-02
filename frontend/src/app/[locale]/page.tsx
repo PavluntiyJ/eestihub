@@ -1,5 +1,6 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { BackendStatus } from "@/components/backend-status";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -8,27 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getHealth } from "@/lib/api";
-
-export const dynamic = "force-dynamic";
-
-type BackendStatus = {
-  online: boolean;
+type HomePageParams = {
+  params: Promise<{ locale: string }>;
 };
 
-async function getBackendStatus(): Promise<BackendStatus> {
-  try {
-    const health = await getHealth({ cache: "no-store" });
-
-    return { online: health.status === "ok" };
-  } catch {
-    return { online: false };
-  }
-}
-
-export default async function HomePage() {
+export default async function HomePage({ params }: HomePageParams) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("home");
-  const backendStatus = await getBackendStatus();
 
   return (
     <main className="flex flex-1 bg-[radial-gradient(circle_at_top_left,var(--muted),transparent_34rem)] px-6 py-12 sm:px-8 lg:px-12">
@@ -60,15 +48,14 @@ export default async function HomePage() {
             <CardDescription>{t("status.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-4">
-              <span className="text-sm font-medium">{t("status.api")}</span>
-              <Badge variant={backendStatus.online ? "default" : "secondary"}>
-                {backendStatus.online ? t("status.online") : t("status.offline")}
-              </Badge>
-            </div>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {backendStatus.online ? t("status.onlineHelp") : t("status.offlineHelp")}
-            </p>
+            <BackendStatus
+              apiLabel={t("status.api")}
+              onlineLabel={t("status.online")}
+              offlineLabel={t("status.offline")}
+              checkingHelp={t("status.description")}
+              onlineHelp={t("status.onlineHelp")}
+              offlineHelp={t("status.offlineHelp")}
+            />
           </CardContent>
         </Card>
       </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
 
 import { SiteHeader } from "@/components/site-header";
@@ -27,12 +27,17 @@ function isLocale(locale: string): locale is Locale {
   return locales.includes(locale as Locale);
 }
 
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { locale: requestedLocale } = await params;
   const locale = isLocale(requestedLocale) ? requestedLocale : defaultLocale;
   const t = await getTranslations({ locale, namespace: "metadata" });
 
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
     title: t("title"),
     description: t("description"),
     openGraph: {
@@ -64,6 +69,8 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) {
     notFound();
   }
+
+  setRequestLocale(locale);
 
   return (
     <html
