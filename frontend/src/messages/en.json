@@ -160,6 +160,10 @@
     "disclaimer": {
       "title": "Not tax advice",
       "text": "This calculator provides an estimate based on Estonia 2026 tax rates. It is not tax, legal, or financial advice. Verify your decisions with the Estonian Tax and Customs Board."
+    },
+    "share": {
+      "copy": "Copy link to this scenario",
+      "copied": "Link copied"
     }
   },
   "eresidency": {

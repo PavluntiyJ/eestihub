@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -13,16 +14,20 @@ import {
 } from "@/components/ui/card";
 import { ApiError, calculateTaxes } from "@/lib/api";
 import { AffordabilityPanel } from "@/features/tax-calculator/components/affordability-panel";
+import {
+  isGrossIncomeValid as isValidIncome,
+  parseGrossIncome,
+  scenarioToQuery,
+  type PensionPillarRate,
+  type Scenario,
+} from "@/features/tax-calculator/scenario";
 import type {
   ConstraintSeverity,
   DistrictRent,
   EqualizeBy,
   RegimeResult,
   TaxCalculationResponse,
-  TaxCalculationRequest,
 } from "@/types/api";
-
-type PensionPillarRate = TaxCalculationRequest["pension_pillar_rate"];
 
 const PENSION_PILLAR_OPTIONS: { value: PensionPillarRate; labelKey: string }[] = [
   { value: 0, labelKey: "zero" },
@@ -40,21 +45,58 @@ const CONSTRAINT_STYLES: Record<ConstraintSeverity, string> = {
     "border-destructive/50 bg-destructive/10 text-destructive dark:border-destructive/70",
 };
 
+function scenarioKey(scenario: Scenario): string {
+  return [
+    scenario.grossMonthlyIncome,
+    scenario.pensionPillarRate,
+    scenario.equalizeBy,
+  ].join("|");
+}
+
 type CalculatorFormProps = {
   districts: DistrictRent[];
+  initialResult: TaxCalculationResponse | null;
+  initialScenario: Scenario;
   locale: string;
 };
 
-export function CalculatorForm({ districts, locale }: CalculatorFormProps) {
+export function CalculatorForm({
+  districts,
+  initialResult,
+  initialScenario,
+  locale,
+}: CalculatorFormProps) {
   const t = useTranslations("calculator");
-  const [grossIncome, setGrossIncome] = useState("3000");
-  const [pensionPillarRate, setPensionPillarRate] = useState<PensionPillarRate>(0.02);
-  const [equalizeBy, setEqualizeBy] = useState<EqualizeBy>("gross");
-  const [result, setResult] = useState<TaxCalculationResponse | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const [grossIncome, setGrossIncome] = useState(initialScenario.grossMonthlyIncome);
+  const [pensionPillarRate, setPensionPillarRate] = useState<PensionPillarRate>(
+    initialScenario.pensionPillarRate
+  );
+  const [equalizeBy, setEqualizeBy] = useState<EqualizeBy>(initialScenario.equalizeBy);
+  const [result, setResult] = useState<TaxCalculationResponse | null>(initialResult);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const grossIncomeValue = Number(grossIncome.trim().replace(",", "."));
-  const isGrossIncomeValid = Number.isFinite(grossIncomeValue) && grossIncomeValue > 0;
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
+  const grossIncomeValue = parseGrossIncome(grossIncome);
+  const isGrossIncomeValid = isValidIncome(grossIncome);
+
+  // Back/forward navigation re-renders this component with a different
+  // scenario in its props. Adopt it — but only when it did not come from our
+  // own submit, otherwise a server round trip would overwrite a result the
+  // client already has.
+  const incomingKey = scenarioKey(initialScenario);
+  const [adoptedKey, setAdoptedKey] = useState(incomingKey);
+
+  if (incomingKey !== adoptedKey) {
+    setAdoptedKey(incomingKey);
+    setGrossIncome(initialScenario.grossMonthlyIncome);
+    setPensionPillarRate(initialScenario.pensionPillarRate);
+    setEqualizeBy(initialScenario.equalizeBy);
+    setResult(initialResult);
+    setError(null);
+    setIsLinkCopied(false);
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,11 +115,34 @@ export function CalculatorForm({ districts, locale }: CalculatorFormProps) {
         equalize_by: equalizeBy,
       });
       setResult(response);
+      setIsLinkCopied(false);
+
+      const submitted: Scenario = {
+        grossMonthlyIncome: grossIncome,
+        pensionPillarRate,
+        equalizeBy,
+      };
+
+      // push, not replace: only a submit writes to the URL, so history holds
+      // scenarios the user actually asked for and back walks between them.
+      // Claiming the key first stops the resulting server render from being
+      // mistaken for an external navigation.
+      setAdoptedKey(scenarioKey(submitted));
+      router.push(`${pathname}?${scenarioToQuery(submitted)}`, { scroll: false });
     } catch (caughtError) {
       setResult(null);
       setError(caughtError instanceof ApiError ? t("errors.api") : t("errors.network"));
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function onCopyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsLinkCopied(true);
+    } catch {
+      setIsLinkCopied(false);
     }
   }
 
@@ -171,12 +236,24 @@ export function CalculatorForm({ districts, locale }: CalculatorFormProps) {
         ) : null}
 
         {result ? (
-          <ResultsView
-            districts={districts}
-            equalizeBy={result.input.equalize_by}
-            locale={locale}
-            results={result.results}
-          />
+          <>
+            <div className="flex justify-end">
+              <Button
+                onClick={onCopyLink}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {isLinkCopied ? t("share.copied") : t("share.copy")}
+              </Button>
+            </div>
+            <ResultsView
+              districts={districts}
+              equalizeBy={result.input.equalize_by}
+              locale={locale}
+              results={result.results}
+            />
+          </>
         ) : (
           <Card className="border-dashed bg-background/80 shadow-sm">
             <CardHeader>

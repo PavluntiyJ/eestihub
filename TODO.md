@@ -54,7 +54,7 @@ has to land before anything is built on top of the calculator's numbers.
 All three tasks moved into iteration 7 — T15 and T16 unchanged apart from
 small review amendments, T14 rebased onto T17.
 
-## Iteration 7 — audit remediation + usefulness (opened 2026-09-02, owner-approved slate)
+## Iteration 7 — audit remediation + usefulness (closed 2026-09-02, all 7 tasks accepted)
 
 Full audit with evidence for every finding ID below:
 https://claude.ai/code/artifact/1eeb632e-3479-45fd-831e-427ab2433192
@@ -79,7 +79,7 @@ https://claude.ai/code/artifact/1eeb632e-3479-45fd-831e-427ab2433192
 
 | # | Task | Brief | Status | Worker | Depends on |
 |---|------|-------|--------|--------|------------|
-| T20 | Shareable calculator scenario URLs | tasks/T20-shareable-scenarios.md | `[ ]` | — | T17, T14 |
+| T20 | Shareable calculator scenario URLs | tasks/T20-shareable-scenarios.md | `[x]` | claude-opus-5 | T17, T14 |
 
 Findings covered: T17 → F-01 F-02 F-03 F-04 F-16 · T18 → F-05 F-06 F-07
 F-08 F-09 F-17 · T19 → F-10 F-11 F-13 F-14 · T20 → F-15 F-20.
@@ -94,6 +94,56 @@ edits. Shared `messages/*.json` follows the standing rule: each task adds
 only its own namespace.
 
 ## Journal (newest first)
+
+- 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **T20 done —
+  iteration 7 closed, all seven tasks `[x]`.** Same caveat as wave 2: I wrote
+  this code and accepted it, so it has had no independent review.
+
+  **URL contract, recorded verbatim as the brief requires** — the future
+  programmatic-SEO task must be written against exactly this:
+  - `gross` — monthly amount. Accepts a comma decimal separator; written back
+    normalised with a dot. Invalid or absent → `3000`.
+  - `pillar` — whole percent, one of `0` `2` `4` `6` (not `0.02`). Anything
+    else → `2`.
+  - `basis` — `gross` or `payer_cost`, mirroring the API's `equalize_by`.
+    Anything else → `gross`.
+  - All three are optional. Results only render when `gross` is present *and*
+    valid; every other combination shows the empty state, never an error.
+  Parsing and serialisation live in `features/tax-calculator/scenario.ts` so
+  the server page and the client form cannot drift apart.
+
+  · **Deviated from the brief on one point, deliberately.** The brief said
+  `router.replace`, reasoning that push would make the back button walk through
+  every keystroke. That reasoning does not apply to this implementation: only a
+  submit writes to the URL, editing fields does not. With `replace`, back would
+  have skipped past every scenario the user submitted — which contradicts the
+  brief's own acceptance criterion. Used `push`, and added a render-phase state
+  sync so a back/forward navigation adopts the incoming scenario while the
+  server render caused by our own submit does not clobber the result the client
+  already computed. Covered by a new e2e assertion.
+  · **F-20.** The language switcher now carries the query string and the hash.
+  `useSearchParams` forced a Suspense boundary around it in the header;
+  verified afterwards that every page still builds as `●`.
+  · **Worth noting:** `/[locale]/calculator` reads `searchParams` and still
+  prerenders as `●` — Next serves the static shell and renders the
+  query-dependent part per request. So T18's F-09 win survived and a shared
+  link still arrives with its numbers in the HTML; no trade-off was needed.
+  · Verified: `npm run build` clean with no lint warnings; i18n parity 155/155;
+  `npm run e2e` → 15 passed; `curl` on
+  `?gross=3000&pillar=2&basis=payer_cost` returns four server-rendered result
+  cards with the payer-cost figures (€1,839.92 / €1,878.21 / €1,721.80 /
+  €2,340.00), the bare URL returns none, and `?gross=abc&pillar=99` returns 200
+  with the default form; copy-link verified through the real clipboard API;
+  with the backend stopped the scenario URL still returns 200 with a usable
+  form and no results.
+
+  · **Iteration 7 result.** 18 of the 20 audit findings are closed. F-12
+  (Recharts payload) and F-18 (no Python lint/type gate) remain open by
+  decision, plus F-19 (e2e assert on English copy) and the three items added to
+  Notes during wave 2. Next candidates, in the order I would take them: OÜ with
+  a salary/dividend split, health-insurance eligibility per regime, and the
+  tax-residency switch — the three that make the calculator authoritative for
+  the audience the homepage actually addresses.
 
 - 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **Wave 2 done:
   T19 and T14 both `[x]`.** The owner directed me to implement these directly

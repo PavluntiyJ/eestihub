@@ -10,11 +10,17 @@ import {
 } from "@/components/ui/card";
 import { CalculatorForm } from "@/features/tax-calculator/components/calculator-form";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
-import { getHousingRents } from "@/lib/api";
-import type { DistrictRent } from "@/types/api";
+import { scenarioFromParams, parseGrossIncome } from "@/features/tax-calculator/scenario";
+import type { Scenario } from "@/features/tax-calculator/scenario";
+import { calculateTaxes, getHousingRents } from "@/lib/api";
+import type { DistrictRent, TaxCalculationResponse } from "@/types/api";
 
 type CalculatorPageParams = {
   params: Promise<{ locale: string }>;
+};
+
+type CalculatorPageProps = CalculatorPageParams & {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function isLocale(locale: string): locale is Locale {
@@ -54,12 +60,41 @@ async function getDistricts(): Promise<DistrictRent[]> {
   }
 }
 
-export default async function CalculatorPage({ params }: CalculatorPageParams) {
+// A shared scenario link should show its numbers in the HTML, not after a
+// round trip, so the calculation runs here when the URL carries one. An
+// unreachable API just means the visitor starts from an empty results panel.
+async function getInitialResult(
+  scenario: Scenario,
+  hasExplicitIncome: boolean
+): Promise<TaxCalculationResponse | null> {
+  if (!hasExplicitIncome) {
+    return null;
+  }
+
+  try {
+    return await calculateTaxes({
+      gross_monthly_income: parseGrossIncome(scenario.grossMonthlyIncome),
+      pension_pillar_rate: scenario.pensionPillarRate,
+      equalize_by: scenario.equalizeBy,
+    });
+  } catch {
+    return null;
+  }
+}
+
+export default async function CalculatorPage({
+  params,
+  searchParams,
+}: CalculatorPageProps) {
   const { locale } = await params;
   const currentLocale = isLocale(locale) ? locale : defaultLocale;
   setRequestLocale(currentLocale);
   const t = await getTranslations("calculator");
-  const districts = await getDistricts();
+  const { scenario, hasExplicitIncome } = scenarioFromParams(await searchParams);
+  const [districts, initialResult] = await Promise.all([
+    getDistricts(),
+    getInitialResult(scenario, hasExplicitIncome),
+  ]);
 
   return (
     <main className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--muted),transparent_32rem)] px-6 py-10 sm:px-8 lg:px-12">
@@ -78,7 +113,12 @@ export default async function CalculatorPage({ params }: CalculatorPageParams) {
           </div>
         </section>
 
-        <CalculatorForm districts={districts} locale={currentLocale} />
+        <CalculatorForm
+          districts={districts}
+          initialResult={initialResult}
+          initialScenario={scenario}
+          locale={currentLocale}
+        />
 
         <Card className="border-dashed bg-background/80 shadow-sm">
           <CardHeader>

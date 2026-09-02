@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -19,7 +20,13 @@ export async function SiteHeader() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <LanguageSwitcher />
+          {/* The switcher reads the query string so it can carry a scenario
+              across locales; that keeps the pages themselves static. */}
+          <Suspense
+            fallback={<div className="h-8 w-[8.5rem] rounded-full border bg-background" />}
+          >
+            <LanguageSwitcher />
+          </Suspense>
         </div>
       </div>
     </header>

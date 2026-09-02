@@ -110,6 +110,58 @@ test("shows affordable districts and reacts to the housing share", async ({ page
     .toBeGreaterThanOrEqual(atThirty);
 });
 
+test("renders a shared scenario URL without a submit", async ({ page }) => {
+  await page.goto("/en/calculator?gross=3000&pillar=2&basis=payer_cost");
+
+  await expect(page.locator("[data-regime]")).toHaveCount(4);
+  await expect(page.getByText("Active basis: Payer cost.")).toBeVisible();
+  await expect(
+    page.locator('[data-regime="ettevotluskonto"]').getByText("Best net", { exact: true })
+  ).toBeVisible();
+  await expect(page.locator('input[name="gross_monthly_income"]')).toHaveValue("3000");
+});
+
+test("a malformed scenario URL falls back to the default form", async ({ page }) => {
+  const response = await page.goto("/en/calculator?gross=abc&pillar=99&basis=nonsense");
+
+  expect(response?.status()).toBe(200);
+  await expect(page.locator("[data-regime]")).toHaveCount(0);
+  await expect(page.locator('input[name="gross_monthly_income"]')).toHaveValue("3000");
+});
+
+test("submitting writes the scenario into the URL", async ({ page }) => {
+  await page.goto("/en/calculator");
+
+  await page.locator('input[name="gross_monthly_income"]').fill("2500");
+  await page.getByLabel("Payer cost").check();
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+
+  await expect(page.locator("[data-regime]")).toHaveCount(4);
+  await expect(page).toHaveURL(/gross=2500/);
+  await expect(page).toHaveURL(/pillar=2/);
+  await expect(page).toHaveURL(/basis=payer_cost/);
+
+  // Only submits write to the URL, so back returns to the previous scenario.
+  await page.locator('input[name="gross_monthly_income"]').fill("4000");
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+  await expect(page).toHaveURL(/gross=4000/);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/gross=2500/);
+  await expect(page.locator('input[name="gross_monthly_income"]')).toHaveValue("2500");
+});
+
+test("switching locale keeps the scenario", async ({ page }) => {
+  await page.goto("/en/calculator?gross=3000&pillar=4&basis=gross");
+
+  await page.getByRole("link", { name: "ET" }).click();
+
+  await expect(page).toHaveURL(/\/et\/calculator\?/);
+  await expect(page).toHaveURL(/gross=3000/);
+  await expect(page).toHaveURL(/pillar=4/);
+  await expect(page.locator("[data-regime]")).toHaveCount(4);
+});
+
 test("shows the entrepreneur-account annual-limit blocker", async ({ page }) => {
   await page.goto("/en/calculator");
 

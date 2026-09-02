@@ -160,6 +160,10 @@
     "disclaimer": {
       "title": "Pole maksunõuanne",
       "text": "See kalkulaator annab hinnangu Eesti 2026. aasta maksumäärade alusel. See ei ole maksu-, juriidiline ega finantsnõustamine. Kontrolli oma otsused Maksu- ja Tolliametiga."
+    },
+    "share": {
+      "copy": "Kopeeri selle stsenaariumi link",
+      "copied": "Link kopeeritud"
     }
   },
   "eresidency": {
