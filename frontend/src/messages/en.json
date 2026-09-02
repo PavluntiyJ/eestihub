@@ -130,6 +130,7 @@
     },
     "results": {
       "best": "Best net",
+      "negativeNet": "Negative net income",
       "cardDescription": "Monthly values returned by the tax API.",
       "netIncome": "Net income",
       "employerTotalCost": "Employer total cost",

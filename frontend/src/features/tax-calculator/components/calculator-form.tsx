@@ -223,17 +223,46 @@ function ResultsView({
         </CardHeader>
         <CardContent className="space-y-4">
           {sortedResults.map((result) => {
-            const width = bestNetIncome > 0 ? `${(result.net_income / bestNetIncome) * 100}%` : "0%";
+            const widthPercentage =
+              bestNetIncome > 0
+                ? Math.max(0, Math.min(100, (result.net_income / bestNetIncome) * 100))
+                : 0;
+            const isNegative = result.net_income < 0;
 
             return (
-              <div key={result.regime} className="space-y-2">
+              <div
+                key={result.regime}
+                className="space-y-2"
+                data-regime-comparison={result.regime}
+              >
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="font-medium">{t(`regime.${result.regime}`)}</span>
-                  <span className="font-mono tabular-nums">{moneyFormatter.format(result.net_income)}</span>
+                  <span
+                    className={`font-mono tabular-nums ${isNegative ? "font-semibold text-destructive" : ""}`}
+                  >
+                    {moneyFormatter.format(result.net_income)}
+                  </span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width }} />
+                <div
+                  className={`relative h-3 overflow-hidden rounded-full ${isNegative ? "bg-destructive/15" : "bg-muted"}`}
+                >
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    data-net-bar-fill
+                    style={{ width: `${widthPercentage}%` }}
+                  />
+                  {isNegative ? (
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-0 w-1 bg-destructive"
+                    />
+                  ) : null}
                 </div>
+                {isNegative ? (
+                  <p className="text-xs font-medium text-destructive">
+                    {t("results.negativeNet")}
+                  </p>
+                ) : null}
               </div>
             );
           })}
@@ -244,7 +273,11 @@ function ResultsView({
         {sortedResults.map((result, index) => (
           <Card
             key={result.regime}
-            className="bg-background/95 shadow-sm"
+            className={
+              result.net_income < 0
+                ? "border-destructive/50 bg-destructive/5 shadow-sm"
+                : "bg-background/95 shadow-sm"
+            }
             data-regime={result.regime}
           >
             <CardHeader>
@@ -254,21 +287,29 @@ function ResultsView({
                   <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
                     {t("results.best")}
                   </span>
+                ) : result.net_income < 0 ? (
+                  <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+                    {t("results.negativeNet")}
+                  </span>
                 ) : null}
               </CardTitle>
               <CardDescription>{t("results.cardDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div
+                className={`grid gap-3 ${result.net_income < 0 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+              >
                 <Metric label={t("results.netIncome")} value={moneyFormatter.format(result.net_income)} />
                 <Metric
                   label={t("results.employerTotalCost")}
                   value={moneyFormatter.format(result.employer_total_cost)}
                 />
-                <Metric
-                  label={t("results.effectiveTaxRate")}
-                  value={percentFormatter.format(result.effective_tax_rate)}
-                />
+                {result.net_income >= 0 ? (
+                  <Metric
+                    label={t("results.effectiveTaxRate")}
+                    value={percentFormatter.format(result.effective_tax_rate)}
+                  />
+                ) : null}
               </div>
 
               {result.constraints.length > 0 ? (

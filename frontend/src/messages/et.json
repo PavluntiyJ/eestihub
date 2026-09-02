@@ -130,6 +130,7 @@
     },
     "results": {
       "best": "Parim neto",
+      "negativeNet": "Negatiivne netotulu",
       "cardDescription": "Maksu API tagastatud kuised väärtused.",
       "netIncome": "Netotulu",
       "employerTotalCost": "Tööandja kogukulu",

@@ -87,6 +87,30 @@ test("shows the entrepreneur-account annual-limit blocker", async ({ page }) => 
   ).toBeVisible();
 });
 
+test("renders a negative FIE net without a full-width comparison bar", async ({ page }) => {
+  await page.goto("/en/calculator");
+
+  await page.getByLabel("Monthly gross income, EUR").fill("200");
+  await page.getByLabel("II pension pillar contribution").selectOption("0");
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+
+  const fieComparison = page.locator('[data-regime-comparison="fie"]');
+  const bestComparison = page.locator('[data-regime-comparison="juhatuse_liige"]');
+  await expect(fieComparison.locator("[data-net-bar-fill]")).toHaveAttribute(
+    "style",
+    /width: 0%/
+  );
+  await expect(bestComparison.locator("[data-net-bar-fill]")).toHaveAttribute(
+    "style",
+    /width: 100%/
+  );
+
+  const fieCard = page.locator('[data-regime="fie"]');
+  await expect(fieCard.getByText("Negative net income", { exact: true })).toBeVisible();
+  await expect(fieCard.getByText("-€92.38", { exact: true })).toBeVisible();
+  await expect(fieCard.getByText("146.2%", { exact: true })).toHaveCount(0);
+});
+
 test("accepts a comma decimal separator in every locale", async ({ page }) => {
   for (const locale of ["en", "et", "ru"]) {
     await page.goto(`/${locale}/calculator`);

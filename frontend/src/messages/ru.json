@@ -130,6 +130,7 @@
     },
     "results": {
       "best": "Лучший net",
+      "negativeNet": "Отрицательный чистый доход",
       "cardDescription": "Месячные значения из налогового API.",
       "netIncome": "Чистый доход",
       "employerTotalCost": "Полная стоимость для работодателя",

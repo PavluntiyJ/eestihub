@@ -19,4 +19,6 @@ places for effective tax rates.
 The scenarios cover both comparison bases at €3,000 / 2%, the FIE floor and
 income below the exemption at €500 / 0%, income above the exemption at €1,000
 / 4%, and annual turnover above €40,000 at €5,000 / 6%. Together they exercise
-every supported pension rate.
+every supported pension rate. The €200 / 0% FIE row records the legally correct
+negative result: `€200 - €292.38 minimum social tax = -€92.38`, with an
+effective tax rate of `1 - (-92.38 / 200) = 1.4619`, rounded to `1.462`.
