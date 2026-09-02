@@ -1,5 +1,6 @@
 export type HealthResponse = {
-  status: "ok";
+  status: "ok" | "degraded";
+  database: "ok" | "unavailable";
 };
 
 export type TaxCalculationRequest = {
@@ -41,6 +42,26 @@ export type RegimeResult = {
 export type TaxCalculationResponse = {
   input: TaxCalculationRequest;
   results: RegimeResult[];
+};
+
+export type EResidencyCalculationRequest = {
+  expected_monthly_revenue: number;
+  monthly_accounting_fee?: number;
+};
+
+export type EResidencyCostLine = {
+  name: string;
+  amount: number;
+};
+
+export type EResidencyCalculationResponse = {
+  input: EResidencyCalculationRequest;
+  setup_breakdown: EResidencyCostLine[];
+  monthly_running_cost: number;
+  first_year_total_cost: number;
+  break_even_monthly_revenue: number;
+  first_year_revenue: number;
+  first_year_surplus: number;
 };
 
 export type DistrictRent = {

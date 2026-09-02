@@ -18,7 +18,8 @@
   "nav": {
     "home": "Avaleht",
     "calculator": "Kalkulaator",
-    "housing": "Üür"
+    "housing": "Üür",
+    "eresidency": "e-residentsus"
   },
   "home": {
     "hero": {
@@ -159,6 +160,59 @@
     "disclaimer": {
       "title": "Pole maksunõuanne",
       "text": "See kalkulaator annab hinnangu Eesti 2026. aasta maksumäärade alusel. See ei ole maksu-, juriidiline ega finantsnõustamine. Kontrolli oma otsused Maksu- ja Tolliametiga."
+    }
+  },
+  "eresidency": {
+    "metadata": {
+      "title": "E-residendi OÜ esimese aasta kulud - EestiHub",
+      "description": "Hinda Eesti e-residendi OÜ asutamis- ja jooksvaid kulusid ning esimese aasta tasuvuspiiri."
+    },
+    "hero": {
+      "eyebrow": "E-residentsuse kulud",
+      "title": "Hinda e-residendi OÜ esimese aasta kulusid.",
+      "description": "Vaata ametlikke asutamistasusid, realistlikku teenusekulude hinnangut ja kuutulu, mida Eesti ettevõte vajab esimese aasta kulude katmiseks."
+    },
+    "form": {
+      "title": "Sinu hinnang",
+      "description": "Sisesta oodatav tulu ja kohanda oma teenusepakkuja igakuist raamatupidamistasu.",
+      "revenueLabel": "Oodatav kuutulu, EUR",
+      "revenuePlaceholder": "3000.00",
+      "accountingLabel": "Igakuine raamatupidamistasu, EUR",
+      "accountingPlaceholder": "75.00",
+      "invalidRevenue": "Sisesta oodatav tulu, mis on suurem kui 0.",
+      "invalidAccounting": "Sisesta raamatupidamistasu 0 või rohkem.",
+      "submit": "Arvuta esimese aasta kulu",
+      "loading": "Arvutan..."
+    },
+    "empty": {
+      "title": "Hinnangut veel pole",
+      "description": "Saada vorm, et näha asutamiskulusid, esimese aasta summasid ja tasuvuspiiri."
+    },
+    "errors": {
+      "title": "Arvutus ebaõnnestus",
+      "api": "API lükkas päringu tagasi. Kontrolli sisendit ja proovi uuesti.",
+      "network": "Backend pole saadaval. Käivita FastAPI teenus lokaalselt ja proovi uuesti."
+    },
+    "results": {
+      "firstYearTotal": "Esimese aasta kogukulu",
+      "monthlyRunning": "Jooksev kuukulu",
+      "breakEven": "Tasuvuspiiri kuutulu",
+      "firstYearRevenue": "Esimese aasta tulu",
+      "firstYearSurplus": "Esimese aasta ülejääk"
+    },
+    "setup": {
+      "title": "Asutamis- ja aastased algkulud",
+      "description": "Tavaline veebipõhine iseteenindus ning kontaktisiku hinnavahemiku keskpunkt.",
+      "items": {
+        "eresidency_application": "E-residentsuse taotlus",
+        "ou_online_registration": "OÜ registreerimine e-äriregistris",
+        "contact_person_first_year": "Kontaktisik ja juriidiline aadress (1. aasta)"
+      }
+    },
+    "disclaimer": {
+      "title": "Hinnang, mitte professionaalne nõuanne",
+      "text": "Teenusepakkuja, panganduse, maksude ja tegevuslubade tegelikud kulud võivad erineda. Kontrolli kehtivaid nõudeid",
+      "link": "ametlikust e-residentsuse portaalist"
     }
   },
   "footer": {

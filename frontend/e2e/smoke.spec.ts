@@ -74,6 +74,22 @@ test("calculates tax regimes from the form", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("calculates e-residency first-year costs from navigation", async ({ page }) => {
+  await page.goto("/en");
+
+  await page.getByRole("link", { name: "e-Residency" }).click();
+  await expect(page).toHaveURL(/\/en\/eresidency$/);
+  await expect(
+    page.getByRole("heading", { name: "Estimate your e-resident OÜ costs for year one." })
+  ).toBeVisible();
+
+  await page.getByLabel("Expected monthly revenue, EUR").fill("3000");
+  await page.getByLabel("Monthly accounting fee, EUR").fill("75");
+  await page.getByRole("button", { name: "Calculate first-year cost" }).click();
+
+  await expect(page.getByTestId("first-year-total")).toHaveText("€1,615.00");
+});
+
 test("shows the entrepreneur-account annual-limit blocker", async ({ page }) => {
   await page.goto("/en/calculator");
 

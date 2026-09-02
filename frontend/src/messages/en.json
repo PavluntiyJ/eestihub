@@ -18,7 +18,8 @@
   "nav": {
     "home": "Home",
     "calculator": "Calculator",
-    "housing": "Rent"
+    "housing": "Rent",
+    "eresidency": "e-Residency"
   },
   "home": {
     "hero": {
@@ -159,6 +160,59 @@
     "disclaimer": {
       "title": "Not tax advice",
       "text": "This calculator provides an estimate based on Estonia 2026 tax rates. It is not tax, legal, or financial advice. Verify your decisions with the Estonian Tax and Customs Board."
+    }
+  },
+  "eresidency": {
+    "metadata": {
+      "title": "e-Residency first-year cost calculator - EestiHub",
+      "description": "Estimate the setup, running and break-even costs of an Estonian e-resident OÜ in its first year."
+    },
+    "hero": {
+      "eyebrow": "e-Residency costs",
+      "title": "Estimate your e-resident OÜ costs for year one.",
+      "description": "See the official setup fees, a realistic service-cost estimate and the monthly revenue your Estonian company needs to cover its first year."
+    },
+    "form": {
+      "title": "Your estimate",
+      "description": "Enter expected revenue and adjust the monthly accounting fee for your provider.",
+      "revenueLabel": "Expected monthly revenue, EUR",
+      "revenuePlaceholder": "3000.00",
+      "accountingLabel": "Monthly accounting fee, EUR",
+      "accountingPlaceholder": "75.00",
+      "invalidRevenue": "Enter expected revenue greater than 0.",
+      "invalidAccounting": "Enter an accounting fee of 0 or more.",
+      "submit": "Calculate first-year cost",
+      "loading": "Calculating..."
+    },
+    "empty": {
+      "title": "No estimate yet",
+      "description": "Submit the form to see setup costs, first-year totals and break-even revenue."
+    },
+    "errors": {
+      "title": "Calculation failed",
+      "api": "The API rejected the request. Check the input and try again.",
+      "network": "The backend is unavailable. Start the FastAPI service locally and try again."
+    },
+    "results": {
+      "firstYearTotal": "First-year total cost",
+      "monthlyRunning": "Monthly running cost",
+      "breakEven": "Break-even monthly revenue",
+      "firstYearRevenue": "First-year revenue",
+      "firstYearSurplus": "First-year surplus"
+    },
+    "setup": {
+      "title": "Setup and annual starting costs",
+      "description": "Standard online self-service route with the midpoint contact-person estimate.",
+      "items": {
+        "eresidency_application": "e-Residency application",
+        "ou_online_registration": "Online OÜ registration",
+        "contact_person_first_year": "Contact person and legal address (year one)"
+      }
+    },
+    "disclaimer": {
+      "title": "An estimate, not professional advice",
+      "text": "Actual provider, banking, tax and licensed-activity costs vary. Confirm current requirements with the",
+      "link": "official e-Residency portal"
     }
   },
   "footer": {

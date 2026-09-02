@@ -8,6 +8,7 @@ const navItems = [
   { href: "/", key: "home" },
   { href: "/calculator", key: "calculator" },
   { href: "/housing", key: "housing" },
+  { href: "/eresidency", key: "eresidency" },
 ] as const;
 
 export function SiteNav() {
