@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,7 +27,7 @@ function isLocale(locale: string): locale is Locale {
 
 async function getRentData(): Promise<HousingRentsResponse | null> {
   try {
-    return await getHousingRents({ cache: "no-store" });
+    return await getHousingRents({ next: { revalidate: 86_400 } });
   } catch {
     return null;
   }
@@ -56,6 +56,7 @@ export async function generateMetadata({ params }: HousingPageParams): Promise<M
 export default async function HousingPage({ params }: HousingPageParams) {
   const { locale } = await params;
   const currentLocale = isLocale(locale) ? locale : defaultLocale;
+  setRequestLocale(currentLocale);
   const t = await getTranslations("housing");
   const rentData = await getRentData();
   const moneyFormatter = new Intl.NumberFormat(currentLocale, {

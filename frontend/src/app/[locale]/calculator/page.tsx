@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: CalculatorPageParams): Promis
 export default async function CalculatorPage({ params }: CalculatorPageParams) {
   const { locale } = await params;
   const currentLocale = isLocale(locale) ? locale : defaultLocale;
+  setRequestLocale(currentLocale);
   const t = await getTranslations("calculator");
 
   return (
