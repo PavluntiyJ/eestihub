@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/card";
 import { CalculatorForm } from "@/features/tax-calculator/components/calculator-form";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
+import { getHousingRents } from "@/lib/api";
+import type { DistrictRent } from "@/types/api";
 
 type CalculatorPageParams = {
   params: Promise<{ locale: string }>;
@@ -39,11 +41,25 @@ export async function generateMetadata({ params }: CalculatorPageParams): Promis
   };
 }
 
+// The affordability panel needs rents, but the calculator must stay usable
+// (and statically rendered) when the API is down: an unreachable backend just
+// hides the panel.
+async function getDistricts(): Promise<DistrictRent[]> {
+  try {
+    const rents = await getHousingRents({ next: { revalidate: 86400 } });
+
+    return rents.districts;
+  } catch {
+    return [];
+  }
+}
+
 export default async function CalculatorPage({ params }: CalculatorPageParams) {
   const { locale } = await params;
   const currentLocale = isLocale(locale) ? locale : defaultLocale;
   setRequestLocale(currentLocale);
   const t = await getTranslations("calculator");
+  const districts = await getDistricts();
 
   return (
     <main className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--muted),transparent_32rem)] px-6 py-10 sm:px-8 lg:px-12">
@@ -62,7 +78,7 @@ export default async function CalculatorPage({ params }: CalculatorPageParams) {
           </div>
         </section>
 
-        <CalculatorForm locale={currentLocale} />
+        <CalculatorForm districts={districts} locale={currentLocale} />
 
         <Card className="border-dashed bg-background/80 shadow-sm">
           <CardHeader>

@@ -72,8 +72,8 @@ https://claude.ai/code/artifact/1eeb632e-3479-45fd-831e-427ab2433192
 
 | # | Task | Brief | Status | Worker | Depends on |
 |---|------|-------|--------|--------|------------|
-| T19 | Frontend polish: typeface, dark mode, error boundaries, OG images | tasks/T19-frontend-polish.md | `[ ]` | — | T18 |
-| T14 | Affordability link: net income → affordable districts (rebased) | tasks/T14-affordability-link.md | `[ ]` | — | T17 |
+| T19 | Frontend polish: typeface, dark mode, error boundaries, OG images | tasks/T19-frontend-polish.md | `[x]` | claude-opus-5 | T18 |
+| T14 | Affordability link: net income → affordable districts (rebased) | tasks/T14-affordability-link.md | `[x]` | claude-opus-5 | T17 |
 
 **Wave 3:**
 
@@ -94,6 +94,56 @@ edits. Shared `messages/*.json` follows the standing rule: each task adds
 only its own namespace.
 
 ## Journal (newest first)
+
+- 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **Wave 2 done:
+  T19 and T14 both `[x]`.** The owner directed me to implement these directly
+  because the worker was out of budget, so CLAUDE.md's "orchestrator does not
+  write application code" was waived for this pass. Flagging the obvious
+  caveat: nobody independently reviewed this code the way I reviewed wave 1.
+  · **T19.** F-10 fixed — `--font-sans` was defined as itself; it now resolves
+  to `var(--font-geist-sans)` with a real fallback stack, verified in the built
+  CSS (`font-family:var(--font-geist-sans),ui-sans-serif,system-ui,sans-serif`,
+  zero self-references). F-11 — three-state theme control (light/dark/system)
+  in the header, persisted in localStorage, applied by an inline pre-paint
+  script so there is no flash. Two mistakes worth recording: Next silently
+  strips scripts from a hand-written `<head>`, so it had to move to the top of
+  `<body>`; and the storage key was exported from a `"use client"` module,
+  which made the server render `localStorage.getItem(undefined)` — constants
+  shared with a server component must live in a plain module, now
+  `src/lib/theme.ts`. F-13 — localized `error.tsx`, `not-found.tsx` and
+  `loading.tsx`. F-14 — `opengraph-image.tsx` per locale via `next/og`,
+  prerendered, inherited by every child route; checked the rendered PNG.
+  · **T19 criterion NOT met, deliberately.** The brief asked that `/xx` render
+  the localized not-found inside the site shell. The only way to route unmatched
+  URLs into `[locale]/not-found.tsx` is a `[...rest]` catch-all — I built it,
+  and it returns **HTTP 200**, because the layout has already flushed the
+  response head before `notFound()` throws. Worse, the next-intl middleware then
+  emits `hreflang` alternates for the nonexistent path, telling Google that
+  `/en/nope`, `/et/nope` and `/ru/nope` are three translations of a real page.
+  A soft-404 farm on an SEO-focused site is worse than an unstyled 404, so I
+  reverted the catch-all. Unmatched URLs keep Next's default page with a correct
+  404; the localized not-found still serves genuine `notFound()` calls. Proper
+  fix needs a root layout — logged in Notes.
+  · **T14.** Rebased as briefed: the budget comes from the top-ranked regime
+  under the active comparison basis and the panel names that regime, the 30%
+  factor is a slider (15-50%), and districts are matched on rent **plus**
+  utilities with both components shown. Rents are fetched server-side with a
+  one-day revalidate, so the calculator stays statically rendered and T18's
+  F-09 win is preserved. Verified the offline rule the hard way: built with the
+  backend down, then loaded the page with the API back up — 4 result cards
+  render, the panel is absent, no page errors.
+  · **Stale copy fixed, outside both briefs.** `housing.mockNote` still said
+  "demo (mock) values and does not reflect the real Tallinn rental market" and
+  the footer said "demo housing data". After T15 that is simply false, and it
+  told users the sourced numbers were fake. Rewritten in all three locales to
+  describe what the figures actually are: midpoints of published district
+  ranges, with utilities as a separate estimate.
+  · Verified: `npm run build` clean, all locale routes still prerendered;
+  i18n parity 153/153 across en/et/ru; `npm run e2e` → 11 passed against a live
+  backend serving real snapshot data; panel screenshotted in both themes and
+  the two affordable districts at 30% (Mustamäe €690, Lasnamäe €675) match a
+  hand calculation from the source data.
+  · T20 is now unblocked.
 
 - 2026-09-02 · claude-opus-5 (orchestrator) · **Wave 1 accepted: T15, T16,
   T17, T18 all `[x]`.** The worker ran out of budget with the code finished
@@ -366,6 +416,21 @@ only its own namespace.
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-02 · claude-opus-5 (orchestrator) · Backlog added during wave 2.
+  **Localized 404 with a correct status.** `app/` has no root layout —
+  `[locale]/layout.tsx` renders `<html>` — so unmatched URLs can only reach
+  Next's default 404 page. A `[...rest]` catch-all routes them into the
+  localized page but returns 200 and makes the middleware advertise hreflang
+  alternates for a nonexistent path; it was tried and reverted. The real fix is
+  a root `app/layout.tsx` plus `app/not-found.tsx`, which touches the whole
+  rendering tree and deserves its own task.
+  **Dark-theme colours in the constraint list** (`CONSTRAINT_STYLES` in
+  `calculator-form.tsx`) still use raw Tailwind palette classes rather than the
+  design tokens. They work now that `.dark` is live, but they sit outside the
+  token system; fold into whatever task next touches that component.
+  **OG card title repeats the brand** — the metadata title already begins with
+  "EestiHub", so the card shows the word twice. Cosmetic.
 
 - 2026-09-02 · claude-opus-5 (orchestrator) · Audit backlog, NOT scheduled
   into iteration 7. Deferred findings: **F-12** — `/[locale]/housing`

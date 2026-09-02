@@ -12,8 +12,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ApiError, calculateTaxes } from "@/lib/api";
+import { AffordabilityPanel } from "@/features/tax-calculator/components/affordability-panel";
 import type {
   ConstraintSeverity,
+  DistrictRent,
   EqualizeBy,
   RegimeResult,
   TaxCalculationResponse,
@@ -39,10 +41,11 @@ const CONSTRAINT_STYLES: Record<ConstraintSeverity, string> = {
 };
 
 type CalculatorFormProps = {
+  districts: DistrictRent[];
   locale: string;
 };
 
-export function CalculatorForm({ locale }: CalculatorFormProps) {
+export function CalculatorForm({ districts, locale }: CalculatorFormProps) {
   const t = useTranslations("calculator");
   const [grossIncome, setGrossIncome] = useState("3000");
   const [pensionPillarRate, setPensionPillarRate] = useState<PensionPillarRate>(0.02);
@@ -169,6 +172,7 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
 
         {result ? (
           <ResultsView
+            districts={districts}
             equalizeBy={result.input.equalize_by}
             locale={locale}
             results={result.results}
@@ -187,10 +191,12 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
 }
 
 function ResultsView({
+  districts,
   equalizeBy,
   locale,
   results,
 }: {
+  districts: DistrictRent[];
   equalizeBy: EqualizeBy;
   locale: string;
   results: RegimeResult[];
@@ -340,6 +346,14 @@ function ResultsView({
           </Card>
         ))}
       </div>
+
+      {districts.length > 0 && sortedResults[0] ? (
+        <AffordabilityPanel
+          districts={districts}
+          locale={locale}
+          topResult={sortedResults[0]}
+        />
+      ) : null}
     </div>
   );
 }

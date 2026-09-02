@@ -90,6 +90,26 @@ test("calculates e-residency first-year costs from navigation", async ({ page })
   await expect(page.getByTestId("first-year-total")).toHaveText("€1,615.00");
 });
 
+test("shows affordable districts and reacts to the housing share", async ({ page }) => {
+  await page.goto("/en/calculator");
+
+  await page.getByLabel("Monthly gross income, EUR").fill("3000");
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+
+  // CardTitle renders a div, not a heading, so match on text.
+  await expect(page.getByText("Where you could rent", { exact: true })).toBeVisible();
+
+  const districts = page.locator("[data-affordable-district]");
+  const atThirty = await districts.count();
+  expect(atThirty).toBeGreaterThan(0);
+
+  // Widening the share can only ever afford more districts, never fewer.
+  await page.getByLabel(/Share of net income spent on housing/).fill("0.5");
+  await expect
+    .poll(async () => districts.count())
+    .toBeGreaterThanOrEqual(atThirty);
+});
+
 test("shows the entrepreneur-account annual-limit blocker", async ({ page }) => {
   await page.goto("/en/calculator");
 

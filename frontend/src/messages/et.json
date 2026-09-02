@@ -74,7 +74,7 @@
         "utilities": "Kommunaalid"
       }
     },
-    "mockNote": "Selle lehe andmed on demo (mock) väärtused ega kajasta tegelikku Tallinna üüriturgu.",
+    "mockNote": "Numbrid on avaliku Tallinna turuülevaate linnaosade üürivahemike keskpunktid, mitte üksikpakkumised. Kommunaalkulud on eraldi hinnang.",
     "states": {
       "unavailable": "Andmed pole saadaval",
       "unavailableTitle": "Eluaseme andmed pole saadaval",
@@ -216,8 +216,38 @@
     }
   },
   "footer": {
-    "line": "EestiHub pakub informatiivset maksuhinnangut ja demo eluasemeandmeid — mitte professionaalset nõu.",
+    "line": "EestiHub pakub informatiivseid maksuhinnanguid ja avalikke üürituru andmeid — mitte professionaalset nõustamist.",
     "github": "GitHub",
     "emta": "EMTA"
+  },
+  "theme": {
+    "label": "Teema",
+    "options": {
+      "light": "Hele",
+      "dark": "Tume",
+      "system": "Süsteemi järgi"
+    }
+  },
+  "errors": {
+    "loading": "Laadin…",
+    "boundary": {
+      "title": "Seda lehte ei õnnestunud kuvada",
+      "description": "Renderdamisel läks midagi valesti. Tavaliselt aitab uuesti proovimine; kui tõrge kordub, võib API olla kättesaamatu.",
+      "retry": "Proovi uuesti"
+    },
+    "notFound": {
+      "title": "Lehte ei leitud",
+      "description": "Avatud aadressi EestiHubis ei ole.",
+      "home": "Tagasi avalehele"
+    }
+  },
+  "affordability": {
+    "title": "Kus saaksid üürida",
+    "description": "Tallinna linnaosad, kus keskmine üür koos kommunaalkuludega mahub sinu eluasemeeelarvesse.",
+    "basedOn": "Eelarve arvutatakse {regime} netotulust — sellel võrdlusalusel kõrgeimast.",
+    "shareLabel": "Eluasemele kuluv osa netotulust: {share}",
+    "budget": "Kuine eluasemeeelarve",
+    "rentAndUtilities": "üür {rent} + kommunaalkulud {utilities}",
+    "none": "Ükski linnaosa keskmine sellesse eelarvesse ei mahu. Proovi suuremat osakaalu või võta neid numbreid pigem lähtepunktina — need on keskmised ja üksikpakkumised on odavamad."
   }
 }

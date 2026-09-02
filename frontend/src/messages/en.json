@@ -74,7 +74,7 @@
         "utilities": "Utilities"
       }
     },
-    "mockNote": "The data on this page is demo (mock) values and does not reflect the real Tallinn rental market.",
+    "mockNote": "Figures are midpoints of published district rent ranges from a public Tallinn market report, not individual listings. Utilities are a separate estimate.",
     "states": {
       "unavailable": "Data unavailable",
       "unavailableTitle": "Housing data is unavailable",
@@ -216,8 +216,38 @@
     }
   },
   "footer": {
-    "line": "EestiHub provides an informational tax estimate and demo housing data — not professional advice.",
+    "line": "EestiHub provides informational tax estimates and public housing market data — not professional advice.",
     "github": "GitHub",
     "emta": "EMTA"
+  },
+  "theme": {
+    "label": "Theme",
+    "options": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Match system"
+    }
+  },
+  "errors": {
+    "loading": "Loading…",
+    "boundary": {
+      "title": "This page could not be displayed",
+      "description": "Something went wrong while rendering it. Trying again usually helps; if it keeps failing, the API may be unavailable.",
+      "retry": "Try again"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The address you opened does not exist on EestiHub.",
+      "home": "Back to the home page"
+    }
+  },
+  "affordability": {
+    "title": "Where you could rent",
+    "description": "Tallinn districts where the average rent plus utilities fits your housing budget.",
+    "basedOn": "Budget is taken from the {regime} net income — the highest on this comparison basis.",
+    "shareLabel": "Share of net income spent on housing: {share}",
+    "budget": "Monthly housing budget",
+    "rentAndUtilities": "rent {rent} + utilities {utilities}",
+    "none": "No district average fits this budget. Try a larger share, or treat the districts as a floor rather than a target — these are averages, and individual listings go lower."
   }
 }

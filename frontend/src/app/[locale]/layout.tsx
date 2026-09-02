@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
 
 import { SiteHeader } from "@/components/site-header";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { SiteFooter } from "@/components/site-footer";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
 
@@ -22,6 +23,10 @@ const geistMono = Geist_Mono({
 type LocaleParams = {
   params: Promise<{ locale: string }>;
 };
+
+const themeScript = `(function(){try{var s=localStorage.getItem(${JSON.stringify(
+  THEME_STORAGE_KEY
+)});var d=s==="dark"||(s!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 
 function isLocale(locale: string): locale is Locale {
   return locales.includes(locale as Locale);
@@ -76,8 +81,16 @@ export default async function LocaleLayout({
     <html
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full bg-background text-foreground">
+        {/* Applies the stored theme before the body paints, so the page never
+            flashes the wrong one. Must stay inline and synchronous; Next
+            strips scripts from a hand-written <head>. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+          suppressHydrationWarning
+        />
         <NextIntlClientProvider>
           <div className="flex min-h-screen flex-col">
             <SiteHeader />
