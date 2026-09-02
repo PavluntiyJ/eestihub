@@ -10,7 +10,18 @@ from app.schemas.health import HealthResponse
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Liveness and database reachability",
+    description=(
+        "Runs a real `SELECT 1`, so it can fail. Returns 200 when the process "
+        "and the database are both up, and 503 when the database query fails. "
+        "Endpoints that do not touch the database keep returning 200 while "
+        "this reports `degraded`."
+    ),
+    responses={503: {"description": "Database unreachable"}},
+)
 def get_health(
     response: Response, session: Session = Depends(get_session)
 ) -> HealthResponse:

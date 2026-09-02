@@ -95,6 +95,30 @@ only its own namespace.
 
 ## Journal (newest first)
 
+- 2026-09-02 · claude-opus-5 (orchestrator) · **API docs brought back in sync.**
+  Owner asked whether they were updated; they were not, beyond CONTEXT §5.
+  · `/docs` (Swagger) generates shapes from the Pydantic schemas, so the new
+  fields were already correct — but the app still declared `version="0.1.0"`,
+  had no description, and not one route carried a summary. Added an app-level
+  description (locale-neutral contract, Decimal money, rates in one sourced
+  module, estimates not advice), bumped to `0.2.0` for iteration 7's contract
+  additions, and gave all five routes a summary, a description and documented
+  503 responses. Verified against the generated OpenAPI document rather than by
+  eye.
+  · README carried two statements that had become **false** when T15 landed:
+  the housing feature was described as "demo data for now" and the disclaimer
+  said "Housing figures are demo data". Both rewritten to say what the numbers
+  actually are. Also corrected: test counts (17 → 55 backend, 6 → 15 e2e),
+  brief count (13 → 20), the structure tree (missing eresidency routes,
+  service, feature folder, `fees.py`, `ingest_rents`, `data/`), the
+  `'use client'` leaf list, and the getting-started block (missing the ingest
+  step). Added an API section with an endpoint table, and feature entries for
+  the comparison basis, constraints, affordability panel, e-Residency
+  calculator, shareable scenarios and theming — none of iteration 7's
+  user-facing work was mentioned.
+  · Verified: `pytest` → 55 passed, `next build` clean, every relative link in
+  the README resolves.
+
 - 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **CI was red on
   the T20 push; fixed.** Backend tests and the frontend build were green — one
   e2e test failed: "shows the entrepreneur-account annual-limit blocker".

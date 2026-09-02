@@ -15,20 +15,39 @@ Web service for expats and entrepreneurs in Estonia. Moving to Estonia (or openi
 ## Features
 
 - **Tax regime calculator** — enter gross monthly income and II pension pillar rate, get net income, employer total cost, effective tax rate, and a full tax breakdown for four regimes: employment contract (Tööleping), management board member, FIE sole proprietor, and entrepreneur account. Rates are the 2026 EMTA figures, kept in [one source-annotated module](backend/app/core/tax_rates.py).
-- **Tallinn rent dashboard** — average 1/2/3-room rents and utilities across eight districts, table + chart (demo data for now).
-- **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with `hreflang` alternates, `x-default`, sitemap, and OG metadata.
+- **Comparison basis** — the four regimes cost the payer different amounts for the same gross, so ranking them by net income is only meaningful once you fix what they have in common. Switch between equal gross and equal cost to the payer; at €3,000 the ranking inverts.
+- **Statutory limits, surfaced** — the €40,000 entrepreneur-account ceiling, the VAT registration threshold and the FIE social-tax floor and cap come back as machine-readable constraints instead of being left for the user to discover.
+- **Tallinn rent dashboard** — average 1/2/3-room rents and utilities across eight districts, table + chart. Values are midpoints of published district rent ranges from a public Tallinn market report, cited with retrieval date in [`backend/scripts/data/SOURCES.md`](backend/scripts/data/SOURCES.md); a trends endpoint serves the snapshot history.
+- **Affordability link** — after a calculation, which districts you could actually rent in, matched on rent plus utilities against an adjustable share of net income.
+- **e-Residency cost calculator** — setup fees, monthly running cost, first-year total and break-even revenue for an e-resident OÜ, every constant traced to an official source.
+- **Shareable scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
+- **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with absolute `hreflang` alternates, `x-default`, sitemap, and generated per-locale OG cards. Light, dark and system themes.
 
 | Russian locale, live calculation | Housing dashboard |
 |---|---|
 | ![Calculator in Russian](docs/screenshots/calculator-ru.png) | ![Housing dashboard](docs/screenshots/housing.png) |
+
+## API
+
+Locale-neutral: responses carry machine keys and numbers, human labels come from the frontend dictionaries. Interactive docs at [`/docs`](https://eestihub-api.onrender.com/docs).
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/health` | Liveness plus a real database probe; 503 when the query fails |
+| `POST /api/v1/calculate-taxes` | Net income, payer cost, effective rate, breakdown and statutory constraints for the four regimes |
+| `GET /api/v1/housing/rents` | Latest rent snapshot per Tallinn district |
+| `GET /api/v1/housing/trends` | Snapshot history per district |
+| `POST /api/v1/calculate-eresidency` | First-year cost of an e-resident OÜ |
+
+The full contract, including the tax logic and its sources, is in [`docs/CONTEXT.md`](docs/CONTEXT.md).
 
 ## How this repo was built
 
 This project doubles as a case study in **AI-orchestrated development**. A tech-lead agent (Claude) owned the architecture, wrote self-contained task briefs, and reviewed every delivery against explicit acceptance criteria; the application code was written by several AI worker models (GPT, DeepSeek) executing those briefs. The full process is public in this repo:
 
 - [`docs/CONTEXT.md`](docs/CONTEXT.md) — the single source of truth workers had to follow: stack, code rules, API contracts, tax logic.
-- [`tasks/`](tasks/) — 13 task briefs with goals, non-goals, and acceptance criteria.
-- [`TODO.md`](TODO.md) — the task board and a review journal recording every acceptance, rework, and found bug (including a real tax-rate bug caught at review against the primary EMTA source).
+- [`tasks/`](tasks/) — 20 task briefs with goals, non-goals, and acceptance criteria.
+- [`TODO.md`](TODO.md) — the task board and a review journal recording every acceptance, rework, and found bug — including a tax-rate bug caught at review against the primary EMTA source, and a full code audit whose 20 findings became iteration 7.
 
 ## Architecture
 
@@ -49,14 +68,15 @@ Principles the codebase holds throughout:
 
 - Routes are thin; all tax math lives in the service layer with unit-tested manual derivations.
 - Backend Pydantic schemas are mirrored 1:1 (snake_case) in `frontend/src/types/` — the API is locale-neutral, UI labels come only from dictionaries.
-- Pages are Server Components; `'use client'` appears only on interactive leaves (form, chart, language switcher).
+- Pages are Server Components; `'use client'` appears only on interactive leaves (forms, chart, language switcher, theme toggle, status badge).
 - Tax rates exist in exactly one file, each constant annotated with its official source.
 
 ## Getting started
 
 ```bash
 docker compose up -d db                      # Postgres on :5432
-cd backend && python -m scripts.seed_housing # seed housing data
+cd backend && python -m scripts.seed_housing # seed baseline housing data
+cd backend && python -m scripts.ingest_rents  # ingest sourced rent snapshots
 cd backend && uvicorn app.main:app --reload  # API on :8000
 cd frontend && npm run dev                   # UI on :3000
 ```
@@ -70,7 +90,7 @@ cd backend && pytest                 # unit + integration tests
 cd frontend && npm run e2e           # Playwright chromium smokes (needs backend on :8000)
 ```
 
-Backend tests (17) cover the health endpoint, tax service arithmetic and the housing API. The Playwright suite (6 browser tests) covers redirect/home, language switch, header nav active state, a real calculator submit, housing table and chart rendering, and disabled submit on invalid input. CI runs all of it — pytest, production build, and browser e2e against a live Postgres — on every push.
+Backend tests (55) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, and the e-Residency service. The Playwright suite (15 browser tests) covers locale routing and switching, real submits on both calculators, shared scenario URLs, constraint rendering, the affordability panel, and the housing table and chart. CI runs all of it — pytest, production build, and browser e2e against a live Postgres — on every push.
 
 ## Deployment
 
@@ -82,18 +102,18 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 ├── .github/workflows/          # ci.yml
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/routes/      # health, taxes, housing
-│   │   ├── core/               # config, tax_rates, db
+│   │   ├── api/v1/routes/      # health, taxes, housing, eresidency
+│   │   ├── core/               # config, tax_rates, fees, db
 │   │   ├── schemas/            # Pydantic request/response
-│   │   ├── services/           # tax_service, housing_service
+│   │   ├── services/           # tax_service, housing_service, eresidency_service
 │   │   └── models/             # SQLAlchemy
-│   ├── scripts/                # seed_housing
+│   ├── scripts/                # seed_housing, ingest_rents, data/ + SOURCES.md
 │   └── tests/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/[locale]/       # pages + layout
 │   │   ├── components/         # ui kit, header, footer
-│   │   ├── features/           # tax-calculator, housing
+│   │   ├── features/           # tax-calculator, housing, eresidency
 │   │   ├── i18n/               # routing, request config
 │   │   ├── lib/                # API client, utils
 │   │   ├── messages/           # en, et, ru dictionaries
@@ -101,7 +121,7 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 │   ├── e2e/                    # Playwright smokes
 │   └── scripts/                # screenshots.ts (manual)
 ├── docs/                       # CONTEXT.md, DEPLOY.md, screenshots
-├── tasks/                      # AI-worker task briefs (T01–T13)
+├── tasks/                      # AI-worker task briefs (T01–T20)
 ├── TODO.md                     # task board + review journal
 ├── docker-compose.yml
 └── render.yaml
@@ -109,7 +129,7 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 
 ## Disclaimer
 
-The calculator provides estimates based on Estonia's 2026 tax rates and is not tax advice — verify decisions with [EMTA](https://www.emta.ee/en). Housing figures are demo data.
+The calculator provides estimates based on Estonia's 2026 tax rates and is not tax advice — verify decisions with [EMTA](https://www.emta.ee/en). Housing figures are midpoints of published district rent ranges, not individual listings; utilities are a separate estimate.
 
 ## License
 
