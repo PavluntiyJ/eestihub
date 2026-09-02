@@ -18,6 +18,17 @@ produced by external AI workers executing the briefs in `tasks/`.
 - `tasks/T##-*.md` — self-contained briefs: goal, steps, explicit
   non-goals, acceptance criteria. Orchestrator writes them; workers execute
   and flip the task to `[R]` for review.
+- `tasks/TEMPLATE.md` — the brief skeleton. Every new brief starts from it.
+  Two sections are mandatory and are the ones that actually prevent damage:
+  **Files you own** (binding, because tasks run in parallel and overlaps
+  must be resolved when the briefs are written, not at merge time) and
+  **Documentation impact** (name the statements this task will make untrue).
+  A task scoped to its own file zone will otherwise leave `README.md` and
+  the docs asserting things that stopped being true — this has already
+  happened twice: T15 shipped real sourced rent data while the README kept
+  calling it demo data, and iteration 7's user-facing features went
+  unmentioned entirely. Documentation nobody owns is documentation that
+  rots.
 - All project documentation (docs, briefs, TODO board and journal) is
   written in English — the repo is public and goes into a portfolio.
   Conversation with the owner stays in Russian.

@@ -95,6 +95,29 @@ only its own namespace.
 
 ## Journal (newest first)
 
+- 2026-09-02 · claude-opus-5 (orchestrator) · **Process fix: documentation
+  impact is now part of every brief.** Twice this iteration a task shipped
+  correctly and left the repo asserting something false, because the brief was
+  scoped to a file zone and no zone contained `README.md`: T15 landed real
+  sourced rent data while the README still called it demo data (and the
+  disclaimer repeated it), and none of iteration 7's user-facing features were
+  mentioned at all. Catching that after the fact is luck, not process.
+  · Added `tasks/TEMPLATE.md` — the brief skeleton every new brief starts from,
+  with a mandatory **Documentation impact** section. The orchestrator names,
+  when writing the brief, which statements the task will falsify, with a
+  checklist of the places that state facts: the README feature list, test
+  counts, structure tree, getting-started commands and disclaimer, plus
+  `docs/DEPLOY.md` and CONTEXT §5. It carries a matching acceptance criterion,
+  and it forbids leaving the section as "none" without having checked.
+  · `CLAUDE.md` now points at the template and records why the two mandatory
+  sections exist — Files you own resolves parallel-task overlaps at
+  brief-writing time, Documentation impact stops docs rotting.
+  · `AGENTS.md` gains the worker duty as step 4, deliberately placed after
+  "run the acceptance checks" and before "update TODO.md": re-read each
+  statement the brief names, update what is inside your zone, and report the
+  rest by file and sentence rather than as "docs need updating". CONTEXT stays
+  orchestrator-only.
+
 - 2026-09-02 · claude-opus-5 (orchestrator) · **API docs brought back in sync.**
   Owner asked whether they were updated; they were not, beyond CONTEXT §5.
   · `/docs` (Swagger) generates shapes from the Pydantic schemas, so the new

@@ -11,10 +11,15 @@ orchestrator (Tech Lead) through task files. Your duties:
    acceptance criteria.
 3. Before handing off, run every check in the acceptance criteria and
    make sure they pass.
-4. When done, update `TODO.md`: set your task's status to `[R]`, put
+4. Then work through the brief's **Documentation impact** section:
+   re-read each statement it names and confirm it is still true of the
+   code you just wrote. Update what the brief assigns to you; report the
+   rest — naming the file and the sentence — in "Notes for the
+   orchestrator". A passing test suite does not make a stale README true.
+5. When done, update `TODO.md`: set your task's status to `[R]`, put
    your model name in the "Worker" column, and add a journal entry at
    the top: date · model · what was done · how it was verified.
-5. Questions, blockers and out-of-scope findings go to the
+6. Questions, blockers and out-of-scope findings go to the
    "Notes for the orchestrator" section in `TODO.md`. Do not fix other
    people's code and do not expand scope.
 
