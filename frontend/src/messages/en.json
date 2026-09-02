@@ -92,8 +92,9 @@
     },
     "form": {
       "title": "Inputs",
-      "description": "The API calculates all regimes from the same monthly gross income.",
+      "description": "Choose whether to compare the regimes by gross income or by the payer's total cost.",
       "grossIncomeLabel": "Monthly gross income, EUR",
+      "payerCostLabel": "Monthly payer cost, EUR",
       "grossIncomePlaceholder": "3000.00",
       "invalidIncome": "Enter an amount greater than 0.",
       "pensionPillarLabel": "II pension pillar contribution",
@@ -106,6 +107,13 @@
       "submit": "Calculate comparison",
       "loading": "Calculating..."
     },
+    "basis": {
+      "label": "Comparison basis",
+      "options": {
+        "gross": "Gross income",
+        "payer_cost": "Payer cost"
+      }
+    },
     "empty": {
       "title": "No calculation yet",
       "description": "Submit the form to compare net income across the four regimes."
@@ -117,7 +125,8 @@
     },
     "comparison": {
       "title": "Net income comparison",
-      "description": "Bars are scaled against the best net income result."
+      "description": "Bars are scaled against the best net income result.",
+      "activeBasis": "Active basis: {basis}."
     },
     "results": {
       "best": "Best net",
@@ -139,6 +148,12 @@
       "pension_pillar_ii": "II pension pillar",
       "social_tax": "Social tax",
       "business_income_tax": "Business income tax"
+    },
+    "constraints": {
+      "ettevotluskonto_annual_limit_exceeded": "Annual receipts exceed €40,000. Register as an entrepreneur and VAT payer.",
+      "vat_registration_threshold_exceeded": "Annual turnover exceeds the €40,000 VAT registration threshold.",
+      "fie_social_tax_minimum_applied": "The statutory minimum FIE social tax was applied.",
+      "fie_social_tax_cap_applied": "The statutory annual FIE social tax cap was applied."
     },
     "disclaimer": {
       "title": "Not tax advice",

@@ -61,6 +61,40 @@ test("calculates tax regimes from the form", async ({ page }) => {
   await expect(page.getByText("€2,409.76").first()).toBeVisible();
   await expect(page.getByText("Best net", { exact: true })).toBeVisible();
   await expect(page.getByText("Management board member").first()).toBeVisible();
+  await expect(
+    page.locator('[data-regime="juhatuse_liige"]').getByText("Best net", { exact: true })
+  ).toBeVisible();
+
+  await page.getByLabel("Payer cost").check();
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+
+  await expect(page.getByText("Active basis: Payer cost.")).toBeVisible();
+  await expect(
+    page.locator('[data-regime="ettevotluskonto"]').getByText("Best net", { exact: true })
+  ).toBeVisible();
+});
+
+test("shows the entrepreneur-account annual-limit blocker", async ({ page }) => {
+  await page.goto("/en/calculator");
+
+  await page.getByLabel("Monthly gross income, EUR").fill("5000");
+  await page.getByRole("button", { name: "Calculate comparison" }).click();
+
+  await expect(
+    page.getByText(
+      "Annual receipts exceed €40,000. Register as an entrepreneur and VAT payer."
+    )
+  ).toBeVisible();
+});
+
+test("accepts a comma decimal separator in every locale", async ({ page }) => {
+  for (const locale of ["en", "et", "ru"]) {
+    await page.goto(`/${locale}/calculator`);
+    await page.locator('input[name="gross_monthly_income"]').fill("3000,50");
+    await page.locator('form button[type="submit"]').click();
+
+    await expect(page.locator('[data-regime="tooleping"]')).toBeVisible();
+  }
 });
 
 test("shows housing table and chart", async ({ page }) => {

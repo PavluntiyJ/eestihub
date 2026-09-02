@@ -92,8 +92,9 @@
     },
     "form": {
       "title": "Sisendid",
-      "description": "API arvutab kõik režiimid sama kuise brutotulu põhjal.",
+      "description": "Vali, kas võrrelda režiime brutotulu või maksja kogukulu alusel.",
       "grossIncomeLabel": "Kuine brutotulu, EUR",
+      "payerCostLabel": "Maksja kuine kogukulu, EUR",
       "grossIncomePlaceholder": "3000.00",
       "invalidIncome": "Sisesta summa, mis on suurem kui 0.",
       "pensionPillarLabel": "II pensionisamba makse",
@@ -106,6 +107,13 @@
       "submit": "Arvuta võrdlus",
       "loading": "Arvutan..."
     },
+    "basis": {
+      "label": "Võrdluse alus",
+      "options": {
+        "gross": "Brutotulu",
+        "payer_cost": "Maksja kulu"
+      }
+    },
     "empty": {
       "title": "Arvutust veel pole",
       "description": "Saada vorm, et võrrelda netotulu nelja režiimi vahel."
@@ -117,7 +125,8 @@
     },
     "comparison": {
       "title": "Netotulu võrdlus",
-      "description": "Tulbad on skaleeritud parima netotulu tulemuse järgi."
+      "description": "Tulbad on skaleeritud parima netotulu tulemuse järgi.",
+      "activeBasis": "Aktiivne alus: {basis}."
     },
     "results": {
       "best": "Parim neto",
@@ -139,6 +148,12 @@
       "pension_pillar_ii": "II pensionisammas",
       "social_tax": "Sotsiaalmaks",
       "business_income_tax": "Ettevõtlustulu maks"
+    },
+    "constraints": {
+      "ettevotluskonto_annual_limit_exceeded": "Aastane laekumine ületab 40 000 eurot. Registreeri end ettevõtjaks ja käibemaksukohustuslaseks.",
+      "vat_registration_threshold_exceeded": "Aastakäive ületab käibemaksukohustuslaseks registreerimise 40 000 euro piiri.",
+      "fie_social_tax_minimum_applied": "Rakendati FIE seadusjärgset minimaalset sotsiaalmaksu.",
+      "fie_social_tax_cap_applied": "Rakendati FIE sotsiaalmaksu seadusjärgset aastast ülempiiri."
     },
     "disclaimer": {
       "title": "Pole maksunõuanne",

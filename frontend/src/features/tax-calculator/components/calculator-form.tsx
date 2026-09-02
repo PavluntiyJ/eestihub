@@ -12,7 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ApiError, calculateTaxes } from "@/lib/api";
-import type { RegimeResult, TaxCalculationResponse, TaxCalculationRequest } from "@/types/api";
+import type {
+  ConstraintSeverity,
+  EqualizeBy,
+  RegimeResult,
+  TaxCalculationResponse,
+  TaxCalculationRequest,
+} from "@/types/api";
 
 type PensionPillarRate = TaxCalculationRequest["pension_pillar_rate"];
 
@@ -23,6 +29,15 @@ const PENSION_PILLAR_OPTIONS: { value: PensionPillarRate; labelKey: string }[] =
   { value: 0.06, labelKey: "six" },
 ];
 
+const COMPARISON_BASIS_OPTIONS: EqualizeBy[] = ["gross", "payer_cost"];
+const CONSTRAINT_STYLES: Record<ConstraintSeverity, string> = {
+  info: "border-blue-300 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100",
+  warning:
+    "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100",
+  blocker:
+    "border-destructive/50 bg-destructive/10 text-destructive dark:border-destructive/70",
+};
+
 type CalculatorFormProps = {
   locale: string;
 };
@@ -31,10 +46,11 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
   const t = useTranslations("calculator");
   const [grossIncome, setGrossIncome] = useState("3000");
   const [pensionPillarRate, setPensionPillarRate] = useState<PensionPillarRate>(0.02);
+  const [equalizeBy, setEqualizeBy] = useState<EqualizeBy>("gross");
   const [result, setResult] = useState<TaxCalculationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const grossIncomeValue = Number(grossIncome);
+  const grossIncomeValue = Number(grossIncome.trim().replace(",", "."));
   const isGrossIncomeValid = Number.isFinite(grossIncomeValue) && grossIncomeValue > 0;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -51,6 +67,7 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
       const response = await calculateTaxes({
         gross_monthly_income: grossIncomeValue,
         pension_pillar_rate: pensionPillarRate,
+        equalize_by: equalizeBy,
       });
       setResult(response);
     } catch (caughtError) {
@@ -72,7 +89,9 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
           <form className="space-y-5" onSubmit={onSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="gross-monthly-income">
-                {t("form.grossIncomeLabel")}
+                {equalizeBy === "gross"
+                  ? t("form.grossIncomeLabel")
+                  : t("form.payerCostLabel")}
               </label>
               <input
                 id="gross-monthly-income"
@@ -83,13 +102,34 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
                 onChange={(event) => setGrossIncome(event.target.value)}
                 placeholder={t("form.grossIncomePlaceholder")}
                 step="0.01"
-                type="number"
+                type="text"
                 value={grossIncome}
               />
               {!isGrossIncomeValid ? (
                 <p className="text-sm text-destructive">{t("form.invalidIncome")}</p>
               ) : null}
             </div>
+
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">{t("basis.label")}</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {COMPARISON_BASIS_OPTIONS.map((basis) => (
+                  <label
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                    key={basis}
+                  >
+                    <input
+                      checked={equalizeBy === basis}
+                      name="equalize_by"
+                      onChange={() => setEqualizeBy(basis)}
+                      type="radio"
+                      value={basis}
+                    />
+                    {t(`basis.options.${basis}`)}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="pension-pillar-rate">
@@ -128,7 +168,11 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
         ) : null}
 
         {result ? (
-          <ResultsView locale={locale} results={result.results} />
+          <ResultsView
+            equalizeBy={result.input.equalize_by}
+            locale={locale}
+            results={result.results}
+          />
         ) : (
           <Card className="border-dashed bg-background/80 shadow-sm">
             <CardHeader>
@@ -142,7 +186,15 @@ export function CalculatorForm({ locale }: CalculatorFormProps) {
   );
 }
 
-function ResultsView({ locale, results }: { locale: string; results: RegimeResult[] }) {
+function ResultsView({
+  equalizeBy,
+  locale,
+  results,
+}: {
+  equalizeBy: EqualizeBy;
+  locale: string;
+  results: RegimeResult[];
+}) {
   const t = useTranslations("calculator");
   const moneyFormatter = new Intl.NumberFormat(locale, {
     style: "currency",
@@ -163,7 +215,11 @@ function ResultsView({ locale, results }: { locale: string; results: RegimeResul
       <Card className="bg-background/95 shadow-sm">
         <CardHeader>
           <CardTitle>{t("comparison.title")}</CardTitle>
-          <CardDescription>{t("comparison.description")}</CardDescription>
+          <CardDescription>
+            {t("comparison.description")} {t("comparison.activeBasis", {
+              basis: t(`basis.options.${equalizeBy}`),
+            })}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {sortedResults.map((result) => {
@@ -186,7 +242,11 @@ function ResultsView({ locale, results }: { locale: string; results: RegimeResul
 
       <div className="grid gap-4 xl:grid-cols-2">
         {sortedResults.map((result, index) => (
-          <Card key={result.regime} className="bg-background/95 shadow-sm">
+          <Card
+            key={result.regime}
+            className="bg-background/95 shadow-sm"
+            data-regime={result.regime}
+          >
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-3">
                 <span>{t(`regime.${result.regime}`)}</span>
@@ -210,6 +270,19 @@ function ResultsView({ locale, results }: { locale: string; results: RegimeResul
                   value={percentFormatter.format(result.effective_tax_rate)}
                 />
               </div>
+
+              {result.constraints.length > 0 ? (
+                <ul className="space-y-2">
+                  {result.constraints.map((constraint) => (
+                    <li
+                      className={`rounded-lg border px-3 py-2 text-sm ${CONSTRAINT_STYLES[constraint.severity]}`}
+                      key={constraint.code}
+                    >
+                      {t(`constraints.${constraint.code}`)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">{t("breakdown.title")}</h3>

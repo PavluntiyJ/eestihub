@@ -32,5 +32,28 @@ PENSION_PILLAR_RATES = frozenset(
 # https://www.emta.ee/en/private-client/taxes-and-payment/taxable-income/entrepreneur-account
 ENTREPRENEUR_ACCOUNT_TAX_RATE = Decimal("0.20")
 
+# Source: EMTA 2026 tax changes and social tax page, verified 2026-09-02:
+# https://www.emta.ee/uudised/maksumuudatused-2026
+# https://www.emta.ee/ariklient/maksud-ja-tasumine/tulumaks-ja-sotsiaalmaks/sotsiaalmaks
+SOCIAL_TAX_MONTHLY_RATE = Decimal("886")
+FIE_SOCIAL_TAX_MINIMUM_MONTHLY = SOCIAL_TAX_MONTHLY_RATE * SOCIAL_TAX_RATE
+
+# Source: EMTA FIE social tax page, verified 2026-09-02:
+# https://www.emta.ee/ariklient/registreerimine-ettevotlus/ettevotjale/fuusilisest-isikust-ettevotjale-fie/sotsiaalmaks
+FIE_SOCIAL_TAX_ANNUAL_MAXIMUM = Decimal("36867.60")
+FIE_SOCIAL_TAX_MONTHLY_MAXIMUM = FIE_SOCIAL_TAX_ANNUAL_MAXIMUM / Decimal("12")
+
+# Source: EMTA Entrepreneur account page, verified 2026-09-02:
+# https://www.emta.ee/eraklient/maksud-ja-tasumine/maksustatavad-tulud/ettevotluskonto
+ENTREPRENEUR_ACCOUNT_ANNUAL_LIMIT = Decimal("40000")
+ENTREPRENEUR_ACCOUNT_MONTHLY_LIMIT = ENTREPRENEUR_ACCOUNT_ANNUAL_LIMIT / Decimal("12")
+
+# Source: EMTA VAT registration page, verified 2026-09-02:
+# https://www.emta.ee/ariklient/maksud-ja-tasumine/kaibemaks/kaibemaksukohustuslasena-registreerimine/maksukohustuslasena-registreerimise-kohustus
+VAT_REGISTRATION_ANNUAL_THRESHOLD = Decimal("40000")
+VAT_REGISTRATION_MONTHLY_THRESHOLD = (
+    VAT_REGISTRATION_ANNUAL_THRESHOLD / Decimal("12")
+)
+
 MONEY_QUANT = Decimal("0.01")
 EFFECTIVE_TAX_RATE_QUANT = Decimal("0.001")

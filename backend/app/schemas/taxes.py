@@ -7,11 +7,20 @@ from app.core.tax_rates import PENSION_PILLAR_RATES
 
 
 Regime = Literal["tooleping", "juhatuse_liige", "fie", "ettevotluskonto"]
+EqualizeBy = Literal["gross", "payer_cost"]
+ConstraintCode = Literal[
+    "ettevotluskonto_annual_limit_exceeded",
+    "vat_registration_threshold_exceeded",
+    "fie_social_tax_minimum_applied",
+    "fie_social_tax_cap_applied",
+]
+ConstraintSeverity = Literal["info", "warning", "blocker"]
 
 
 class TaxCalculationRequest(BaseModel):
     gross_monthly_income: float = Field(gt=0)
     pension_pillar_rate: float = 0.02
+    equalize_by: EqualizeBy = "gross"
 
     @field_validator("pension_pillar_rate")
     @classmethod
@@ -26,6 +35,11 @@ class TaxLine(BaseModel):
     amount: float
 
 
+class Constraint(BaseModel):
+    code: ConstraintCode
+    severity: ConstraintSeverity
+
+
 class RegimeResult(BaseModel):
     regime: Regime
     label: str
@@ -34,6 +48,7 @@ class RegimeResult(BaseModel):
     breakdown: list[TaxLine]
     net_income: float
     effective_tax_rate: float
+    constraints: list[Constraint]
 
 
 class TaxCalculationResponse(BaseModel):
