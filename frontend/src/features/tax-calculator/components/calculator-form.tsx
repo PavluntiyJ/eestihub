@@ -45,14 +45,6 @@ const CONSTRAINT_STYLES: Record<ConstraintSeverity, string> = {
     "border-destructive/50 bg-destructive/10 text-destructive dark:border-destructive/70",
 };
 
-function scenarioKey(scenario: Scenario): string {
-  return [
-    scenario.grossMonthlyIncome,
-    scenario.pensionPillarRate,
-    scenario.equalizeBy,
-  ].join("|");
-}
-
 type CalculatorFormProps = {
   districts: DistrictRent[];
   initialResult: TaxCalculationResponse | null;
@@ -81,22 +73,6 @@ export function CalculatorForm({
   const grossIncomeValue = parseGrossIncome(grossIncome);
   const isGrossIncomeValid = isValidIncome(grossIncome);
 
-  // Back/forward navigation re-renders this component with a different
-  // scenario in its props. Adopt it — but only when it did not come from our
-  // own submit, otherwise a server round trip would overwrite a result the
-  // client already has.
-  const incomingKey = scenarioKey(initialScenario);
-  const [adoptedKey, setAdoptedKey] = useState(incomingKey);
-
-  if (incomingKey !== adoptedKey) {
-    setAdoptedKey(incomingKey);
-    setGrossIncome(initialScenario.grossMonthlyIncome);
-    setPensionPillarRate(initialScenario.pensionPillarRate);
-    setEqualizeBy(initialScenario.equalizeBy);
-    setResult(initialResult);
-    setError(null);
-    setIsLinkCopied(false);
-  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -117,18 +93,17 @@ export function CalculatorForm({
       setResult(response);
       setIsLinkCopied(false);
 
-      const submitted: Scenario = {
-        grossMonthlyIncome: grossIncome,
-        pensionPillarRate,
-        equalizeBy,
-      };
-
-      // push, not replace: only a submit writes to the URL, so history holds
-      // scenarios the user actually asked for and back walks between them.
-      // Claiming the key first stops the resulting server render from being
-      // mistaken for an external navigation.
-      setAdoptedKey(scenarioKey(submitted));
-      router.push(`${pathname}?${scenarioToQuery(submitted)}`, { scroll: false });
+      // replace, not push: the form owns its state after mount, so a history
+      // entry the browser could navigate back to would show a URL the form no
+      // longer reflects. The URL exists here to be copied and shared.
+      router.replace(
+        `${pathname}?${scenarioToQuery({
+          grossMonthlyIncome: grossIncome,
+          pensionPillarRate,
+          equalizeBy,
+        })}`,
+        { scroll: false }
+      );
     } catch (caughtError) {
       setResult(null);
       setError(caughtError instanceof ApiError ? t("errors.api") : t("errors.network"));

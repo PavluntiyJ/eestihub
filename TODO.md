@@ -95,6 +95,36 @@ only its own namespace.
 
 ## Journal (newest first)
 
+- 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **CI was red on
+  the T20 push; fixed.** Backend tests and the frontend build were green — one
+  e2e test failed: "shows the entrepreneur-account annual-limit blocker".
+  · **Cause: a hydration race in the tests, not in the app.** Playwright can
+  drive an input before React has hydrated it, after which the controlled value
+  snaps back to its default. That is invisible whenever the default still
+  satisfies the assertion — which is why it only ever surfaced on the one test
+  that fills `5000`, since 3000 × 12 sits under the €40,000 threshold and the
+  blocker simply never renders. Latent for a while; T20's larger client bundle
+  made it likelier. Fixed with retrying `fillStable` / `selectStable` /
+  `checkStable` helpers that re-apply the value until it sticks, used by every
+  test that sets one. As a side effect the comma-separator test now genuinely
+  tests the comma — it previously passed even when the value reverted to
+  `3000`.
+  · A second, real bug the helpers exposed: `getByLabel("Payer cost")` becomes
+  ambiguous once that basis is selected, because the income input's label
+  changes to "Monthly payer cost, EUR". Now targeted by input name and value.
+  · **A misdiagnosis worth recording.** While verifying locally I saw failures
+  moving between tests and concluded the T20 `push` + keyed-remount design was
+  racy, so I reverted it to `router.replace` with no remount. The real cause was
+  a stale `next start` still holding port 3000 from an earlier command, so the
+  suite was running against a build from before the changes; `push` was probably
+  fine. I kept `replace` anyway: it matches the original brief, it is simpler,
+  and it is now verified green — but the consequence is that **back/forward does
+  not restore previous scenarios**, and the earlier journal entry claiming that
+  behaviour is wrong. Shared links, server-rendered results and the copy control
+  all work as described. Revisit if scenario history is wanted.
+  · Verified after the fix: `next build` clean, `npm run e2e` → 15 passed twice
+  against a freshly started server.
+
 - 2026-09-02 · claude-opus-5 (orchestrator, acting as worker) · **T20 done —
   iteration 7 closed, all seven tasks `[x]`.** Same caveat as wave 2: I wrote
   this code and accepted it, so it has had no independent review.
