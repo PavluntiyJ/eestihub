@@ -49,6 +49,13 @@ an honest, verifiable cost estimator.
    (`nav.eresidency` key); add the page to `sitemap.ts` (3 locales →
    sitemap grows 9 → 12 URLs); new `eresidency` namespace symmetric in
    `messages/{en,et,ru}.json`.
+   **Added 2026-09-02:** you are the sole owner of `sitemap.ts` this
+   iteration, so also add `x-default` to its `alternates` and a
+   `lastModified` on every entry while you are in the file. T18 gave up
+   that change to avoid a conflict with you. Note that T18 is setting
+   `metadataBase` in the locale layout in parallel — do not add one
+   yourself, and write your page's `alternates` as relative paths exactly
+   like the existing pages do.
 6. **e2e smoke.** Nav link → page renders → submit a valid revenue → a
    result figure is visible.
 

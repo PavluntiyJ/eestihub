@@ -32,6 +32,13 @@ additions below at review and mirror them into CONTEXT §5.
    (`city`, `district_name`, `captured_on`) — idempotency key. Follow the
    existing `create_all` bootstrap pattern (no Alembic — standing
    orchestrator decision).
+   **Amended 2026-09-02:** this is the second table to arrive through
+   `create_all`, and the deployed Neon database already holds data. Do
+   not introduce Alembic in this task — but in your journal entry state
+   plainly what happens on the deployed instance when this model lands
+   (does `create_all` add the table on the next Render start? what would
+   a future column change require?). The orchestrator will decide on
+   migrations at review, with your answer as the input.
 3. **Ingest script.** `python -m scripts.ingest_rents` parses the CSV and
    upserts snapshots (conflict-safe by the unique key, mirroring the seed
    style). Re-running is a no-op. The legacy seed stays untouched and is
@@ -58,6 +65,11 @@ additions below at review and mirror them into CONTEXT §5.
   beyond the standard library unless cleared at review.
 - No other cities beyond the `city` column being future-ready.
 - Do not modify `district_rents`, the seed, or the taxes code paths.
+- **Shared file warning (added 2026-09-02):** T18 runs in parallel and
+  adds a `Cache-Control` header to the existing `/housing/rents` route in
+  `backend/app/api/v1/routes/housing.py`. Add your `/housing/trends`
+  route to that file without touching the `/rents` handler, and say in
+  your journal entry that you left it alone.
 
 ## Acceptance criteria
 

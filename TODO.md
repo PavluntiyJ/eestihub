@@ -46,19 +46,268 @@ Rules for workers:
 |---|------|-------|--------|--------|------------|
 | T13 | Deploy config: Render blueprint, keep-alive, runbook | tasks/T13-deploy.md | `[x]` | deepseek-pro-v4 | T11 |
 
-## Iteration 6 — usefulness pass (planned 2026-08-23, owner-approved brainstorm)
+## Iteration 6 — usefulness pass (superseded 2026-09-02)
+
+Planned 2026-08-23 with T14–T16. None of the three was ever assigned or
+started, and the 2026-09-02 audit changed the ordering: correctness work
+has to land before anything is built on top of the calculator's numbers.
+All three tasks moved into iteration 7 — T15 and T16 unchanged apart from
+small review amendments, T14 rebased onto T17.
+
+## Iteration 7 — audit remediation + usefulness (opened 2026-09-02, owner-approved slate)
+
+Full audit with evidence for every finding ID below:
+https://claude.ai/code/artifact/1eeb632e-3479-45fd-831e-427ab2433192
+
+**Wave 1 — start these four in parallel, they share no files:**
 
 | # | Task | Brief | Status | Worker | Depends on |
 |---|------|-------|--------|--------|------------|
-| T14 | Affordability link: net salary → affordable districts | tasks/T14-affordability-link.md | `[ ]` | — | — |
-| T15 | Housing real data: snapshots, ingest, trends API | tasks/T15-housing-real-data.md | `[ ]` | — | — |
-| T16 | e-Residency first-year cost calculator | tasks/T16-eresidency-calculator.md | `[ ]` | — | — |
+| T17 | Tax engine correctness: II pillar for board members, comparison basis, FIE bounds, constraints, golden files | tasks/T17-tax-engine-correctness.md | `[x]` | gpt-5-codex | — |
+| T18 | Production hardening: pooling, real health check, static rendering, absolute SEO URLs | tasks/T18-production-hardening.md | `[x]` | gpt-5.6-sol | — |
+| T15 | Housing real data: snapshots, ingest, trends API | tasks/T15-housing-real-data.md | `[x]` | gpt-5.6-sol | — |
+| T16 | e-Residency first-year cost calculator | tasks/T16-eresidency-calculator.md | `[x]` | gpt-5.6-sol | — |
 
-Tasks are independent and may run in parallel; file zones are separated
-in the briefs (shared files: `messages/*.json` — each adds only its own
-namespace; only T16 touches the nav/sitemap).
+**Wave 2 — after their dependencies are `[R]`:**
+
+| # | Task | Brief | Status | Worker | Depends on |
+|---|------|-------|--------|--------|------------|
+| T19 | Frontend polish: typeface, dark mode, error boundaries, OG images | tasks/T19-frontend-polish.md | `[ ]` | — | T18 |
+| T14 | Affordability link: net income → affordable districts (rebased) | tasks/T14-affordability-link.md | `[ ]` | — | T17 |
+
+**Wave 3:**
+
+| # | Task | Brief | Status | Worker | Depends on |
+|---|------|-------|--------|--------|------------|
+| T20 | Shareable calculator scenario URLs | tasks/T20-shareable-scenarios.md | `[ ]` | — | T17, T14 |
+
+Findings covered: T17 → F-01 F-02 F-03 F-04 F-16 · T18 → F-05 F-06 F-07
+F-08 F-09 F-17 · T19 → F-10 F-11 F-13 F-14 · T20 → F-15 F-20.
+Still open after this iteration: F-12 (Recharts payload) and F-18
+(no Python lint/type gate) — backlog, see Notes.
+
+Each brief carries a "Files you own" section. It is binding: three
+deliberate overlaps were resolved when the slate was drafted — T16 is the
+sole owner of `sitemap.ts`, T18 touches only `HealthResponse` inside
+`types/api.ts`, and T15 must not touch the `/rents` handler that T18
+edits. Shared `messages/*.json` follows the standing rule: each task adds
+only its own namespace.
 
 ## Journal (newest first)
+
+- 2026-09-02 · claude-opus-5 (orchestrator) · **Wave 1 accepted: T15, T16,
+  T17, T18 all `[x]`.** The worker ran out of budget with the code finished
+  but uncommitted; this entry covers the review, the gap I closed, and the
+  commits.
+  · Independently verified rather than taken on trust: `pytest` → 55 passed;
+  production build clean with every locale route now prerendered (`●`), which
+  closes F-09; live API run against a throwaway SQLite DB — health
+  `{"status":"ok","database":"ok"}` 200, rents carrying
+  `Cache-Control: public, max-age=86400, stale-while-revalidate=604800` and
+  `updated_at: 2026-05-27` with snapshot-backed values, trends returning eight
+  ordered series; ingest run twice → 8 snapshot rows, idempotency holds;
+  `npm run e2e` → 10 passed against that live backend.
+  · **T15's data source was checked at the primary source, not accepted from
+  the brief.** The Hinnapäring 2026 district report exists, is dated
+  2026-05-27, and attributes its figures to Ruumiamet transaction statistics
+  plus a KV.ee/City24 offer analysis. All 24 published ranges were re-derived
+  by hand: every CSV value is the correct integer midpoint. `avg_utilities` is
+  deliberately left empty because the source does not publish it — the trends
+  API reports null and only the rents API substitutes the legacy estimate.
+  That is the right call and must not be "tidied up" later.
+  · T16's fee constants and T17's tax constants all carry source URLs with
+  retrieval dates; the e-Residency worked example in CONTEXT §5 was generated
+  from the real service and matches byte for byte.
+  · **Gap I found and fixed — it fell between two briefs, so it is my
+  miss, not a worker's.** T15 creates and populates `rent_snapshots` locally,
+  but `render.yaml`'s start command ran only `scripts.seed_housing`, and the
+  CI e2e job did the same. `create_all` would have made the table in
+  production and left it empty, so the deployed dashboard would have silently
+  fallen back to the 2026-07-01 mock values — T15 shipping without reaching
+  production at all. Added `python -m scripts.ingest_rents` to both the Render
+  start command and the CI e2e job; the script is idempotent, so running it on
+  every boot is safe. T15 was scoped backend-only and T18 owned `render.yaml`
+  without reason to know about the new script — the seam was in how I split
+  the briefs.
+  · CONTEXT §5 updated with the three contract additions the workers correctly
+  flagged for orchestrator review: `HealthResponse.database` with the 503
+  policy, `GET /api/v1/housing/trends`, and `POST /api/v1/calculate-eresidency`
+  (explicitly documented as a cost model that does not tax the revenue), plus
+  the `updated_at` semantics and cache header on rents.
+  · Wave 2 is now unblocked: T19 (depends on T18) and T14 (depends on T17) can
+  both start; T20 follows T14.
+
+- 2026-09-02 · gpt-5.6-sol · T18 done: made SQLAlchemy engine/session
+  creation lazy while preserving the seed script's existing imports, enabled
+  `pool_pre_ping` with a 300-second recycle window, changed health to query the
+  database, cached successful rents responses, split runtime/test Python
+  dependencies, added a default overridable frontend request timeout, moved
+  the landing status check into a client leaf, enabled locale prerendering and
+  absolute metadata URLs, and gave housing data a one-day revalidation window.
+  `HealthResponse` now includes `database: "ok" | "unavailable"`; only that
+  type was touched in the shared `frontend/src/types/api.ts`, and CONTEXT §5
+  needs the orchestrator's contract update. Chosen health policy: return 503
+  only while the database query fails (`degraded`/`unavailable`), so Render's
+  existing health path detects an actual dependency outage; tax calculations
+  remain 200 because they do not use the database, and pooled connections
+  recover without a process restart. Production build route table:
+  ```text
+  ○ /_not-found
+  ● /[locale]                 /en /et /ru
+  ● /[locale]/calculator      /en/calculator /et/calculator /ru/calculator
+  ● /[locale]/eresidency      /en/eresidency /et/eresidency /ru/eresidency
+  ● /[locale]/housing         /en/housing /et/housing /ru/housing
+  ○ /robots.txt
+  ○ /sitemap.xml
+  ```
+  (`●` is Next.js static HTML generated from `generateStaticParams`; housing
+  retains `force-dynamic` and emits no `housing.html`.) Built head contains
+  `<link rel="canonical" href="https://eestihub.vercel.app/en"/>` and
+  `<link rel="alternate" hrefLang="et" href="https://eestihub.vercel.app/et"/>`.
+  Verified: clean venv install from `requirements.txt` +
+  `requirements-dev.txt`; `pytest` → 55 passed; production build passed;
+  backend fully down → `/en` 200 in 48 ms and browser offline state in 127 ms;
+  rents 200 with `Cache-Control: public, max-age=86400,
+  stale-while-revalidate=604800`; malformed `DATABASE_URL` import succeeded;
+  a deliberately stale pooled connection recovered without restarting
+  (`pre_ping=True`, `pool_recycle=300`); e2e → 10 passed against isolated
+  seeded SQLite. The exact compose stop/start cycle could not run because this
+  worker environment has neither Docker nor Podman; no shared DB state was
+  changed. T16 changed `sitemap.ts` concurrently; T18 did not touch it.
+
+- 2026-09-02 · gpt-5.6-sol · T16 done: added the sourced e-Residency fee
+  table, Decimal-based first-year cost service and
+  `POST /api/v1/calculate-eresidency`; built a localized en/et/ru
+  calculator with setup, running-cost, revenue, surplus and break-even
+  results; added navigation, relative page alternates, a 12-URL sitemap
+  with `x-default` and `lastModified`, and a browser smoke. Verified the
+  EUR 150 application/renewal fee, EUR 265 online OÜ registration,
+  EUR 200-400 annual contact-person range and accounting from EUR 50
+  against the official e-Residency Knowledge Base and 2026 Q&A; checked
+  current EUR 50-100 small-company accounting offers in the official
+  marketplace and the online/notary alternatives against the e-Business
+  Register and Chamber of Notaries, all retrieved 2026-09-02. Verification:
+  `pytest` → 55 passed; live API → 200 for a valid request and 422 for an
+  invalid request; `npm run build` passed with all three pages statically
+  rendered; live hreflang and sitemap counts checked; `npm run e2e` → 10
+  passed using the project's seeded SQLAlchemy model with temporary SQLite.
+  The new API contract must still be reviewed into CONTEXT §5 by the
+  orchestrator.
+
+- 2026-09-02 · gpt-5.6-sol · T15 done: added the `rent_snapshots`
+  history model and unique idempotency key, an idempotent standard-library
+  CSV ingest command, a dated all-eight-district snapshot, per-district
+  latest-snapshot selection with legacy rent/utility fallback, and an
+  ordered trends API. The public Hinnapäring 2026 district/room ranges,
+  their integer-midpoint transformation, retrieval date, provenance and
+  reuse caveat are documented in `backend/scripts/data/SOURCES.md`; no
+  listings were scraped. Contract additions proposed for CONTEXT §5:
+  (1) rents `updated_at` is the maximum real `captured_on` when snapshots
+  exist; (2) `GET /api/v1/housing/trends` returns
+  `{city, districts: [{name, points: [{captured_on, avg_rent_1room,
+  avg_rent_2room, avg_rent_3room, avg_utilities, source}]}]}`, with
+  districts and points in ascending order. Left T18's `/housing/rents`
+  handler unchanged and added only the trends route/imports in its shared
+  file. Deployment note: Render's existing start command runs
+  `scripts.seed_housing`, whose `Base.metadata.create_all()` now sees
+  `RentSnapshot` through the housing-model import and creates the absent
+  table on the next start without touching Neon data; `create_all` will
+  not alter an existing table for future column changes, which would need
+  explicit DDL or a migration tool. Verified: full backend pytest → 55
+  passed; compileall and `git diff --check` clean; live SQLite seed plus
+  ingest twice → 8 snapshots; live rents → snapshot values with
+  `updated_at: 2026-05-27`; trends → eight series; health and taxes → 200.
+  With an unreachable PostgreSQL URL, rents/trends → 503 and taxes → 200;
+  health → T18's intentional 503 degraded response. Docker/Podman is not
+  installed on this host, so the equivalent compose/PostgreSQL run could
+  not be performed.
+
+- 2026-09-02 · gpt-5-codex · T17 rework round 1 done: clamped every
+  comparison-bar width to the 0–100% range; negative net income now has
+  a destructive track marker, amount styling, result-card border and a
+  localized badge instead of falling back to a full-width bar. Kept the
+  negative monetary result unchanged and suppressed effective tax rate
+  only for negative-net cards: the rate remains valid in the API/golden
+  file, but showing 146.2% beside an explicit −€92.38 net adds confusion
+  rather than information. Added the €200 / 0% FIE golden row and its
+  hand derivation (`net = -92.38`, effective rate `1.462`), plus a browser
+  assertion that the FIE fill is 0% while the best bar is 100%. Verified:
+  `pytest tests/test_tax_service.py -q` → 32 passed; Playwright in real
+  Chromium, `--grep "negative FIE net"` → 1 passed; the browser rendered
+  the localized negative-net treatment and did not render `146.2%` in
+  the FIE card. Commit: `aa30700`.
+
+- 2026-09-02 · claude-opus-5 (orchestrator) · T17 reviewed, **returned
+  for one narrow rework** — see the "Rework — round 1" section appended to
+  `tasks/T17-tax-engine-correctness.md`. Status back to `[>]`.
+  Independently verified rather than taken on trust: re-ran `pytest`
+  (41 passed) and `next build` (clean); re-derived every golden-file row
+  by hand (all correct, including both payer-cost derivations); confirmed
+  i18n parity at 100/100 with genuine et/ru translations; and re-checked
+  the constant the brief flagged as risky — €36,867.60 is indeed stated
+  as the 2026 FIE annual social-tax ceiling on the cited EMTA page, so
+  the worker sourced it correctly where the audit could not.
+  F-01, F-02, F-03, F-04 and F-16 are all correctly implemented.
+  · The defect: the FIE clamp makes net income negative below ~€886/month
+  (€200 → −92.38), which is arithmetically right, but `ResultsView`
+  computes the comparison bar as `net / bestNet` and hands the browser
+  `width: -46.19%`. That is invalid CSS, so the declaration is dropped and
+  the block-level bar falls back to `width: auto` = 100% — the worst
+  regime renders as a full-length bar and reads as the best. Not
+  reachable before this task, because FIE net could not previously go
+  negative. Also `effective_tax_rate` 1.462 renders as "146.2%".
+  · T14 and T20 stay blocked until this lands. T18, T15 and T16 are
+  unaffected and can continue in parallel.
+  · Routed to other tasks rather than to this one: the raw-Tailwind
+  constraint colours bypass the design tokens (→ T19); the comma
+  normalisation handles only the first separator (backlog).
+
+- 2026-09-02 · gpt-5-codex · T17 done: corrected II-pillar withholding
+  for board-member fees; added gross/payer-cost comparison bases, bounded
+  FIE social tax, statutory constraints, a 20-row golden-file suite with
+  documented hand derivations, mirrored frontend types, a localized basis
+  selector and severity-styled constraint messages, comma-decimal parsing,
+  and calculator e2e coverage. Verified the 2026 social-tax monthly rate
+  (€886) and minimum (€292.38) against
+  https://www.emta.ee/uudised/maksumuudatused-2026 and
+  https://www.emta.ee/ariklient/maksud-ja-tasumine/tulumaks-ja-sotsiaalmaks/sotsiaalmaks;
+  the FIE annual social-tax ceiling (€36,867.60) against
+  https://www.emta.ee/ariklient/registreerimine-ettevotlus/ettevotjale/fuusilisest-isikust-ettevotjale-fie/sotsiaalmaks;
+  the entrepreneur-account annual limit (€40,000) against
+  https://www.emta.ee/eraklient/maksud-ja-tasumine/maksustatavad-tulud/ettevotluskonto;
+  and the VAT registration threshold (€40,000) against
+  https://www.emta.ee/ariklient/maksud-ja-tasumine/kaibemaks/kaibemaksukohustuslasena-registreerimine/maksukohustuslasena-registreerimise-kohustus,
+  all retrieved 2026-09-02. Verification: `cd backend && pytest` → 41
+  passed; live API curl checks matched €2,447.20 board-member net, equal
+  €3,000 payer costs and both requested constraints; `cd frontend && npm
+  run build` passed; `npm run e2e` → 8 passed. Docker/Postgres was not
+  available locally, so the unchanged housing e2e prerequisite used the
+  project's real SQLAlchemy model and seed against a temporary SQLite DB;
+  all application API/browser paths were exercised and no project file was
+  changed for that workaround.
+
+- 2026-09-02 · claude-opus-5 (orchestrator) · Full audit of the codebase,
+  deploy config and tax domain; owner approved the whole remediation
+  slate. Method: read every backend/frontend/CI/deploy file, ran the
+  backend suite (17 passed), ran a production frontend build and
+  inspected its route table, emitted HTML and CSS directly, and
+  re-verified all 2026 tax constants against emta.ee. 20 findings
+  (F-01..F-20), report at
+  https://claude.ai/code/artifact/1eeb632e-3479-45fd-831e-427ab2433192
+  · **CONTEXT §5 rewritten** (orchestrator-only file) before any brief:
+  the juhatuse liige II-pillar rule was wrong in the spec itself, not
+  just in the code (F-01); FIE social tax now documented with its
+  statutory floor and ceiling (F-03); added the `equalize_by` comparison
+  basis with the four derivation formulas (F-02) and the `constraints`
+  array with four defined codes (F-04); `employer_total_cost` documented
+  as "payer cost" rather than renamed.
+  · Wrote `tasks/T17..T20`, rebased `tasks/T14`, amended `tasks/T15`
+  (migrations question at review, shared-route warning) and `tasks/T16`
+  (sole ownership of `sitemap.ts`). Iteration 6 superseded — none of its
+  three tasks had been assigned. Board reorganised into three waves with
+  binding "Files you own" sections; the three real file overlaps between
+  parallel tasks were resolved in the briefs rather than left to merge.
+  · No application code touched. All statuses `[ ]` pending assignment.
 
 - 2026-08-23 · gpt-5.6-sol · Owner approved the improvement brainstorm:
   drafted iteration 6 with briefs T14 (affordability link),
@@ -117,6 +366,35 @@ namespace; only T16 touches the nav/sitemap).
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-02 · claude-opus-5 (orchestrator) · Audit backlog, NOT scheduled
+  into iteration 7. Deferred findings: **F-12** — `/[locale]/housing`
+  ships 221 kB of first-load JS against a 103 kB baseline, ~110 kB of it
+  Recharts for one eight-bar chart; hand-drawn SVG in a server component
+  would ship zero client JS, but that contradicts CONTEXT §2's "charts
+  only via shadcn/ui chart components", so it needs a stack decision
+  first. **F-18** — no ruff/mypy/pyproject on the backend; TypeScript has
+  a strict gate through `next build` in CI and Python has none.
+  **F-19** — the e2e smokes assert on English marketing copy and
+  formatted currency, so any copy edit or rate change breaks CI for
+  unrelated reasons; T17 and T20 both add assertions to that file, so
+  reworking the selectors is best done once, after they land.
+  Deferred features, ranked: OÜ with a salary/dividend split (22/78, 0%
+  on retained profit) — the structure this audience actually uses and the
+  strongest single feature available; health-insurance and pension
+  eligibility per regime (the €292.38/month social tax threshold), which
+  is the first real-world question these users have and which no
+  competing calculator answers plainly; tax-residency switch (a
+  non-resident e-resident gets no basic exemption, so the tool is most
+  wrong for exactly the audience the homepage addresses); a 2025/2026
+  year switcher, which A4/A5 make structural rather than cosmetic;
+  prerendered `/{locale}/salary/{amount}` landing pages gated on T20's
+  URL contract; JSON-LD (`WebApplication`, `Dataset`, `FAQPage`);
+  per-district housing pages; a rent map using the `lat`/`lon` already in
+  the schema; a tax-deadline calendar with ICS export; a move-in cost
+  estimator; Lighthouse + axe gates in CI; a monthly rate-drift watchdog
+  that fails when emta.ee no longer matches `tax_rates.py`; Dockerfiles
+  and a one-command compose stack.
 
 - 2026-08-23 · gpt-5.6-sol · Backlog from the owner-approved brainstorm
   (candidates for later iterations, not scheduled): real dividends-vs-
