@@ -108,6 +108,15 @@ evidence). Workstreams, all `[R]`:
 
 ## Journal (newest first)
 
+- 2026-09-21 · deepseek-flash (opencode) · **CI run
+  [35652151450](https://github.com/PavluntiyJ/eestihub/actions/runs/35652151450)
+  is fully green after the lockfile fix**: backend 17s, frontend build 49s,
+  Playwright e2e 2m07s, Lighthouse audits 1m52s (four URLs, assertions
+  passed) and Docker compose stack 2m09s (both images built, stack booted,
+  API and server-rendered housing smokes passed). The two new gates are now
+  verified on the runner, so nothing from the hardening pass is pending
+  except the orchestrator's review of H1–H4.
+
 - 2026-09-21 · deepseek-flash (opencode) · **The flaky e2e test turned out to
   be a real app bug, and the first CI run found a lockfile mismatch.**
   · The pushed run failed before any new job started: `npm ci` on the runner
