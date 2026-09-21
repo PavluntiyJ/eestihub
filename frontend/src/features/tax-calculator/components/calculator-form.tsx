@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -59,8 +58,6 @@ export function CalculatorForm({
   locale,
 }: CalculatorFormProps) {
   const t = useTranslations("calculator");
-  const router = useRouter();
-  const pathname = usePathname();
   const [grossIncome, setGrossIncome] = useState(initialScenario.grossMonthlyIncome);
   const [pensionPillarRate, setPensionPillarRate] = useState<PensionPillarRate>(
     initialScenario.pensionPillarRate
@@ -93,16 +90,19 @@ export function CalculatorForm({
       setResult(response);
       setIsLinkCopied(false);
 
-      // replace, not push: the form owns its state after mount, so a history
-      // entry the browser could navigate back to would show a URL the form no
-      // longer reflects. The URL exists here to be copied and shared.
-      router.replace(
-        `${pathname}?${scenarioToQuery({
+      // The form owns its state after mount, so the scenario is written with
+      // the native history API: it updates the address bar and
+      // useSearchParams without an RSC round trip. router.replace would fetch
+      // the scenario URL from the server, and that request can be aborted by
+      // a concurrent link prefetch, leaving the address bar stale.
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${scenarioToQuery({
           grossMonthlyIncome: grossIncome,
           pensionPillarRate,
           equalizeBy,
-        })}`,
-        { scroll: false }
+        })}`
       );
     } catch (caughtError) {
       setResult(null);
