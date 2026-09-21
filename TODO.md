@@ -106,7 +106,61 @@ evidence). Workstreams, all `[R]`:
 | H3 | Docker: backend/frontend images, one-command compose stack, server-only `API_URL`, CI image build + stack smoke | `[R]` | deepseek-flash (opencode) |
 | H4 | Process docs: `docs/AI-WORKFLOW.md`, README refresh, `.lighthouseci` ignored | `[R]` | deepseek-flash (opencode) |
 
+## Data-source research — M02 (owner-directed, 2026-09-21, awaiting review)
+
+| # | Task | Brief | Status | Worker |
+|---|------|-------|--------|--------|
+| M02 | Probe and document data sources for future integrations (report + reproducible probes) | owner-directed, no brief | `[R]` | deepseek-flash (opencode) |
+
+M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
+("stop before M04").
+
 ## Journal (newest first)
+
+- 2026-09-21 · deepseek-flash (opencode) · **M02 done: data-source research,
+  report and probes — `[R]`.** Delivered `docs/DATA-SOURCES.md` plus
+  stdlib-only, reproducible probes under `backend/scripts/probes/`
+  (`probe_inaks`, `probe_gtfs`, `probe_districts`, `probe_basemap`, shared
+  `_http.py`). No product endpoints, UI, map or main-database change; no
+  secrets; existing API contracts untouched.
+  · **Confirmed by requests, not memory.** In-AKS gazetteer search and
+  reverse geocoding on `aks.geoportaal.ee` (HTTP 200, `ads_oid`, L-EST97 and
+  WGS84 coordinates); Tallinn GTFS at `transport.tallinn.ee/data/gtfs.zip`
+  (2.6 MB, Last-Modified 2026-09-18, 80 routes / 1120 stops / 483 972
+  stop_times, no `feed_info.txt`); Tallinn ArcGIS `Linnaosad_asumid`
+  (8 city districts + 84 neighbourhoods as queryable GeoJSON without a
+  token); basemap candidates (OpenFreeMap 200, OSM and CARTO 200 with CORS,
+  Stadia 401 and MapTiler 403 without keys, Maa-amet WMS 200).
+  · **Licenses resolved through the national open-data registry API:**
+  the GTFS distribution and the Tallinn district map files are both
+  **CC BY-SA 3.0** (attribution plus share-alike for derived data). The
+  Maa-amet map-service terms allow free commercial use with attribution, but
+  all four `kaart.maaamet.ee` WMS variants advertise **EPSG:3301 only**,
+  which blocks direct use as a MapLibre `{bbox-epsg-3857}` raster source
+  without a reprojection proxy. Recommended basemap for the future map:
+  OpenFreeMap Liberty (no key, no limits) with OSM attribution.
+  · Verified: all four probes ran green against the live sources on
+  2026-09-21 (output inspected); every URL in the report was requested in
+  this pass; confirmed-vs-docs-vs-open is labelled per statement; open
+  questions are listed at the end of the report and in Notes below.
+
+- 2026-09-21 · deepseek-flash (opencode) · **H2 and H4 review fixes done.**
+  · **H2.** The Lighthouse job only started the frontend, so `/en/housing`
+  was audited in its "data unavailable" state. It now runs the same
+  Postgres service, seed and ingest as the e2e job, starts the backend,
+  waits for a healthy database and asserts that the housing page actually
+  renders a district ("Kesklinn") before `lhci autorun`. CI run
+  [35653359141](https://github.com/PavluntiyJ/eestihub/actions/runs/35653359141)
+  is green: Lighthouse audits 2m28s with the data step and all assertions
+  passing.
+  · **H4.** `docs/AI-WORKFLOW.md` corrected: F-01 now says the code
+  implemented the wrong rule as written and the spec was corrected before
+  the remediation briefs; the doc states that H1–H4 were owner-directed
+  without task briefs, with the review record in `TODO.md`; the CI-race
+  bullet records that a later URL-writing failure was an app-side router
+  race, not a test race.
+  · Verified: `ci.yml` parses; the housing page check passes locally; the
+  pushed run is green including the new Docker and Lighthouse jobs.
 
 - 2026-09-21 · deepseek-flash (opencode) · **CI run
   [35652151450](https://github.com/PavluntiyJ/eestihub/actions/runs/35652151450)
@@ -636,6 +690,47 @@ evidence). Workstreams, all `[R]`:
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-21 · deepseek-flash (opencode) · M02 findings that need an
+  orchestrator decision before any map/search feature is briefed:
+  **Share-alike licenses.** Both the Tallinn GTFS distribution and the
+  Tallinn district map files are CC BY-SA 3.0 per the national open-data
+  registry API (confirmed), so derived layers or tiles would inherit
+  share-alike. Decide whether that is acceptable for the product or whether
+  the feature must avoid derived CC BY-SA outputs.
+  **Maa-amet WMS is EPSG:3301 only** (all four variants, confirmed), so it
+  cannot be a direct MapLibre raster source; a reprojection proxy or a
+  separate tile build is required if authoritative Estonian detail is
+  wanted. OpenFreeMap Liberty is the no-key default recommended in the
+  report.
+  **Undocumented In-AKS routes** (`/aks-api/ava/api/ads/search`,
+  `/aks-api/ava/api/ads-address-component/list`) were observed in public UI
+  traffic; do not build on them without a documented agreement. The
+  gazetteer itself is public and working.
+  **Broken provider link:** the "Maa- ja Ruumiamet avatud ruumiandmete
+  litsentsitingimused" anchor on the terms page returns 404.
+  **Documentation impact for the future feature:** when a map/search task is
+  written, `docs/DATA-SOURCES.md` should be referenced from the README and
+  its confirmed endpoints marked as the input to that task.
+
+- 2026-09-21 · Codex · Owner-requested independent review of H1–H4
+  (`b0dc75d..2727f78`). **H2 rework (P2):** the Lighthouse job in
+  `.github/workflows/ci.yml` starts only the frontend. The housing page
+  catches API failures and renders its unavailable state, so the audit
+  excludes the rent table/chart. Start and seed the API/database, wait for
+  readiness, and assert populated housing content before auditing.
+  **H4 correction (P3):** `docs/AI-WORKFLOW.md` says the F-01 spec was fixed
+  "before any feature depended on it", but the September 2 audit entry
+  records the same error in existing code. Say it was corrected before
+  the remediation briefs. Also qualify "every commit" to acknowledge the
+  owner-directed H1–H4 pass without task briefs.
+  Verification: local backend pytest 55 passed; frontend production build
+  passed. Independently checked GitHub run 35652151450 at `9f3ebc7`: all
+  five jobs passed, including 23 Playwright tests and Docker stack smoke.
+  HEAD adds only a TODO journal entry to that tested commit. Browser and
+  Docker checks were verified from CI, not rerun locally. No application
+  code or acceptance statuses changed. Update CONTEXT through its owner
+  before assigning new product implementation briefs.
 
 - 2026-09-21 · deepseek-flash (opencode) · Findings from the owner-directed
   hardening pass that are outside the worker's write zone:
