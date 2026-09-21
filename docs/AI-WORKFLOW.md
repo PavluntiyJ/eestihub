@@ -18,6 +18,10 @@ exceptions where the worker ran out of budget; the journal marks those
 acceptances as lacking independent review). Workers never review their own
 work, and never set a task to `[x]` — only the orchestrator accepts.
 
+The portfolio-hardening pass (workstreams H1–H4: accessibility gates,
+Lighthouse CI, Docker, this document) was owner-directed and had no task
+briefs; its review record lives in `TODO.md`.
+
 ## Artifacts
 
 - **`docs/CONTEXT.md`** — the single source of truth: stack, repo layout,
@@ -52,9 +56,10 @@ work, and never set a task to `[x]` — only the orchestrator accepts.
 ## What the process actually caught
 
 - **A wrong tax rate in the spec itself.** The II pension pillar rule for
-  management-board members in `CONTEXT.md` was incorrect; the review caught
-  it against the EMTA primary source (finding F-01) and the spec was fixed
-  before any feature depended on it.
+  management-board members in `CONTEXT.md` was incorrect, and the code
+  implemented it as written. The audit caught it against the EMTA primary
+  source (finding F-01); the spec was corrected before the remediation
+  briefs (T17) were written.
 - **A calculation bug returned for rework.** T03's entrepreneur-account
   rate ignored the pension pillar surcharge; the orchestrator refused the
   hand-off and requested tests with hand derivations.
@@ -72,7 +77,9 @@ work, and never set a task to `[x]` — only the orchestrator accepts.
   (fixed with blocking metadata).
 - **A CI race, not an app bug.** An e2e failure was traced to Playwright
   driving inputs before React hydrated; the fix was retrying helpers, and
-  the journal entry records the misdiagnosis that preceded it.
+  the journal entry records the misdiagnosis that preceded it. A later,
+  similar-looking failure in the URL-writing test turned out to be an
+  app-side router race instead; the journal records that diagnosis too.
 
 ## Quality gates
 
