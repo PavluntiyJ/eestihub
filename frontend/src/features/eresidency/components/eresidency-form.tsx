@@ -142,6 +142,8 @@ function AmountField({
         {label}
       </label>
       <input
+        aria-describedby={error ? `${id}-error` : undefined}
+        aria-invalid={error !== null}
         className="h-10 w-full rounded-lg border bg-background px-3 text-sm tabular-nums outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         id={id}
         inputMode="decimal"
@@ -151,7 +153,11 @@ function AmountField({
         type="text"
         value={value}
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-destructive" id={`${id}-error`} role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

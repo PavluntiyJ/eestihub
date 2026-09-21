@@ -19,7 +19,11 @@ export default async function HomePage({ params }: HomePageParams) {
   const t = await getTranslations("home");
 
   return (
-    <main className="flex flex-1 bg-[radial-gradient(circle_at_top_left,var(--muted),transparent_34rem)] px-6 py-12 sm:px-8 lg:px-12">
+    <main
+      className="flex flex-1 bg-[radial-gradient(circle_at_top_left,var(--muted),transparent_34rem)] px-6 py-12 sm:px-8 lg:px-12"
+      id="main-content"
+      tabIndex={-1}
+    >
       <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
         <section className="space-y-8">
           <div className="space-y-5">

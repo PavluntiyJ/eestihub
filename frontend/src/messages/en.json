@@ -7,6 +7,10 @@
     "brand": "EestiHub",
     "tagline": "Estonia essentials for builders and expats"
   },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "mainNavigation": "Main navigation"
+  },
   "languageSwitcher": {
     "label": "Choose language",
     "locales": {

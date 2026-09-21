@@ -9,7 +9,11 @@ export default function LocaleNotFound() {
   const t = useTranslations("errors");
 
   return (
-    <main className="flex flex-1 items-center px-6 py-16 sm:px-8 lg:px-12">
+    <main
+      className="flex flex-1 items-center px-6 py-16 sm:px-8 lg:px-12"
+      id="main-content"
+      tabIndex={-1}
+    >
       <Card className="mx-auto w-full max-w-xl bg-background/95 shadow-sm">
         <CardHeader className="space-y-4">
           <div className="space-y-2">

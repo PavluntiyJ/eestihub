@@ -97,7 +97,11 @@ export default async function CalculatorPage({
   ]);
 
   return (
-    <main className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--muted),transparent_32rem)] px-6 py-10 sm:px-8 lg:px-12">
+    <main
+      className="flex flex-1 bg-[radial-gradient(circle_at_top_right,var(--muted),transparent_32rem)] px-6 py-10 sm:px-8 lg:px-12"
+      id="main-content"
+      tabIndex={-1}
+    >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <section className="max-w-4xl space-y-5">
           <Badge variant="outline" className="rounded-full px-3 py-1">

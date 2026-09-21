@@ -25,7 +25,7 @@ export function RentBarChart({ districts, label }: RentBarChartProps) {
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
-      <BarChart accessibilityLayer data={districts} margin={{ left: 4, right: 4 }}>
+      <BarChart accessibilityLayer aria-label={label} data={districts} margin={{ left: 4, right: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis
           dataKey="name"

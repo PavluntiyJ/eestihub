@@ -7,6 +7,10 @@
     "brand": "EestiHub",
     "tagline": "Eesti põhiteave tegijatele ja välismaalastele"
   },
+  "a11y": {
+    "skipToContent": "Liigu sisu juurde",
+    "mainNavigation": "Põhinavigatsioon"
+  },
   "languageSwitcher": {
     "label": "Vali keel",
     "locales": {

@@ -13,10 +13,14 @@ const navItems = [
 
 export function SiteNav() {
   const t = useTranslations("nav");
+  const a11y = useTranslations("a11y");
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full min-w-0 items-center gap-1 overflow-x-auto rounded-full border bg-background p-1 sm:w-auto">
+    <nav
+      aria-label={a11y("mainNavigation")}
+      className="flex w-full min-w-0 items-center gap-1 overflow-x-auto rounded-full border bg-background p-1 sm:w-auto"
+    >
       {navItems.map((item) => {
         const isActive =
           item.href === "/" ? pathname === item.href : pathname.startsWith(item.href);

@@ -67,7 +67,11 @@ export default async function HousingPage({ params }: HousingPageParams) {
   const formatCurrency = (value: number) => moneyFormatter.format(value);
 
   return (
-    <main className="flex flex-1 bg-[linear-gradient(135deg,var(--background),var(--muted)_52%,var(--background))] px-6 py-10 sm:px-8 lg:px-12">
+    <main
+      className="flex flex-1 bg-[linear-gradient(135deg,var(--background),var(--muted)_52%,var(--background))] px-6 py-10 sm:px-8 lg:px-12"
+      id="main-content"
+      tabIndex={-1}
+    >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <section className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-end">
           <div className="space-y-5">

@@ -138,6 +138,10 @@ export function CalculatorForm({
               </label>
               <input
                 id="gross-monthly-income"
+                aria-describedby={
+                  isGrossIncomeValid ? undefined : "gross-monthly-income-error"
+                }
+                aria-invalid={!isGrossIncomeValid}
                 className="h-10 w-full rounded-lg border bg-background px-3 text-sm tabular-nums outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                 inputMode="decimal"
                 min="0.01"
@@ -149,7 +153,9 @@ export function CalculatorForm({
                 value={grossIncome}
               />
               {!isGrossIncomeValid ? (
-                <p className="text-sm text-destructive">{t("form.invalidIncome")}</p>
+                <p className="text-sm text-destructive" id="gross-monthly-income-error" role="alert">
+                  {t("form.invalidIncome")}
+                </p>
               ) : null}
             </div>
 
@@ -384,7 +390,7 @@ function ResultsView({
               ) : null}
 
               <div className="space-y-2">
-                <h3 className="text-sm font-medium">{t("breakdown.title")}</h3>
+                <h2 className="text-sm font-medium">{t("breakdown.title")}</h2>
                 <div className="divide-y rounded-lg border">
                   {result.breakdown.map((line) => (
                     <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm" key={line.name}>

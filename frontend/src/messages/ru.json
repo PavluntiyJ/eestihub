@@ -7,6 +7,10 @@
     "brand": "EestiHub",
     "tagline": "Главное об Эстонии для создателей и экспатов"
   },
+  "a11y": {
+    "skipToContent": "Перейти к основному содержимому",
+    "mainNavigation": "Основная навигация"
+  },
   "languageSwitcher": {
     "label": "Выбор языка",
     "locales": {
