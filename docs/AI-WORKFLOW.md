@@ -2,8 +2,9 @@
 
 EestiHub is not only a full-stack application; it is also a case study in
 running a real project with coding agents under human direction. This
-document describes the workflow that produced every commit in this
-repository, so the history can be read as evidence rather than as a claim.
+document describes the workflow that produced the planned iterations in
+this repository, so the history can be read as evidence rather than as a
+claim. One owner-directed exception is recorded below.
 
 ## Roles
 
