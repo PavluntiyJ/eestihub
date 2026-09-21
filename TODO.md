@@ -93,7 +93,71 @@ sole owner of `sitemap.ts`, T18 touches only `HealthResponse` inside
 edits. Shared `messages/*.json` follows the standing rule: each task adds
 only its own namespace.
 
+## Iteration 8 — portfolio hardening (owner-directed, 2026-09-21, awaiting review)
+
+No briefs were written: the owner directed this pass directly in chat,
+aimed at the TalTech full-stack role (accessibility, Docker/CI, AI-first
+evidence). Workstreams, all `[R]`:
+
+| # | Workstream | Status | Worker |
+|---|------------|--------|--------|
+| H1 | Accessibility: skip link, labelled landmarks, form error associations, `loading.tsx` landmark fix, axe suite (`e2e/a11y.spec.ts`, 8 scans) | `[R]` | deepseek-flash (opencode) |
+| H2 | Lighthouse CI: blocking metadata so canonical/hreflang/description stay in `<head>`, assertions for a11y/SEO 100 | `[R]` | deepseek-flash (opencode) |
+| H3 | Docker: backend/frontend images, one-command compose stack, server-only `API_URL`, CI image build + stack smoke | `[R]` | deepseek-flash (opencode) |
+| H4 | Process docs: `docs/AI-WORKFLOW.md`, README refresh, `.lighthouseci` ignored | `[R]` | deepseek-flash (opencode) |
+
 ## Journal (newest first)
+
+- 2026-09-21 · deepseek-flash (opencode) · **Portfolio-hardening pass done,
+  H1–H4 `[R]`.** The owner directed four workstreams directly; there are no
+  briefs, so this entry is the record and no independent review has happened
+  yet. Environment note: the host had no Python (installed 3.12), no Docker,
+  and `npm` needed `npm.cmd` under the PowerShell execution policy.
+  · **Accessibility.** Added a skip link in the header, `aria-label` on the
+  main nav, `id="main-content"` + `tabIndex={-1}` on every `<main>` (pages,
+  loading, error, not-found), `aria-invalid`/`aria-describedby` on both
+  calculator forms, and `aria-label` on the housing chart. Wrote
+  `e2e/a11y.spec.ts`: 8 axe scans (four pages, calculated results, negative
+  net, Estonian locale, dark theme) with `wcag2a/2aa/21a/21aa/22aa` plus
+  `best-practice` tags. The suite immediately found a real defect:
+  `role="status"` sat on `<main>` in `loading.tsx`, so during streaming the
+  page had no `main` landmark and no `h1`; the live region moved to an inner
+  span. 23 e2e green (15 smokes + 8 axe).
+  · **Lighthouse.** Added `@lhci/cli`, `lighthouserc.json` (desktop preset,
+  a11y/SEO must be 100, best-practices 95+, performance a warning) and a CI
+  job. The gate found a real SEO defect: on the dynamic routes (`calculator`
+  reads `searchParams`, `housing` is `force-dynamic`) Next streamed all
+  metadata, so canonical, `hreflang` and the description landed in `<body>`
+  for every client. Fixed with the documented `htmlLimitedBots: /.*/`
+  (blocking metadata; our metadata is a local dictionary lookup). Verified
+  all four pages now carry description/canonical/alternates before `<body`,
+  and Lighthouse scores them 100/100/100/100 locally (desktop, Chromium via
+  `CHROME_PATH`). `lhci autorun` itself cannot finish on this Windows host
+  (chrome-launcher EPERM on temp-dir cleanup after the run), so the CI job is
+  the end-to-end verification; local scores came from manual `lighthouse`
+  JSON reports.
+  · **Docker.** `backend/Dockerfile` (python:3.12-slim, non-root, idempotent
+  seed+ingest on boot), `frontend/Dockerfile` (multi-stage: full deps →
+  build → prod-only deps + non-root), both `.dockerignore`s, and a full
+  `docker-compose.yml` (db + api + web with health-gated ordering). Added a
+  server-only `API_URL` override in `lib/api.ts` so the frontend container
+  reaches `http://api:8000` while the browser bundle keeps the build-time
+  `NEXT_PUBLIC_API_URL`. Verified locally that `npm ci --omit=dev` +
+  `next start` serves all pages (so the runner needs no dev deps). Docker is
+  not installed on this host, so the new CI job builds both images, boots the
+  stack and greps a district name out of the SSR housing HTML to prove the
+  container-network path.
+  · **Docs/process.** Added `docs/AI-WORKFLOW.md` (roles, artifacts, review
+  loop, what the process caught, quality gates) and linked it from the README;
+  README gained the two new features, the one-command compose start, the
+  updated test counts (55 backend, 23 e2e), the testing command for
+  Lighthouse, and the refreshed structure tree.
+  · Verified: `pytest` → 55 passed; `npm run build` clean; `npm run lint`
+  clean; `npm run e2e` → 23 passed; i18n parity holds (same keys added to
+  en/et/ru); `ci.yml`, `docker-compose.yml`, `render.yaml` and
+  `lighthouserc.json` parse. One transient e2e failure in the first of three
+  full runs ("submitting writes the scenario into the URL") did not reproduce
+  in isolation or in two later full runs — recorded in Notes.
 
 - 2026-09-02 · claude-opus-5 (orchestrator) · **Process fix: documentation
   impact is now part of every brief.** Twice this iteration a task shipped
@@ -543,6 +607,29 @@ only its own namespace.
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-21 · deepseek-flash (opencode) · Findings from the owner-directed
+  hardening pass that are outside the worker's write zone:
+  **`docs/CONTEXT.md` is stale in three places and only the orchestrator may
+  fix it.** §2's Dev env row still says "frontend and backend run locally" —
+  the repo now ships images and a one-command compose stack. §3's structure
+  tree lacks `backend/Dockerfile`, `frontend/Dockerfile`, both
+  `.dockerignore`s, `frontend/e2e/a11y.spec.ts` and
+  `frontend/lighthouserc.json`. §7's commands block only documents the local
+  process flow; `docker compose up --build` is now the shortest path.
+  **Small contract addition not in CONTEXT §5:** `frontend/src/lib/api.ts`
+  now prefers a server-only `API_URL` over `NEXT_PUBLIC_API_URL`, so
+  containers can reach the API over the compose network; the browser never
+  sees `API_URL`.
+  **Flaky e2e observation:** "submitting writes the scenario into the URL"
+  failed once in three full local runs and passed in isolation and in the
+  other two; no failure artifact was captured before the next run overwrote
+  it. Looks like the same hydration/timing class as the T20 incident, so it
+  may be worth a retry or a hydration wait in that test before accepting the
+  new CI jobs, rather than discovering it on `main`.
+  **CI runtime:** the two new jobs (Lighthouse, Docker) add roughly 5–8
+  minutes per push; if that becomes annoying, the Lighthouse job could run
+  only on `main` pushes rather than every PR.
 
 - 2026-09-02 · claude-opus-5 (orchestrator) · Backlog added during wave 2.
   **Localized 404 with a correct status.** `app/` has no root layout —

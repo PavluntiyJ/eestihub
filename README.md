@@ -22,6 +22,8 @@ Web service for expats and entrepreneurs in Estonia. Moving to Estonia (or openi
 - **e-Residency cost calculator** — setup fees, monthly running cost, first-year total and break-even revenue for an e-resident OÜ, every constant traced to an official source.
 - **Shareable scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
 - **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with absolute `hreflang` alternates, `x-default`, sitemap, and generated per-locale OG cards. Light, dark and system themes.
+- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 8 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state and the dark theme, and fail CI on any violation.
+- **Containerised stack** — `docker compose up --build` builds the frontend and API images, starts Postgres, seeds the sourced housing data and serves the app on :3000. CI builds the images and smoke-tests the running stack.
 
 | Russian locale, live calculation | Housing dashboard |
 |---|---|
@@ -46,6 +48,7 @@ The full contract, including the tax logic and its sources, is in [`docs/CONTEXT
 This project doubles as a case study in **AI-orchestrated development**. A tech-lead agent (Claude) owned the architecture, wrote self-contained task briefs, and reviewed every delivery against explicit acceptance criteria; the application code was written by several AI worker models (GPT, DeepSeek) executing those briefs. The full process is public in this repo:
 
 - [`docs/CONTEXT.md`](docs/CONTEXT.md) — the single source of truth workers had to follow: stack, code rules, API contracts, tax logic.
+- [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) — the workflow in full: roles, artifacts, the review loop, and what the process actually caught.
 - [`tasks/`](tasks/) — 20 task briefs with goals, non-goals, and acceptance criteria.
 - [`TODO.md`](TODO.md) — the task board and a review journal recording every acceptance, rework, and found bug — including a tax-rate bug caught at review against the primary EMTA source, and a full code audit whose 20 findings became iteration 7.
 
@@ -73,6 +76,15 @@ Principles the codebase holds throughout:
 
 ## Getting started
 
+With Docker, one command builds and starts the whole stack — Postgres, the
+API (seeded on boot) and the frontend:
+
+```bash
+docker compose up --build   # UI on :3000, API on :8000
+```
+
+For local processes instead of containers:
+
 ```bash
 docker compose up -d db                      # Postgres on :5432
 cd backend && python -m scripts.seed_housing # seed baseline housing data
@@ -81,16 +93,17 @@ cd backend && uvicorn app.main:app --reload  # API on :8000
 cd frontend && npm run dev                   # UI on :3000
 ```
 
-The frontend reaches the backend via `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`, configured in `frontend/.env.example`).
+The frontend reaches the backend via `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`, configured in `frontend/.env.example`); inside Docker the server side uses the `API_URL` override so it can reach the API over the compose network.
 
 ## Testing
 
 ```bash
 cd backend && pytest                 # unit + integration tests
 cd frontend && npm run e2e           # Playwright chromium smokes (needs backend on :8000)
+cd frontend && npm run lighthouse    # Lighthouse CI assertions (needs a running frontend)
 ```
 
-Backend tests (55) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, and the e-Residency service. The Playwright suite (15 browser tests) covers locale routing and switching, real submits on both calculators, shared scenario URLs, constraint rendering, the affordability panel, and the housing table and chart. CI runs all of it — pytest, production build, and browser e2e against a live Postgres — on every push.
+Backend tests (55) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, and the e-Residency service. The Playwright suite (23 browser tests) covers locale routing and switching, real submits on both calculators, shared scenario URLs, constraint rendering, the affordability panel, the housing table and chart, plus 8 axe accessibility scans. CI runs all of it — pytest, production build, browser e2e against a live Postgres, Lighthouse assertions, and a Docker Compose smoke of the running stack — on every push.
 
 ## Deployment
 
@@ -99,7 +112,7 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 ## Project structure
 
 ```
-├── .github/workflows/          # ci.yml
+├── .github/workflows/          # ci.yml: tests, build, e2e, Lighthouse, Docker
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/routes/      # health, taxes, housing, eresidency
@@ -108,7 +121,8 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 │   │   ├── services/           # tax_service, housing_service, eresidency_service
 │   │   └── models/             # SQLAlchemy
 │   ├── scripts/                # seed_housing, ingest_rents, data/ + SOURCES.md
-│   └── tests/
+│   ├── tests/
+│   └── Dockerfile
 ├── frontend/
 │   ├── src/
 │   │   ├── app/[locale]/       # pages + layout
@@ -118,12 +132,14 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 │   │   ├── lib/                # API client, utils
 │   │   ├── messages/           # en, et, ru dictionaries
 │   │   └── types/              # 1:1 Pydantic mirrors
-│   ├── e2e/                    # Playwright smokes
-│   └── scripts/                # screenshots.ts (manual)
-├── docs/                       # CONTEXT.md, DEPLOY.md, screenshots
+│   ├── e2e/                    # smoke.spec.ts + a11y.spec.ts (axe)
+│   ├── scripts/                # screenshots.ts (manual)
+│   ├── lighthouserc.json       # Lighthouse CI assertions
+│   └── Dockerfile
+├── docs/                       # CONTEXT.md, AI-WORKFLOW.md, DEPLOY.md, screenshots
 ├── tasks/                      # AI-worker task briefs (T01–T20)
 ├── TODO.md                     # task board + review journal
-├── docker-compose.yml
+├── docker-compose.yml          # db + api + web
 └── render.yaml
 ```
 
