@@ -182,7 +182,7 @@ First feature properties include `nimi` ("Haabersti linnaosa"), `animi`,
 also exists. The service and layer metadata have an empty `copyrightText`
 **[request]**, so the license is not stated by the service itself.
 
-### Official dataset and license **[request]**
+### Official dataset and license (downloadable files) **[request]**
 
 The registry entry
 `https://avaandmed.eesti.ee/api/datasets/e147cc7d-6063-40e3-b614-0ea1696f225a`
@@ -194,8 +194,13 @@ distributions under **CC BY-SA 3.0**, with:
 - landing page `https://www.tallinn.ee/et/geoportaal/ruumiandmed`
   ("Tallinna asumite piirid (uuendatakse vajadusel)")
 
-Attribution ("Tallinn") and share-alike apply. The service itself is updated
-as needed; the static files are dated 2020.
+That license covers the files distributed through the registry. The live
+ArcGIS service is a different channel: it states no license (empty
+`copyrightText` **[request]**), and mapping the registry license onto the live
+layer is **not supported by this evidence** — treat that mapping as
+unresolved **[open]** until the city confirms it. Attribution ("Tallinn") and
+share-alike apply to the downloadable files; the live service is updated as
+needed while the static files are dated 2020.
 
 Alternatives **[docs]**, not probed:
 
@@ -207,10 +212,12 @@ Alternatives **[docs]**, not probed:
 - OSM district polygons via Overpass would be available under ODbL
   (attribution + share-alike); not requested in this pass.
 
-**Recommendation:** take geometry from the Tallinn ArcGIS REST service for
-current boundaries and reference the city's CC BY-SA 3.0 dataset for
-attribution. If the product must stay license-clean without share-alike,
-verify the Maa-amet download terms first.
+**Recommendation:** if the feature needs a license it can redistribute
+without share-alike, neither of the confirmed sources is clean — resolve the
+live-service license in writing or use the Maa-amet route first. If
+share-alike is acceptable, the city's CC BY-SA 3.0 files are the documented
+choice; taking current geometry from the unlicensed live REST service should
+not be presented as licensed until the mapping is confirmed.
 
 ## 4. Basemap for MapLibre
 
@@ -220,7 +227,7 @@ verify the Maa-amet download terms first.
 | CARTO | `https://a.basemaps.cartocdn.com/light_all/3/4/2.png` | **200** PNG, `CORS: *` | none | **[docs]** attribution required for every plan; free-tier commercial terms **[open]** (docs page did not render server-side) |
 | Stadia Maps | `https://tiles.stadiamaps.com/tiles/alidade_smooth/3/4/2.png` | **401** without key | required | **[docs]** Free $0: 200k credits/month, "commercial use not allowed"; Starter $20/mo allows commercial |
 | MapTiler | `https://api.maptiler.com/maps/streets-v2/style.json` | **403** without key | required | **[docs]** Free $0 for testing/PoC/personal/non-commercial with logo; Flex $30/mo |
-| OpenFreeMap | `https://tiles.openfreemap.org/styles/liberty` | **200** JSON style, `CORS: *` | none | **[docs]** public instance free, no limits, no registration, no cookies; OSM data; self-hostable |
+| OpenFreeMap | `https://tiles.openfreemap.org/styles/liberty` | **200** JSON style, `CORS: *` | none | **[docs]** public instance free including commercial use, no limits, no registration, no cookies, no SLA; OSM data; self-hostable |
 | MapLibre demo | `https://demotiles.maplibre.org/style.json` | **200** JSON | none | **[docs]** demo tiles only, not for production |
 | Maa-amet WMS | `https://kaart.maaamet.ee/wms/alus?service=WMS&version=1.1.1&request=GetCapabilities` | **200** XML, layers `MA-ALUS`, `pohi_vr2`, `pohi_vv`, `of10000`, … | none | **[docs]** free, commercial use allowed with attribution ("Aluskaart: Maa- ja Ruumiamet [aasta]"); no mass caching; SRS is **EPSG:3301 only** |
 
@@ -264,6 +271,9 @@ python -m scripts.probes.probe_basemap
   (2026-05-22) lags the file's Last-Modified (2026-09-18).
 - Decide how CC BY-SA 3.0 share-alike affects a derived district layer or a
   GTFS-based map before shipping one.
+- Confirm whether the live Tallinn ArcGIS `Linnaosad_asumid` service may be
+  used under the registry's CC BY-SA 3.0 file license; the service itself
+  states no license. This mapping is unresolved **[open]**.
 - CARTO free basemap terms for commercial use could not be confirmed from the
   documentation in this pass.
 - The "Maa- ja Ruumiamet avatud ruumiandmete litsentsitingimused" link on the

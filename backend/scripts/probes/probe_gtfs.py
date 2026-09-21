@@ -19,6 +19,17 @@ from scripts.probes._http import fetch
 
 GTFS_URL = "https://transport.tallinn.ee/data/gtfs.zip"
 
+EXPECTED_ENTRIES = {
+    "agency.txt",
+    "calendar.txt",
+    "calendar_dates.txt",
+    "routes.txt",
+    "shapes.txt",
+    "stops.txt",
+    "stop_times.txt",
+    "trips.txt",
+}
+
 
 def row_count(archive: zipfile.ZipFile, name: str) -> int:
     with archive.open(name) as handle:
@@ -39,7 +50,19 @@ def main() -> None:
         if header in headers:
             print(f"{header}: {headers[header]}")
 
-    with zipfile.ZipFile(io.BytesIO(body)) as archive:
+    if status != 200:
+        raise SystemExit(f"unexpected HTTP status {status}")
+
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(body))
+    except zipfile.BadZipFile as error:
+        raise SystemExit(f"response is not a zip archive: {error}") from error
+
+    with archive:
+        missing = EXPECTED_ENTRIES - set(archive.namelist())
+        if missing:
+            raise SystemExit(f"feed is missing expected entries: {', '.join(sorted(missing))}")
+
         print("entries (uncompressed rows):")
         for name in sorted(archive.namelist()):
             print(f"  {name:<24} {row_count(archive, name):>8}")
