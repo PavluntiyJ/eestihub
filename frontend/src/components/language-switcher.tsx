@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
   const href = `${pathname}${query ? `?${query}` : ""}${hash}`;
 
   return (
-    <nav aria-label={t("label")} className="flex items-center gap-1 rounded-full border bg-background p-1">
+    <nav aria-label={t("label")} className="flex items-center gap-1 rounded-full border border-border bg-background p-1">
       {locales.map((locale) => {
         const isActive = locale === activeLocale;
 
@@ -35,8 +35,8 @@ export function LanguageSwitcher() {
             aria-current={isActive ? "page" : undefined}
             className={
               isActive
-                ? "rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                : "rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                ? "rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                : "rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             }
           >
             {t(`locales.${locale}`)}

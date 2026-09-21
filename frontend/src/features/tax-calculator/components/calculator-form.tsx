@@ -37,9 +37,8 @@ const PENSION_PILLAR_OPTIONS: { value: PensionPillarRate; labelKey: string }[] =
 
 const COMPARISON_BASIS_OPTIONS: EqualizeBy[] = ["gross", "payer_cost"];
 const CONSTRAINT_STYLES: Record<ConstraintSeverity, string> = {
-  info: "border-blue-300 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100",
-  warning:
-    "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100",
+  info: "border-primary/30 bg-primary/10 text-foreground",
+  warning: "border-warning/40 bg-warning-surface text-warning",
   blocker:
     "border-destructive/50 bg-destructive/10 text-destructive dark:border-destructive/70",
 };
@@ -142,7 +141,7 @@ export function CalculatorForm({
                   isGrossIncomeValid ? undefined : "gross-monthly-income-error"
                 }
                 aria-invalid={!isGrossIncomeValid}
-                className="h-10 w-full rounded-lg border bg-background px-3 text-sm tabular-nums outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-12 w-full rounded-lg border bg-background px-3 text-sm tabular-nums outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                 inputMode="decimal"
                 min="0.01"
                 name="gross_monthly_income"
@@ -186,7 +185,7 @@ export function CalculatorForm({
               </label>
               <select
                 id="pension-pillar-rate"
-                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-12 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                 name="pension_pillar_rate"
                 onChange={(event) => setPensionPillarRate(Number(event.target.value) as PensionPillarRate)}
                 value={pensionPillarRate}

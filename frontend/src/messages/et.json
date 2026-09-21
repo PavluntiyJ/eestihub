@@ -5,6 +5,8 @@
   },
   "header": {
     "brand": "EestiHub",
+    "brandLead": "Eesti",
+    "brandAccent": "Hub",
     "tagline": "Eesti põhiteave tegijatele ja välismaalastele"
   },
   "a11y": {
@@ -27,23 +29,42 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "MVP alus",
-      "title": "Planeeri oma tööd, makse ja järgmist kodu Eestis.",
-      "description": "EestiHub koondab praktilised maksuvõrdlused ja Tallinna üürituru signaalid kiiresse mitmekeelsesse tööruumi inimestele, kes loovad Eestis elu või ettevõtet."
+      "eyebrow": "Loodud Tallinna jaoks",
+      "title": "Tee Tallinna kolimine numbrites selgeks.",
+      "description": "Vaata, kui palju jääb palgast pärast Eesti makse alles, kui palju maksab üür Tallinna linnaosades ja mida nõuab e-residendi ettevõtte pidamine — inglise, eesti või vene keeles.",
+      "primaryCta": "Võrdle maksurežiime",
+      "secondaryCta": "Uuri Tallinna üüre"
     },
-    "proof": {
-      "tax": "Võrdle töölepingu, juhatuse liikme, FIE ja ettevõtluskonto režiime.",
-      "housing": "Uuri Tallinna linnaosade üüriandmeid, kui eluaseme töölaud kasvab.",
-      "i18n": "Kasuta toodet kohe inglise, eesti või vene keeles."
+    "example": {
+      "title": "Näidis",
+      "amount": "3 000 € bruto",
+      "description": "Vaata, kuidas neli Eesti maksurežiimi sama palga pealt kõrvuti välja näevad — iga numbri taga on 2026. aasta EMTA määrad.",
+      "cta": "Ava näidis"
     },
-    "status": {
-      "title": "Backend'i olek",
-      "description": "Serveris renderdatud FastAPI tervisekontroll.",
-      "api": "API tervis",
-      "online": "töös",
-      "offline": "maas",
-      "onlineHelp": "API vastas edukalt ja on valmis frontend'i integratsioonideks.",
-      "offlineHelp": "Leht on endiselt saadaval; käivita backend lokaalselt, et live-andmed taastada."
+    "steps": {
+      "title": "Kolm tööriista ühe kolimise jaoks",
+      "description": "Iga tööriist vastab ühele küsimusele ja näitab, kust selle numbrid pärinevad.",
+      "items": {
+        "income": {
+          "title": "Mis palgast alles jääb",
+          "text": "Võrdle nelja viisi Eestis raha teenimiseks: netotulu, maksja kulu ja efektiivne maksumäär.",
+          "cta": "Võrdle režiime"
+        },
+        "housing": {
+          "title": "Kui palju üür maksab",
+          "text": "Keskmised 1–3-toaliste korterite üürid ja kommunaalid kaheksas Tallinna linnaosas koos andmete kogumiskuupäevaga.",
+          "cta": "Vaata linnaosade hindu"
+        },
+        "eresidency": {
+          "title": "Kui palju ettevõte maksab",
+          "text": "E-residendi OÜ esimese aasta alustamis- ja jooksvad kulud ametlike tasude põhjal.",
+          "cta": "Hinda ettevõtte kulusid"
+        }
+      }
+    },
+    "transparency": {
+      "title": "Igal numbril on allikas",
+      "text": "Maksumäärad pärinevad EMTA 2026. aasta tabelist, üürid avaldatud linnaosavahemike keskpunktidest koos kogumiskuupäevaga ja e-residentsuse tasud ametlikust teadmistebaasist. Ei väljamõeldud hindu ega nõuandeid — hinnangud, mida saad ise kontrollida."
     }
   },
   "housing": {

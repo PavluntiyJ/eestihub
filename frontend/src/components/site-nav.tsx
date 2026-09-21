@@ -11,6 +11,9 @@ const navItems = [
   { href: "/eresidency", key: "eresidency" },
 ] as const;
 
+const itemClassName =
+  "shrink-0 rounded-full px-3.5 py-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
 export function SiteNav() {
   const t = useTranslations("nav");
   const a11y = useTranslations("a11y");
@@ -19,7 +22,7 @@ export function SiteNav() {
   return (
     <nav
       aria-label={a11y("mainNavigation")}
-      className="flex w-full min-w-0 items-center gap-1 overflow-x-auto rounded-full border bg-background p-1 sm:w-auto"
+      className="flex w-full min-w-0 flex-wrap items-center gap-1 rounded-2xl border border-border bg-background p-1 sm:w-auto sm:flex-nowrap sm:rounded-full"
     >
       {navItems.map((item) => {
         const isActive =
@@ -32,8 +35,8 @@ export function SiteNav() {
             aria-current={isActive ? "page" : undefined}
             className={
               isActive
-                ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                : "shrink-0 rounded-full px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                ? `${itemClassName} bg-primary text-primary-foreground`
+                : `${itemClassName} text-muted-foreground hover:bg-muted hover:text-foreground`
             }
           >
             {t(item.key)}

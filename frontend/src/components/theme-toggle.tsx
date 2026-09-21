@@ -85,8 +85,8 @@ export function ThemeToggle() {
             aria-pressed={isActive}
             className={
               isActive
-                ? "rounded-full bg-primary p-1.5 text-primary-foreground transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                : "rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                ? "rounded-full bg-primary p-2 text-primary-foreground transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                : "rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             }
             key={value}
             onClick={() => selectTheme(value)}

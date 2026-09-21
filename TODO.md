@@ -117,6 +117,35 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-21 · deepseek-flash (opencode) · **M04 done: Baltic theme, shell
+  and home — `[R]`.** Implemented the design tokens from PLANNER-DESIGN.md in
+  `globals.css` (warm canvas / navy dark, teal primary, terracotta CTA,
+  warning and input tokens, 20px cards, 10px inputs); restyled the header
+  (the brand is now a link home with an explicit accessible name), nav,
+  language switcher, theme toggle and footer; rebuilt the home page around a
+  working hero, a live example linking to the existing calculator scenario
+  URL, three existing-tool steps and a transparency block; removed the
+  per-page gradients and the last raw Tailwind palette classes (constraint
+  list). Per owner follow-up the backend-status card was removed from the
+  home page together with its FastAPI/health/integration texts and keys; the
+  health endpoint itself and the CI/monitoring checks are unchanged. No new
+  routes, no placeholder planner link, no backend or provider changes.
+  · Existing destinations and URLs are untouched; EN/ET/RU dictionaries
+  gained the new home/header keys and dropped the status keys (parity
+  168/168); the skip link, focus-visible styles, form labels and the global
+  reduced-motion rule are preserved.
+  · Verified against the seeded API: `npm run build` and `npm run lint`
+  clean; `npm run e2e` → 23 passed (15 smokes + 8 axe scans, including dark
+  theme and Estonian); manual desktop Lighthouse on the seeded backend →
+  100/100/100/100 on /en, /en/calculator, /en/housing and /en/eresidency;
+  desktop 1440 and mobile 390 screenshots reviewed in EN/ET/RU, light and
+  dark, with no horizontal overflow (the long Russian nav wraps instead of
+  scrolling). The now-unused `BackendStatus` component was deleted;
+  `getHealth` stays in the API client because the backend endpoint remains
+  part of the contract.
+  · Note for review: README screenshots still show the previous theme; they
+  are real but visually stale, and M15 owns README/screenshots.
+
 - 2026-09-21 · deepseek-flash (opencode) · **M02 done: data-source research,
   report and probes — `[R]`.** Delivered `docs/DATA-SOURCES.md` plus
   stdlib-only, reproducible probes under `backend/scripts/probes/`

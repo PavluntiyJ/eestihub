@@ -38,24 +38,23 @@ const districtNames = [
   "Põhja-Tallinn",
 ];
 
-test("redirects to English home and shows API online", async ({ page }) => {
+test("redirects to English home", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveURL(/\/en$/);
   await expect(
-    page.getByRole("heading", { name: "Plan your work, taxes, and next apartment in Estonia." })
+    page.getByRole("heading", { name: "Make your move to Tallinn add up." })
   ).toBeVisible();
-  await expect(page.getByText("online", { exact: true })).toBeVisible();
 });
 
 test("switches language to Estonian", async ({ page }) => {
   await page.goto("/en");
 
-  await page.getByRole("link", { name: "ET" }).click();
+  await page.getByRole("link", { name: "ET", exact: true }).click();
 
   await expect(page).toHaveURL(/\/et$/);
   await expect(
-    page.getByRole("heading", { name: "Planeeri oma tööd, makse ja järgmist kodu Eestis." })
+    page.getByRole("heading", { name: "Tee Tallinna kolimine numbrites selgeks." })
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "et");
 });
@@ -63,18 +62,31 @@ test("switches language to Estonian", async ({ page }) => {
 test("navigates between feature pages and updates active section", async ({ page }) => {
   await page.goto("/en");
 
-  await expect(page.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
-
-  await page.getByRole("link", { name: "Calculator" }).click();
-  await expect(page).toHaveURL(/\/en\/calculator$/);
-  await expect(page.getByRole("link", { name: "Calculator" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute(
     "aria-current",
     "page"
   );
 
-  await page.getByRole("link", { name: "Rent" }).click();
+  await page.getByRole("link", { name: "Calculator", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/calculator$/);
+  await expect(page.getByRole("link", { name: "Calculator", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+
+  await page.getByRole("link", { name: "Rent", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/housing$/);
-  await expect(page.getByRole("link", { name: "Rent" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("link", { name: "Rent", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+
+  await page.getByRole("link", { name: "EestiHub", exact: true }).click();
+  await expect(page).toHaveURL(/\/en$/);
+  await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
 });
 
 test("calculates tax regimes from the form", async ({ page }) => {
@@ -104,7 +116,7 @@ test("calculates tax regimes from the form", async ({ page }) => {
 test("calculates e-residency first-year costs from navigation", async ({ page }) => {
   await page.goto("/en");
 
-  await page.getByRole("link", { name: "e-Residency" }).click();
+  await page.getByRole("link", { name: "e-Residency", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/eresidency$/);
   await expect(
     page.getByRole("heading", { name: "Estimate your e-resident OÜ costs for year one." })
@@ -172,7 +184,7 @@ test("submitting writes the scenario into the URL", async ({ page }) => {
 test("switching locale keeps the scenario", async ({ page }) => {
   await page.goto("/en/calculator?gross=3000&pillar=4&basis=gross");
 
-  await page.getByRole("link", { name: "ET" }).click();
+  await page.getByRole("link", { name: "ET", exact: true }).click();
 
   await expect(page).toHaveURL(/\/et\/calculator\?/);
   await expect(page).toHaveURL(/gross=3000/);
