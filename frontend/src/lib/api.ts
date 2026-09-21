@@ -25,7 +25,10 @@ export async function fetchJson<TResponse>(
   path: string,
   init: RequestInit = {}
 ): Promise<TResponse> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
+  // API_URL is server-only: containers reach the API over the compose network,
+  // while the browser keeps the build-time NEXT_PUBLIC_API_URL.
+  const baseUrl =
+    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
   const url = `${baseUrl.replace(/\/$/, "")}${path}`;
   const response = await fetch(url, {
     ...init,

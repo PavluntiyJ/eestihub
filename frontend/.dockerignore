@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+e2e/
+test-results/
+playwright-report/
+.lighthouseci/
+.lighthouse-ci/
+.env
+.env.*
+!.env.example
