@@ -393,7 +393,7 @@
     "busy": "Aadressiotsing on hõivatud. Oota hetk ja proovi uuesti.",
     "retry": "Proovi otsingut uuesti",
     "clear": "Tühjenda valitud aadress",
-    "contextNote": "Ainult asukohataust — see ei muuda ülalolevat eelarvet ega ole vaba korter.",
+    "contextNote": "Ainult asukohataust — see ei muuda sinu eelarvet ega ole vaba korter.",
     "coordinates": "Koordinaadid",
     "quality": {
       "exact": "Täpne vaste",

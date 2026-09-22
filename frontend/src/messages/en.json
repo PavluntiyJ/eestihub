@@ -393,7 +393,7 @@
     "busy": "Address search is busy. Wait a moment and retry.",
     "retry": "Retry search",
     "clear": "Clear selected address",
-    "contextNote": "Location context only — it does not change the budget above and is not an available apartment.",
+    "contextNote": "Location context only — it does not change your budget and is not an available apartment.",
     "coordinates": "Coordinates",
     "quality": {
       "exact": "Exact match",
