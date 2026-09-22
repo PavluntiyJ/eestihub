@@ -57,7 +57,8 @@ and unavailable responses use `Cache-Control: no-store`.
   `estihub_test` service, not production. SQLite alone cannot close M08.
 - Run frontend build, lint, TypeScript, all Playwright flows and mobile axe.
 - Live GTFS import goes through `python -m scripts.import_gtfs` against the
-  intended database only. No automatic download on API startup or user requests.
+  intended database only, also invoked by the Render build command. No automatic
+  download on API startup or user requests.
 - Follow [transit operations](TRANSIT-OPERATIONS.md) for refresh and provenance.
   Missing data visibly degrades to an unavailable message; never a fake stop list.
 - Inspect the production budget, address lookup, nearby response, map and all
@@ -71,7 +72,7 @@ Next.js stays on the 15.5 maintenance line (15.5.25), with matching ESLint confi
 MapLibre 6.10 is used because the 5.x line is covered by GHSA-jrc7-96c5-q579;
 the worker is bundled locally and WebGL2 failure preserves the stop list.
 PostCSS is overridden to patched 8.5.28 within its existing major version.
-Lighthouse's development-only dependency advisories remain tracked separately;
+  Lighthouse's development-only dependency advisories remain tracked separately;
 do not downgrade LHCI or move Next.js to a new major through `audit fix --force`.
 
 References: [MapLibre migration guide](https://maplibre.org/maplibre-gl-js/docs/guides/v5-to-v6-migration-guide/),

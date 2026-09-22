@@ -115,7 +115,13 @@ pause), wait a moment and retry.
 
 ## 6. Transit data for the planner
 
-After the backend release is available, run from `backend/` with the production
+The Render build command installs dependencies and runs `python -m scripts.import_gtfs`
+before activation, using the service's existing Neon `DATABASE_URL`. This also
+works on Free, where Shell and pre-deploy commands are unavailable. Existing
+manually created Render services must have their build command synchronized with
+`render.yaml`; pushing the YAML alone does not update their settings.
+
+For an operator refresh outside deployment, run from `backend/` with the intended
 Neon `DATABASE_URL` supplied through the environment (never paste credentials
 into commands committed to Git):
 
@@ -130,8 +136,9 @@ nonempty `stops`, source dates and license attribution. A 503 before this first
 import is expected. Refresh through the same CLI; the previous snapshot survives
 a failed refresh. No download is added to API boot or request handling.
 
-Refresh is currently an operator action; a daily run is suggested but no
-schedule is installed by this release. After seven days without a successful
+Refresh runs at backend deployment or through the operator CLI; a daily run is
+suggested but no schedule is installed by this release. A failed build-time
+import prevents that deployment and preserves the old active snapshot. After seven days without a successful
 check, the frontend warns that the snapshot is stale. See
 [TRANSIT-OPERATIONS.md](TRANSIT-OPERATIONS.md) for the full freshness policy,
 failure recovery and exit codes.

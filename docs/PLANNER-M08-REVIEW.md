@@ -8,7 +8,8 @@ outside its IntegrityError retry boundary. Codex's `8db2efe` wraps the complete
 transaction attempt (including staging flushes), rolls back and retries once;
 a real same-SHA PostgreSQL barrier test exercises the contested first insert.
 Local full suite after nearby-transit integration: 240 passed, 5 PG skipped.
-Final acceptance waits for PostgreSQL CI. The action lists below are historical.
+PostgreSQL CI on `3906256` passed all 245 backend tests, including all five PG
+integration cases. **M08 is accepted.** The action lists below are historical.
 
 ## Re-review of 2d35cfa — current action list (2026-09-22)
 

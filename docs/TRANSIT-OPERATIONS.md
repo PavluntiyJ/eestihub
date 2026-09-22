@@ -57,9 +57,10 @@ A failed refresh changes nothing: timestamps, pointers and data keep
 serving the last good generation. Recovery is always "fix the cause, run
 the import again": unreachable source (exit 2), invalid feed (exit 1),
 lock contention (exit 3) and transaction errors (exit 4) are distinct and
-logged concisely. Suggested operator schedule is a daily import; no
-automation is installed and the provider publishes no cadence, so this is
-an operator choice, not a feed promise.
+logged concisely. The Render build command imports before deployment; it never
+downloads on API cold starts. Suggested additional operator schedule is a daily
+import; no timed automation is installed and the provider publishes no cadence,
+so this is an operator choice, not a feed promise.
 
 ## Timestamps
 

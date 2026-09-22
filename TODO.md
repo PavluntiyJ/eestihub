@@ -8,11 +8,14 @@ Vercel + Render + Neon. This supersedes historical sequential M09–M13 gates;
 district polygons, comparisons and saved scenarios are deferred. Current scope
 and additive API: [PLANNER-RELEASE.md](docs/PLANNER-RELEASE.md).
 
-Implementation is in review: local backend **240 passed / 5 PostgreSQL skipped**,
-live GTFS imported into disposable local SQLite (1120 stops / 80 routes),
-build/lint/TypeScript pass; full browser and PostgreSQL CI checks are pending.
+Implementation passed CI on `3906256`: **245 backend tests, 70 browser tests**,
+frontend build, Lighthouse and Docker Compose. All five PostgreSQL integration
+tests ran successfully. Local build/lint/TypeScript and production-only npm audit
+pass (zero reported vulnerabilities). Real GTFS was imported into disposable
+SQLite (1120 stops / 80 routes); live address search, basemap and markers were
+visually checked. Release deployment is now in progress.
 The actual first-flush SHA race left in `ad87972` was corrected by Codex and has
-a dedicated concurrent PostgreSQL regression. No production import is claimed.
+a dedicated concurrent PostgreSQL regression that passed in CI.
 
 `docs/CONTEXT.md` sections 1–3/7 retain the historical MVP/compose-only description;
 the release contract and operations documents above describe the new scope.
