@@ -999,7 +999,7 @@ def _activate_generation(
     return "activated"
 
 
-def import_feed(
+def _import_feed_once(
     session: Session,
     feed: ParsedFeed,
     *,
@@ -1009,7 +1009,6 @@ def import_feed(
     checked_at: datetime,
     source_last_modified: datetime | None,
     source_etag: str | None,
-    _attempt: int = 0,
 ) -> ImportResult:
     """Stage one generation and flip the active pointer atomically.
 
@@ -1137,25 +1136,7 @@ def import_feed(
             )
         )
     session.flush()
-    try:
-        outcome = _activate_generation(session, staged.id, fetched_at)
-    except IntegrityError:
-        # Concurrent same-content import or first-import row race: roll back
-        # and re-resolve once against whoever won.
-        session.rollback()
-        if _attempt > 0:
-            raise
-        return import_feed(
-            session,
-            feed,
-            source_url=source_url,
-            content_sha256=content_sha256,
-            fetched_at=fetched_at,
-            checked_at=checked_at,
-            source_last_modified=source_last_modified,
-            source_etag=source_etag,
-            _attempt=_attempt + 1,
-        )
+    outcome = _activate_generation(session, staged.id, fetched_at)
     if outcome == "superseded":
         session.rollback()
         return ImportResult(
@@ -1165,23 +1146,7 @@ def import_feed(
             counts=dict(feed.counts),
             warnings=warnings,
         )
-    try:
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        if _attempt > 0:
-            raise
-        return import_feed(
-            session,
-            feed,
-            source_url=source_url,
-            content_sha256=content_sha256,
-            fetched_at=fetched_at,
-            checked_at=checked_at,
-            source_last_modified=source_last_modified,
-            source_etag=source_etag,
-            _attempt=_attempt + 1,
-        )
+    session.commit()
     return ImportResult(
         status="activated",
         feed_id=staged.id,
@@ -1189,3 +1154,18 @@ def import_feed(
         counts=dict(feed.counts),
         warnings=warnings,
     )
+
+
+def import_feed(session: Session, feed: ParsedFeed, **metadata) -> ImportResult:
+    """Include the first insert flush in bounded concurrent-import recovery."""
+    for attempt in range(2):
+        try:
+            return _import_feed_once(session, feed, **metadata)
+        except IntegrityError:
+            session.rollback()
+            if attempt:
+                raise
+        except Exception:
+            session.rollback()
+            raise
+    raise RuntimeError("unreachable import retry state")

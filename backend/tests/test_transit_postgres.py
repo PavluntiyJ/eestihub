@@ -289,3 +289,38 @@ def test_postgres_unreachable_is_reported() -> None:
         raise AssertionError("unexpected database on :59999")
     except OperationalError:
         pass
+
+
+def test_postgres_same_sha_first_flush_race_recovers(pg_session, monkeypatch) -> None:
+    """Both workers miss the SHA lookup, then contend on the first INSERT."""
+    from sqlalchemy import event
+    from app.models.transit import TransitFeed
+
+    barrier = threading.Barrier(2)
+    outcomes = []
+    factory = sessionmaker(bind=pg_session.get_bind(), autoflush=False, expire_on_commit=False)
+
+    def run():
+        with factory() as session:
+            synchronized = False
+
+            def before_flush(current, *_args):
+                nonlocal synchronized
+                if not synchronized and any(isinstance(row, TransitFeed) for row in current.new):
+                    synchronized = True
+                    barrier.wait(timeout=20)
+
+            event.listen(session, "before_flush", before_flush)
+            try:
+                outcomes.append(_import(session, "9" * 64, NOW).status)
+            except Exception as exc:
+                outcomes.append(type(exc).__name__)
+
+    workers = [threading.Thread(target=run) for _ in range(2)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(timeout=40)
+        assert not worker.is_alive()
+    assert sorted(outcomes) == ["activated", "already_current"]
+    assert pg_session.query(TransitFeed).count() == 1
