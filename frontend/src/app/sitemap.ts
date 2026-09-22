@@ -6,7 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const LAST_MODIFIED = new Date("2026-09-02");
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages = ["", "/calculator", "/housing", "/eresidency"];
+  const pages = ["", "/planner", "/calculator", "/housing", "/eresidency"];
 
   return pages.flatMap((page) =>
     locales.map((locale) => ({

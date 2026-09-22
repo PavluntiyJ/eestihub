@@ -25,14 +25,15 @@
     "home": "Home",
     "calculator": "Calculator",
     "housing": "Rent",
-    "eresidency": "e-Residency"
+    "eresidency": "e-Residency",
+    "planner": "Planner"
   },
   "home": {
     "hero": {
       "eyebrow": "Built for Tallinn",
       "title": "Make your move to Tallinn add up.",
       "description": "See what a salary is worth after Estonian taxes, what rent costs across Tallinn's districts, and what an e-resident company takes to run — in English, Estonian or Russian.",
-      "primaryCta": "Compare tax regimes",
+      "primaryCta": "Plan my budget",
       "secondaryCta": "Explore Tallinn rents"
     },
     "example": {
@@ -278,5 +279,104 @@
     "budget": "Monthly housing budget",
     "rentAndUtilities": "rent {rent} + utilities {utilities}",
     "none": "No district average fits this budget. Try a larger share, or treat the districts as a floor rather than a target — these are averages, and individual listings go lower."
+  },
+  "planner": {
+    "metadata": {
+      "title": "Monthly budget planner - EestiHub",
+      "description": "Turn an Estonian salary into a monthly housing allowance: net income, spending, savings and a housing share."
+    },
+    "hero": {
+      "eyebrow": "Budget planner",
+      "title": "From salary to housing allowance.",
+      "description": "Enter employment income or a manual net, protect everyday spending and savings, and see what is left for rent and utilities. The backend calculates every number."
+    },
+    "progress": {
+      "income": "Income",
+      "budget": "Budget",
+      "explore": "Explore",
+      "exploreSoon": "Coming later"
+    },
+    "incomeKind": {
+      "label": "Income source",
+      "employment": "Employment salary",
+      "manual": "Manual net income"
+    },
+    "form": {
+      "incomeTitle": "Income",
+      "incomeDescription": "An Estonian employment salary is converted with the 2026 tax engine. Choose manual net when those assumptions do not fit.",
+      "grossLabel": "Monthly gross salary, EUR",
+      "grossPlaceholder": "3000.00",
+      "invalidGross": "Enter a gross salary greater than 0 and at most 1,000,000.",
+      "pensionLabel": "II pension pillar contribution",
+      "pensionPlaceholder": "Choose a rate",
+      "invalidPension": "Choose a pension contribution rate.",
+      "pensionOptions": {
+        "zero": "0%",
+        "two": "2%",
+        "four": "4%",
+        "six": "6%"
+      },
+      "netLabel": "Monthly net income, EUR",
+      "netPlaceholder": "2400.00",
+      "invalidNet": "Enter a net income of 0 or more and at most 1,000,000.",
+      "budgetTitle": "Budget",
+      "budgetDescription": "Explicit choices, including zero. Rent and utilities share one allowance.",
+      "spendingLabel": "Monthly non-housing spending, EUR",
+      "invalidSpending": "Enter spending of 0 or more and at most 1,000,000.",
+      "savingsLabel": "Monthly savings target, EUR",
+      "invalidSavings": "Enter a savings target of 0 or more and at most 1,000,000.",
+      "shareLabel": "Maximum housing share, % of net",
+      "invalidShare": "Enter a share from 0 to 100.",
+      "submit": "Calculate budget",
+      "loading": "Calculating...",
+      "retry": "Retry calculation"
+    },
+    "empty": {
+      "title": "No budget yet",
+      "description": "Submit the form to see net income, both limits and the final housing allowance."
+    },
+    "stale": {
+      "title": "Outdated result",
+      "text": "Inputs changed after this calculation. Submit again for current numbers."
+    },
+    "errors": {
+      "title": "Calculation failed",
+      "api": "The API rejected the request. Check the input and try again.",
+      "network": "The backend is unavailable. Start the FastAPI service locally and try again.",
+      "validationTitle": "Check the highlighted fields, then submit again."
+    },
+    "results": {
+      "title": "Your housing budget",
+      "netIncome": "Net income, monthly",
+      "employmentKind": "Employment estimate",
+      "manualKind": "Entered manually",
+      "taxYear": "Tax engine year",
+      "noTaxYear": "Not applicable",
+      "available": "Left after spending and savings",
+      "shareLimit": "Housing share limit",
+      "allowance": "Housing allowance, monthly",
+      "deficitTitle": "Spending and savings exceed income",
+      "announced": "Budget calculation complete.",
+      "warnings": {
+        "commitments_exceed_income": "Monthly spending plus savings are higher than net income, so the allowance is €0.00. Amounts stay visible — nothing was reduced silently.",
+        "utilities_incomplete": "Some utility amounts are unknown, so seasonal totals cannot be completed.",
+        "move_in_incomplete": "Some move-in costs are unknown, so the cash total is incomplete."
+      },
+      "housingContext": "See Tallinn district averages as general context",
+      "housingNote": "District figures are monthly averages, not listings."
+    },
+    "assumptions": {
+      "title": "Calculation assumptions",
+      "employment": "Employment salary uses the existing employment-contract calculation with equal gross, never the highest-net regime.",
+      "allowance": "Allowance is the smaller of money left after commitments and the share limit; a negative remainder stays visible.",
+      "estimate": "Estimates only, not financial advice."
+    },
+    "unsaved": {
+      "confirm": "Budget inputs are not saved. Leave this page without calculating?"
+    },
+    "disclaimer": {
+      "title": "An estimate, not financial advice",
+      "text": "The allowance follows your own spending and savings choices, not an official cost-of-living recommendation. Tax figures use Estonia's 2026 rates."
+    }
   }
 }

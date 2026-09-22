@@ -120,10 +120,54 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 | # | Task | Brief | Status | Worker |
 |---|------|-------|--------|--------|
 | M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
+| M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
 
 M06 has not started.
 
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M06 done — `[R]`.** Guided income
+  and budget UI against the reviewed M05 contract; no apartment/map/
+  comparison screens, no persistence, no salary in URLs, calculator URLs
+  untouched.
+  · **UI:** new `/{locale}/planner` Server page (metadata, hreflang,
+  x-default) + `features/planner` client form. Gross starts empty, pension
+  is an explicit choice (placeholder, no default), manual-net alternative,
+  explicit spending/savings including zero, share in percent defaulting to
+  30. Backend is the only calculator: net, employment tax year, both limits,
+  final allowance, deficit styling and dictionary-rendered warnings; housing
+  overview linked as labelled general context only. Progress Income →
+  Budget → Explore (Explore marked coming-soon, no dead link); assumptions
+  in an expandable panel; validation focuses the first invalid field with
+  `aria-invalid`/`describedby`, no API call when invalid.
+  · **State:** `AbortController` + monotonic request id aborts obsolete
+  requests and ignores stale responses; results marked stale after edits;
+  inputs preserved on errors with retry via `requestSubmit`; unsaved draft
+  warns through `beforeunload` and a capture-phase confirm on in-app
+  navigation (locale switch included) — only while edits are uncalculated,
+  so a fresh result never blocks navigation.
+  · **Shared edits, limited to this feature:** planner types in
+  `types/api.ts`, `calculateBudget` in `lib/api.ts`, planner namespace +
+  `nav.planner` + retargeted home primary CTA in en/et/ru (parity
+  238/238/238), nav item, sitemap entry, README feature list + endpoint row
+  + counts. Codex dictionary-structure repair and other board entries left
+  untouched and out of the commit.
+  · **Defects found while verifying (fixed, tests kept strict):** the
+  planner axe scan caught its own click-then-scan hover state
+  (`hover:bg-primary/80` white text is 4.38:1) — the resting UI is clean,
+  the scan now moves the cursor away first; same latent hover token exists
+  on the shared Button, reported below, component untouched. A stale
+  `next start` (+ stale uvicorn with pre-fix API) from another session was
+  squatting on :3000/:8000 and made the first e2e attempt fail; killed both,
+  reseeded SQLite, restarted the API on current code, reran green.
+  · Verified: `npm run build` clean with `/[locale]/planner` prerendered;
+  `npm run lint` clean; `pytest` → 106 passed; `npm run e2e` → 40 passed
+  (15 smoke + 14 planner + 11 axe, seeded SQLite backend); desktop 1440
+  (EN/ET, dark) and mobile 390 (EN/RU) screenshots inspected, no overflow,
+  translations and themes correct.
+  · Commit: `feat(planner): add guided income and budget flow`. M07 not
+  started.
+
 
 - 2026-09-22 · muse-spark (opencode) · **M05 review fixes done — `[R]`.**
   Addressed both Codex corrections from the M05 review note; no scope
@@ -799,6 +843,17 @@ M06 has not started.
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-22 · muse-spark (opencode) · **Shared hover token below AA (not
+  fixed, out of scope).** The shadcn `Button` default variant uses
+  `hover:bg-primary/80` with white text, which computes to 4.38:1 — under
+  the 4.5:1 text threshold. It only surfaces when an axe scan runs while
+  the cursor hovers a button (caught on the planner submit; the resting
+  state is clean and the scan now moves the cursor first, as the
+  calculator URL-driven scans implicitly do). Retokening the shared
+  component belongs to a design pass, not M06.
+
+
 
 - 2026-09-22 · muse-spark (opencode) · **M05 notes for review.**
   (1) **Shared 500 on non-strict non-finite literals — not fixed, out of

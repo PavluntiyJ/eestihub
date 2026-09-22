@@ -25,14 +25,15 @@
     "home": "Avaleht",
     "calculator": "Kalkulaator",
     "housing": "Üür",
-    "eresidency": "e-residentsus"
+    "eresidency": "e-residentsus",
+    "planner": "Planeerija"
   },
   "home": {
     "hero": {
       "eyebrow": "Loodud Tallinna jaoks",
       "title": "Tee Tallinna kolimine numbrites selgeks.",
       "description": "Vaata, kui palju jääb palgast pärast Eesti makse alles, kui palju maksab üür Tallinna linnaosades ja mida nõuab e-residendi ettevõtte pidamine — inglise, eesti või vene keeles.",
-      "primaryCta": "Võrdle maksurežiime",
+      "primaryCta": "Planeeri eelarve",
       "secondaryCta": "Uuri Tallinna üüre"
     },
     "example": {
@@ -278,5 +279,104 @@
     "budget": "Kuine eluasemeeelarve",
     "rentAndUtilities": "üür {rent} + kommunaalkulud {utilities}",
     "none": "Ükski linnaosa keskmine sellesse eelarvesse ei mahu. Proovi suuremat osakaalu või võta neid numbreid pigem lähtepunktina — need on keskmised ja üksikpakkumised on odavamad."
+  },
+  "planner": {
+    "metadata": {
+      "title": "Kuu eelarve planeerija - EestiHub",
+      "description": "Muuda Eesti palk kuu eluasemetoetuseks: netotulu, kulud, säästud ja eluaseme osakaal."
+    },
+    "hero": {
+      "eyebrow": "Eelarve planeerija",
+      "title": "Palgast eluasemetoetuseni.",
+      "description": "Sisesta töine brutopalk või netotulu käsitsi, kaitse igapäevased kulud ja säästud ning vaata, mis jääb üüriks ja kommunaalkuludeks. Kõik numbrid arvutab API."
+    },
+    "progress": {
+      "income": "Sissetulek",
+      "budget": "Eelarve",
+      "explore": "Uuri",
+      "exploreSoon": "Tulekul"
+    },
+    "incomeKind": {
+      "label": "Sissetuleku allikas",
+      "employment": "Töölepingupalk",
+      "manual": "Netotulu käsitsi"
+    },
+    "form": {
+      "incomeTitle": "Sissetulek",
+      "incomeDescription": "Eesti töine brutopalk teisendatakse 2026. aasta maksumootoriga. Vali käsitsi netotulu, kui need eeldused ei sobi.",
+      "grossLabel": "Kuu brutopalk, EUR",
+      "grossPlaceholder": "3000.00",
+      "invalidGross": "Sisesta brutopalk üle 0 ja kuni 1 000 000.",
+      "pensionLabel": "II pensionisamba makse",
+      "pensionPlaceholder": "Vali määr",
+      "invalidPension": "Vali pensionimakse määr.",
+      "pensionOptions": {
+        "zero": "0%",
+        "two": "2%",
+        "four": "4%",
+        "six": "6%"
+      },
+      "netLabel": "Kuu netotulu, EUR",
+      "netPlaceholder": "2400.00",
+      "invalidNet": "Sisesta netotulu 0 või rohkem ja kuni 1 000 000.",
+      "budgetTitle": "Eelarve",
+      "budgetDescription": "Selged valikud, sealhulgas null. Üür ja kommunaalkulud jagavad ühte toetust.",
+      "spendingLabel": "Kuu eluasemevälised kulud, EUR",
+      "invalidSpending": "Sisesta kulud 0 või rohkem ja kuni 1 000 000.",
+      "savingsLabel": "Kuu säästueesmärk, EUR",
+      "invalidSavings": "Sisesta säästueesmärk 0 või rohkem ja kuni 1 000 000.",
+      "shareLabel": "Eluaseme maksimaalne osakaal, % netost",
+      "invalidShare": "Sisesta osakaal 0 kuni 100.",
+      "submit": "Arvuta eelarve",
+      "loading": "Arvutan...",
+      "retry": "Proovi uuesti"
+    },
+    "empty": {
+      "title": "Eelarvet veel pole",
+      "description": "Saada vorm, et näha netotulu, mõlemat piiri ja lõplikku eluasemetoetust."
+    },
+    "stale": {
+      "title": "Aegunud tulemus",
+      "text": "Sisendid muutusid pärast seda arvutust. Saada uuesti, et saada värsked numbrid."
+    },
+    "errors": {
+      "title": "Arvutus ebaõnnestus",
+      "api": "API lükkas päringu tagasi. Kontrolli sisendit ja proovi uuesti.",
+      "network": "Taustateenus pole kättesaadav. Käivita FastAPI teenus kohapeal ja proovi uuesti.",
+      "validationTitle": "Kontrolli esiletõstetud välju ja saada uuesti."
+    },
+    "results": {
+      "title": "Sinu eluasemeeelarve",
+      "netIncome": "Netotulu kuus",
+      "employmentKind": "Töise tulu hinnang",
+      "manualKind": "Sisestatud käsitsi",
+      "taxYear": "Maksumootori aasta",
+      "noTaxYear": "Ei kohaldu",
+      "available": "Pärast kulusid ja sääste alles",
+      "shareLimit": "Osakaalu piir",
+      "allowance": "Eluasemetoetus kuus",
+      "deficitTitle": "Kulud ja säästud ületavad sissetuleku",
+      "announced": "Eelarve arvutus on valmis.",
+      "warnings": {
+        "commitments_exceed_income": "Kuu kulud ja säästud on suuremad kui netotulu, seega on toetus 0,00 €. Summad on nähtaval — midagi ei vähendatud vaikselt.",
+        "utilities_incomplete": "Osa kommunaalkulude summasid on teadmata, seega ei saa hooaja kogusid lõpetada.",
+        "move_in_incomplete": "Osa kolimiskulusid on teadmata, seega on sularaha kogus mittetäielik."
+      },
+      "housingContext": "Vaata Tallinna linnaosade keskmisi üldise taustana",
+      "housingNote": "Linnaosade arvud on kuu keskmised, mitte kuulutused."
+    },
+    "assumptions": {
+      "title": "Arvutuse eeldused",
+      "employment": "Töine palk kasutab olemasolevat töölepinguarvutust võrdse brutoga, mitte kunagi suurima netotuluga režiimi.",
+      "allowance": "Toetus on väiksem kohustustejärgsest rahast ja osakaalu piirist; negatiivne jääk jääb nähtavale.",
+      "estimate": "Ainult hinnangud, mitte finantsnõuanne."
+    },
+    "unsaved": {
+      "confirm": "Eelarve sisendid pole salvestatud. Lahkuda lehelt arvutamata?"
+    },
+    "disclaimer": {
+      "title": "Hinnang, mitte finantsnõuanne",
+      "text": "Toetus järgib sinu enda kulu- ja säästuvalikuid, mitte ametlikku elukalliduse soovitust. Maksuarvud kasutavad Eesti 2026. aasta määrasid."
+    }
   }
 }

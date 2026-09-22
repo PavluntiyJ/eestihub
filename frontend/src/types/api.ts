@@ -79,3 +79,56 @@ export type HousingRentsResponse = {
   updated_at: string;
   districts: DistrictRent[];
 };
+
+export type PlannerIncomeKind = "employment" | "manual_net";
+
+export type PlannerEmploymentIncome = {
+  kind: "employment";
+  gross_monthly_income: number;
+  pension_pillar_rate: 0.0 | 0.02 | 0.04 | 0.06;
+};
+
+export type PlannerManualNetIncome = {
+  kind: "manual_net";
+  net_monthly_income: number;
+};
+
+export type PlannerBudgetRequest = {
+  income: PlannerEmploymentIncome | PlannerManualNetIncome;
+  monthly_non_housing: number;
+  monthly_savings: number;
+  housing_share: number;
+  apartment: null;
+};
+
+export type PlannerWarningCode =
+  | "commitments_exceed_income"
+  | "utilities_incomplete"
+  | "move_in_incomplete";
+
+export type PlannerWarning = {
+  code: PlannerWarningCode;
+};
+
+export type PlannerIncome = {
+  kind: PlannerIncomeKind;
+  net_monthly_income: number;
+  tax_year: number | null;
+};
+
+export type PlannerBudget = {
+  monthly_non_housing: number;
+  monthly_savings: number;
+  housing_share: number;
+  available_after_commitments: number;
+  share_limit: number;
+  housing_allowance: number;
+};
+
+export type PlannerBudgetResponse = {
+  schema_version: 1;
+  income: PlannerIncome;
+  budget: PlannerBudget;
+  apartment: null;
+  warnings: PlannerWarning[];
+};

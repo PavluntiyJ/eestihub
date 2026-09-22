@@ -46,7 +46,7 @@ export default async function HomePage({ params }: HomePageParams) {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 className={cn(buttonVariants({ variant: "cta", size: "lg" }), "px-5")}
-                href="/calculator"
+                href="/planner"
               >
                 {t("hero.primaryCta")}
               </Link>
