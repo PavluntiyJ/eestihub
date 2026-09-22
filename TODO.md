@@ -122,9 +122,66 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 | M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
 | M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
 | M07 | Verified Tallinn address search: adapter, combobox, docs | docs/PLANNER-M07-HANDOFF.md (frozen address contract, In-AKS v1.2 terms) | `[R]` | muse-spark (opencode) |
+| M08 | Versioned Tallinn GTFS import and refresh: models, import/data services, CLI, tests, ops docs | docs/PLANNER-M08-HANDOFF.md (frozen transit contract, Codex terms review) | `[R]` | muse-spark (opencode) |
 
 
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M08 done — `[R]`.** Versioned
+  GTFS import and refresh per docs/PLANNER-M08-HANDOFF.md; backend only,
+  no nearby endpoint, no frontend, no automation, no push or production.
+  · **Models** (`models/transit.py`): feed generations with SHA/source
+  timestamps/agency tz/effective envelope/counts/attribution-license
+  evidence, singleton active pointer, feed-scoped stops/routes/
+  stop-services/calendars/exceptions. Additive `create_all` via the CLI
+  only; housing tables untouched.
+  · **Import** (`services/transit_import.py`, stdlib only): bounded
+  download (50 MiB cap, socket timeout plus a separately enforced 60s
+  total deadline — slow-drip and silent both stop, no retry), ZIP safety
+  (dups/encryption/symlinks/nested/traversal/CRC/size, never extractall),
+  full schema validation (headers, unique IDs as opaque strings, dates,
+  weekday/exception codes, finite global coords, route-type codes with
+  raw+derived tram/bus/trolleybus/other modes, trip/service and
+  stop/trip refs, unique trip stop-sequences, nonempty datasets,
+  calendars-or-exceptions resolution with effective envelope).
+  Route-less stops preserved; no name grouping, no invented bounding box.
+  Staging plus pointer flip commits once with row lock and
+  compare-and-swap (older staged content rolls back as superseded);
+  identical SHA only refreshes the check time; old generations retained.
+  · **Data service** (`services/transit_data.py`): single-generation
+  reads, `routes_for_stop` with weekday/range plus add/remove exceptions
+  before dedup (scheduled-that-date semantics, never departures), and the
+  freshness policy (7-day check / 30-day source / envelope edges, unknown
+  on missing/future timestamps) on injected clocks.
+  · **CLI** (`scripts/import_gtfs.py`): download or `--file` (with
+  validated `--last-modified`/`--etag`), `--validate-only`, exits
+  0/1/2/3/4 with concise counts, temp download cleaned up, no startup or
+  read-path downloads.
+  · **Tests:** 150 backend passed (44 new: synthetic-ZIP validation
+  matrix, staging/activation/idempotency/rollback/CAS, scheduling incl.
+  weekday/weekend/add/remove/exception-only/expired/future/route-less,
+  freshness branches, download limits/deadline, CLI codes); 3 PostgreSQL
+  lock/transaction/concurrency checks written but SKIPPED — no local
+  Postgres exists (nothing on :5432, no binaries), so SQLite does not
+  evidence PostgreSQL activation safety and CI must run them.
+  · **Real-feed proof (no writes to the repo):** `--validate-only` on the
+  manually downloaded 2026-09-22 archive → 1120/80/20081/483972/10004
+  accepted; full import into a throwaway SQLite DB activated with modes
+  69/6/5, Vana-Kuuli kept routeless, envelope 2024-07-01…2027-09-01
+  (temp DB removed afterwards).
+  · Verified: `pytest` → 150 passed + 3 PG-skipped; `npm run build` /
+  `lint` clean; `npm run e2e` → 62 passed (seeded SQLite backend).
+  · Docs: `docs/TRANSIT-OPERATIONS.md` (commands, tables, transactions,
+  recovery, timestamps, daily-refresh suggestion without automation),
+  `docs/TRANSIT-DATA-LICENSE.md` (CC BY-SA 3.0 scope/credit/transforms,
+  code and salary data excluded), DATA-SOURCES GTFS section (stdlib,
+  envelope semantics), README import commands only (no transit UI/API
+  claims). New additive API: none — report tables/internal services for
+  CONTEXT §5 to its owner.
+  · Commit: `feat(transit): import versioned Tallinn GTFS snapshots`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
 
 - 2026-09-22 · muse-spark (opencode) · **M07 review fixes done — `[R]`.**
   Addressed all three Codex corrections plus the small contract items;

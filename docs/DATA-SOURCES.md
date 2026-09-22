@@ -166,6 +166,16 @@ be shared under the same license. The same registry entry cites
 Update cadence is **[open]**: the zip was modified 3 days before this probe
 and carries Cloudflare caching; no published schedule was found.
 
+**M08 implementation (2026-09-22):** the GTFS zip is imported with stdlib
+`csv`/`zipfile` only — no parser library was needed. `stop_times.txt` is
+streamed as a join input and not stored; only stops, routes, deduplicated
+(stop, route, service) pairs, calendars and exceptions persist, plus feed
+metadata with SHA-256, source timestamps and attribution. Calendar
+`end_date` maxima are validity envelopes per service date, not publisher
+expiry promises; the effective envelope derives from referenced services
+including exceptions. See `docs/TRANSIT-OPERATIONS.md` and
+`docs/TRANSIT-DATA-LICENSE.md`.
+
 **Recommendation:** ingest the GTFS zip, keep `stop_id`/`route_id` as keys,
 attribute Tallinn and keep the share-alike obligation in mind for anything
 redistributed. A GTFS parser library is worth adding at implementation time

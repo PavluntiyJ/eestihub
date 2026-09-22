@@ -93,6 +93,8 @@ For local processes instead of containers:
 docker compose up -d db                      # Postgres on :5432
 cd backend && python -m scripts.seed_housing # seed baseline housing data
 cd backend && python -m scripts.ingest_rents  # ingest sourced rent snapshots
+cd backend && python -m scripts.import_gtfs --validate-only # validate transit feed (no writes)
+cd backend && python -m scripts.import_gtfs  # import versioned transit snapshot
 cd backend && uvicorn app.main:app --reload  # API on :8000
 cd frontend && npm run dev                   # UI on :3000
 ```
