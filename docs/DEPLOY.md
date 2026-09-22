@@ -5,6 +5,30 @@ and services are reused for the September planner release; no paid upgrade
 is required. Initial setup is described below; transit data also needs the
 maintenance CLI described in section 6.
 
+## Current production release — 2026-09-22
+
+Release commit `25d1389` (PR #1) is live at
+[EestiHub](https://eestihub.vercel.app/en/planner) and
+[the API](https://eestihub-api.onrender.com/api/v1/health).
+All CI jobs passed, including 245 backend tests (five PostgreSQL integration
+cases) and 70 browser tests. Production smoke verified the budget, seasonal
+apartment costs, In-AKS search, imported nearby transit and actual map tiles.
+
+The existing Vercel project has **no Git repository connection**. GitHub pushes
+alone do not publish its frontend. Deploy the checked-out, verified release
+from `frontend/` using `vercel deploy --prod --yes`; the linked project is
+`pavluntiyjs-projects/eestihub`, with root directory `.` for this CLI upload.
+Keep `.vercel/` and downloaded environment files ignored. The Git-import steps
+in section 3 describe an alternative initial setup, not the current connection.
+
+The existing Render service is manually configured (not Blueprint-managed).
+Its build and start commands were synchronized with `render.yaml` in the
+dashboard. Deploy `dep-dap8f8h3jptc739ui4lg` succeeded, with 1120 stops and 80
+routes imported into Neon. Render displays Auto-Deploy: On Commit, but the
+release was explicitly triggered through the settings update; verify a deploy
+actually starts after future pushes, since its clone log reports unavailable
+Git credentials and falls back to cloning the public repository.
+
 ## Prerequisites
 
 - A GitHub account with access to the `PavluntiyJ/eestihub` repository.
@@ -35,8 +59,9 @@ maintenance CLI described in section 6.
 
 ## 2. Render — backend
 
-The repository already contains a `render.yaml` Blueprint at the root.
-Render reads it automatically.
+The repository contains a `render.yaml` Blueprint at the root. Render reads it
+when creating or synchronizing a Blueprint; a manually created service must be
+configured separately.
 
 1. Log into [Render](https://dashboard.render.com) → **New** →
    **Blueprint**.

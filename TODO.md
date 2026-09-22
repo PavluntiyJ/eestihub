@@ -1,19 +1,25 @@
 # TODO — EestiHub task board
 
-## Active release — owner-directed scope, 2026-09-22
+## Published release — owner-directed scope, 2026-09-22
 
-Codex is completing the release after Muse's M08 handoff. The owner approved
+Codex completed the release after Muse's M08 handoff. The owner approved
 **M08 → apartment costs + map/nearby transit → verification → release**, keeping
 Vercel + Render + Neon. This supersedes historical sequential M09–M13 gates;
 district polygons, comparisons and saved scenarios are deferred. Current scope
 and additive API: [PLANNER-RELEASE.md](docs/PLANNER-RELEASE.md).
 
-Implementation passed CI on `3906256`: **245 backend tests, 70 browser tests**,
+Release `25d1389` passed CI: **245 backend tests, 70 browser tests**,
 frontend build, Lighthouse and Docker Compose. All five PostgreSQL integration
 tests ran successfully. Local build/lint/TypeScript and production-only npm audit
 pass (zero reported vulnerabilities). Real GTFS was imported into disposable
 SQLite (1120 stops / 80 routes); live address search, basemap and markers were
-visually checked. Release deployment is now in progress.
+visually checked. Production is live on Vercel + Render + Neon:
+[planner](https://eestihub.vercel.app/en/planner). Production smoke confirmed
+manual net and employment gross calculations, seasonal costs, real address
+search, 14 nearby platforms at Mustamäe tee 5 and the rendered basemap.
+Vercel is CLI-deployed, with no Git integration; see `docs/DEPLOY.md` for the
+actual publishing procedure. Free-tier cold starts and deploy-time transit
+refresh remain documented hosting/operations limitations.
 The actual first-flush SHA race left in `ad87972` was corrected by Codex and has
 a dedicated concurrent PostgreSQL regression that passed in CI.
 
@@ -143,16 +149,27 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 | M01 | Planner scope, budget rules, proposed additive contracts and delivery gates | owner-directed chat; docs/PLANNER-PRODUCT.md, docs/PLANNER-CONTRACTS.md, docs/PLANNER-DELIVERY.md | `[R]` | Codex (GPT-6) |
 | M03 | Baltic UI screen/state specification and responsive budget/apartment preview | owner-directed chat; docs/PLANNER-DESIGN.md, docs/planner-preview.html | `[R]` | Codex (GPT-6) |
 
-## Planner implementation — M05 (owner-directed, in review)
+## Planner implementation — accepted in the 2026-09-22 release
 
 | # | Task | Brief | Status | Worker |
 |---|------|-------|--------|--------|
-| M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
-| M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
-| M07 | Verified Tallinn address search: adapter, combobox, docs | docs/PLANNER-M07-HANDOFF.md (frozen address contract, In-AKS v1.2 terms) | `[R]` | muse-spark (opencode) |
-| M08 | Versioned Tallinn GTFS import and refresh: models, import/data services, CLI, tests, ops docs | docs/PLANNER-M08-HANDOFF.md (frozen transit contract, Codex terms review) | `[R]` | muse-spark (opencode) |
+| M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[x]` | muse-spark (opencode) |
+| M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[x]` | muse-spark (opencode) |
+| M07 | Verified Tallinn address search: adapter, combobox, docs | docs/PLANNER-M07-HANDOFF.md (frozen address contract, In-AKS v1.2 terms) | `[x]` | muse-spark (opencode) |
+| M08 | Versioned Tallinn GTFS import and refresh: models, import/data services, CLI, tests, ops docs | docs/PLANNER-M08-HANDOFF.md (frozen transit contract, Codex terms review) | `[x]` | muse-spark (opencode), Codex final race fix |
+| Release | Apartment assessment, map and nearby transit; verification and production deployment | docs/PLANNER-RELEASE.md (owner-approved replacement for sequential M09–M13 scope) | `[x]` | Codex |
 
 ## Journal (newest first)
+
+- 2026-09-22 · Codex · **Planner release published and M05–M08 accepted.**
+  Merged PR #1 as `25d1389` after green CI; 245 backend tests including all five
+  PostgreSQL cases, 70 browser tests, build, Lighthouse and Docker smoke passed.
+  Synchronized Render build/start commands, imported the real GTFS snapshot
+  into Neon and deployed the frontend through Vercel CLI. Production budget,
+  seasonal apartment costs, real address candidates, nearby platforms and map
+  tiles work together. EN/ET/RU pages and self-hosted worker modules return 200;
+  no browser console errors in the live planner. Deployment docs record the
+  missing Vercel Git connection and the remaining free-tier limitations.
 
 - 2026-09-22 · muse-spark (opencode) · **M08 re-review fixes done
   (R1–R3) — `[R]`.** Only the open top-section items; calendar,
