@@ -12,17 +12,15 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import json
 import os
 import tempfile
-import threading
-import time
 import zipfile
+import zlib
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import select
@@ -183,20 +181,15 @@ class _TooLarge(Exception):
     pass
 
 
-def _pump_body(response, handle, max_bytes: int, box: dict, stop) -> None:
-    """Copy one response body to a temp file; runs on a daemon worker thread."""
-    total = 0
+# Bounded wait to reap a killed/cancelled transfer before reporting.
+_TEARDOWN_SECONDS = 5.0
+
+
+def _unlink_quietly(path: str) -> None:
     try:
-        while not stop.is_set():
-            chunk = response.read(CHUNK_BYTES)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_bytes:
-                raise _TooLarge(f"archive exceeds {max_bytes} bytes")
-            handle.write(chunk)
-    except BaseException as exc:  # noqa: BLE001 (marshalled to the caller)
-        box["error"] = exc
+        os.unlink(path)
+    except OSError:
+        pass
 
 
 def download_source(
@@ -205,69 +198,81 @@ def download_source(
     deadline_s: float = TOTAL_DOWNLOAD_DEADLINE_SECONDS,
     max_bytes: int | None = None,
     user_agent: str = USER_AGENT,
-    clock=time.monotonic,
+    source_url: str = SOURCE_URL,
 ) -> DownloadedFeed:
-    """Fetch the fixed source into bounded temporary storage.
+    """Fetch the fixed source into parent-owned temporary storage.
 
-    The socket timeout covers each blocking operation while the monotonic
-    deadline bounds the total wall time: the body pumps on a daemon worker
-    thread, and on expiry the response is closed, which actually stops the
-    in-flight I/O instead of leaving the transfer running. Slow-drip peers
-    (bytes more frequent than the socket timeout) and silent peers both
-    stop at the deadline. No retry loop. The size cap resolves at call time
-    so tests can tighten it with monkeypatch. The temporary file is
-    unlinked inside this function on every failure path; only success hands
-    a path to the caller (the CLI deletes it afterwards).
+    The transfer runs in a child process performing one plain blocking
+    fetch; the parent supervises it with the total deadline and kills it
+    on expiry, which actually stops slow-drip and silent transfers instead
+    of leaving I/O running. `source_url` is an internal seam for loopback
+    tests only — production callers always use the fixed source, and the
+    CLI offers no URL option. The temporary file is created and unlinked
+    by the parent on every failure path; only success hands a path to the
+    caller (the CLI deletes it afterwards). No retry loop. The size cap
+    resolves at call time so tests can tighten it with monkeypatch.
     """
+    import subprocess
+    import sys
+
     if max_bytes is None:
         max_bytes = MAX_COMPRESSED_BYTES
-    request = Request(SOURCE_URL, headers={"User-Agent": user_agent})
-    started = clock()
-    try:
-        response = urlopen(request, timeout=timeout_s)
-    except (URLError, TimeoutError, OSError, ValueError) as exc:
-        raise DownloadError(f"fetch failed: {exc}") from exc
-    if response.status != 200:
-        raise DownloadError(f"unexpected HTTP status {response.status}")
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     handle = tempfile.NamedTemporaryFile(prefix="gtfs-", suffix=".zip", delete=False)
-    box: dict = {}
-    stop = threading.Event()
-    worker = threading.Thread(
-        target=_pump_body, args=(response, handle, max_bytes, box, stop), daemon=True
-    )
-    worker.start()
-    worker.join(max(0.0, deadline_s - (clock() - started)))
-    if worker.is_alive():
-        stop.set()
-        try:
-            response.close()
-        except Exception:  # noqa: BLE001 (teardown only)
-            pass
-        worker.join(timeout_s + 1)
-        handle.close()
-        try:
-            os.unlink(handle.name)
-        except OSError:
-            pass
-        raise DownloadError("download deadline exceeded")
     handle.close()
-    error = box.get("error")
-    if error is not None:
+    command = [
+        sys.executable,
+        "-m",
+        "app.services.transit_fetch_child",
+        "--url",
+        source_url,
+        "--out",
+        handle.name,
+        "--timeout",
+        str(timeout_s),
+        "--max-bytes",
+        str(max_bytes),
+        "--user-agent",
+        user_agent,
+    ]
+    try:
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=backend_dir,
+        )
+    except OSError as exc:
+        _unlink_quietly(handle.name)
+        raise DownloadError(f"fetch failed: {exc}") from exc
+    try:
+        stdout, stderr = proc.communicate(timeout=deadline_s)
+    except subprocess.TimeoutExpired:
+        proc.kill()
         try:
-            os.unlink(handle.name)
-        except OSError:
-            pass
-        if isinstance(error, _TooLarge):
-            raise DownloadError(str(error))
-        raise DownloadError(f"fetch failed: {error}") from error
-    last_modified = _parse_http_date(response.headers.get("Last-Modified"))
-    etag = response.headers.get("ETag")
-    digest = _sha256_file(handle.name)
+            stdout, stderr = proc.communicate(timeout=_TEARDOWN_SECONDS)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = "", ""
+        _unlink_quietly(handle.name)
+        raise DownloadError("download deadline exceeded") from None
+    if proc.returncode != 0:
+        _unlink_quietly(handle.name)
+        detail = (stderr or "").strip().splitlines()
+        raise DownloadError(detail[-1][:200] if detail else "fetch failed")
+    try:
+        metadata = json.loads((stdout or "").strip().splitlines()[-1])
+        digest = metadata["sha256"]
+        last_modified = metadata.get("last_modified")
+        etag = metadata.get("etag")
+    except (IndexError, ValueError, KeyError, AttributeError) as exc:
+        _unlink_quietly(handle.name)
+        raise DownloadError(f"fetch failed: unreadable worker output: {exc}") from exc
     return DownloadedFeed(
         path=handle.name,
         content_sha256=digest,
         fetched_at=datetime.now(timezone.utc),
-        source_last_modified=last_modified,
+        source_last_modified=_parse_http_date(last_modified),
         source_etag=etag[:255] if etag else None,
     )
 
@@ -413,7 +418,7 @@ def _iter_member_lines(
         while True:
             try:
                 chunk = handle.read(CHUNK_BYTES)
-            except (zipfile.BadZipFile, OSError, EOFError) as exc:
+            except (zipfile.BadZipFile, zlib.error, OSError, EOFError) as exc:
                 raise _fail(f"{name}: corrupt data: {exc}") from exc
             if not chunk:
                 break
@@ -437,7 +442,7 @@ def _iter_member_lines(
     finally:
         try:
             handle.close()
-        except Exception as exc:  # noqa: BLE001 (CRC surface)
+        except (zipfile.BadZipFile, zlib.error, OSError, EOFError) as exc:
             if exhausted:
                 raise _fail(f"{name}: CRC check failed: {exc}") from exc
 
@@ -954,6 +959,13 @@ def _warn_on_reduction(
     return warnings
 
 
+def _lock_state_row(session: Session) -> TransitState | None:
+    """Return the singleton state row under a write lock, if it exists."""
+    return session.scalar(
+        select(TransitState).where(TransitState.id == 1).with_for_update()
+    )
+
+
 def _activate_generation(
     session: Session,
     staged_id: int,
@@ -968,9 +980,7 @@ def _activate_generation(
     import has no row to protect; a concurrent first-import primary-key
     race surfaces as IntegrityError for the caller to map.
     """
-    state = session.scalar(
-        select(TransitState).where(TransitState.id == 1).with_for_update()
-    )
+    state = _lock_state_row(session)
     if state is None:
         state = TransitState(id=1, active_feed_id=None)
         session.add(state)
@@ -1016,11 +1026,25 @@ def import_feed(
         select(TransitFeed).where(TransitFeed.content_sha256 == content_sha256)
     )
     if existing is not None:
-        active_id = session.scalar(
-            select(TransitState.active_feed_id).where(TransitState.id == 1)
-        )
-        if active_id is not None and existing.id == active_id:
-            existing.checked_at = checked_at
+        # Resolve the active identity under the same synchronization as
+        # activation: a concurrent flip between the lookup above and the
+        # lock must not report an inactive feed as current, and a stale
+        # concurrent recheck must never move checked_at backward.
+        state = _lock_state_row(session)
+        if state is None:
+            session.rollback()
+            return ImportResult(
+                status="superseded",
+                feed_id=None,
+                content_sha256=content_sha256,
+                counts=dict(feed.counts),
+                warnings=[],
+            )
+        session.refresh(existing)
+        if state.active_feed_id is not None and existing.id == state.active_feed_id:
+            checked = as_aware_utc(existing.checked_at)
+            candidate = as_aware_utc(checked_at)
+            existing.checked_at = max(checked, candidate)
             session.commit()
             return ImportResult(
                 status="already_current",
@@ -1029,6 +1053,7 @@ def import_feed(
                 counts=dict(feed.counts),
                 warnings=[],
             )
+        session.rollback()
         return ImportResult(
             status="superseded",
             feed_id=None,

@@ -127,6 +127,47 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-22 · muse-spark (opencode) · **M08 re-review fixes done
+  (R1–R3) — `[R]`.** Only the open top-section items; calendar,
+  freshness, CI and attribution work left untouched.
+  · **(R1) Download that actually stops:** the transfer moved to a
+  supervised child process the parent kills on total-deadline expiry
+  (fixed source hardwired, CLI has no URL option; loopback-only seam for
+  tests). Parent owns the temp file and unlinks on every failure; child
+  closes its response in `finally`. Replaced the fake-close unit test
+  with real loopback HTTP coverage: 1 byte/20 ms slow body and 2 s
+  delayed headers both die at a 0.5 s deadline with no temp leftovers,
+  plus HTTP-error/oversize/success-metadata cases.
+  · **(R2) Activation races:** unconditional fetched_at age check (older
+  normal-path imports supersede even without concurrent overlap);
+  already_current only for the active generation resolved under the
+  state-row lock with `refresh()` and monotonic `max()` on checked_at;
+  retained SHAs report superseded untouched; all staging flushes plus
+  commit sit inside one IntegrityError retry that re-resolves once.
+  Regressions: older-after-newer, active recheck, A→B→A retention,
+  monotonic checks, same-SHA overlap (SQLite-sequential plus PG-threaded
+  variants), first-import races.
+  · **(R3) Strict parsing:** one bounded streaming reader for every
+  member (real byte counts, CRC on close including ignored shapes,
+  strict CSV, duplicate headers everywhere); non-negative sequences;
+  location_type 0–4; string lengths aligned with DB columns; route types
+  restricted to the reference's exact static+extended codes
+  (333/8/99/1701 rejected, 901/1501 map to other); BadZipFile/zlib
+  normalized to FeedError; archive-limit tests isolated with reason
+  assertions; parser + real-CLI regressions for reserved-block DEFLATE
+  (exit 1, no traceback).
+  · Effective envelope derives first/last service dates from weekday
+  scans plus both exception types (bounded range cap); Monday-only and
+  removed-only feeds reject; freshness checks stale evidence before
+  unknown metadata.
+  · Verified: `pytest` → 235 passed + 4 PG-skipped (explicit reasons;
+  local Postgres still absent); `npm run build`/`lint` clean; real-feed
+  `--validate-only` still accepts 1120/80/20081/483972/10004.
+  · Commit: `fix(transit): re-review corrections for activation safety`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
+
 - 2026-09-22 · muse-spark (opencode) · **M08 review fixes done — `[R]`.**
   Addressed all six Codex findings; existing checks kept strict, no M09,
   no push or production.

@@ -3,6 +3,9 @@
 import io
 import zipfile
 from datetime import date, datetime, timezone
+from http.server import BaseHTTPRequestHandler
+import hashlib
+import time
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -393,41 +396,135 @@ def test_missing_parent_reference_rejected(session) -> None:
         parse_feed(make_zip(files))
 
 
-def test_archive_size_limit_rejects() -> None:
-    import app.services.transit_import as importer
+class _LoopbackState:
+    mode = "ok"
+    chunks: list = []
+    delay_headers = 0.0
+    status = 200
 
-    class FakeResponse:
-        status = 200
-        headers: dict = {}
 
-        def __init__(self, chunks):
-            self._chunks = list(chunks)
+class _LoopbackHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    server_version = "Loopback/1"
 
-        def read(self, size=-1):
-            if not self._chunks:
-                return b""
-            return self._chunks.pop(0)
+    def do_GET(self):
+        if _LoopbackState.delay_headers:
+            time.sleep(_LoopbackState.delay_headers)
+        body = b"".join(_LoopbackState.chunks)
+        try:
+            self.send_response(_LoopbackState.status)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header(
+                "Last-Modified", "Fri, 18 Sep 2026 12:29:14 GMT"
+            )
+            self.send_header("ETag", '"loopback"')
+            self.end_headers()
+            for index in range(0, len(body), 1):
+                if _LoopbackState.mode == "drip":
+                    time.sleep(0.02)
+                try:
+                    self.wfile.write(body[index : index + 1])
+                except (BrokenPipeError, ConnectionResetError):
+                    return
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
-        def close(self):
-            pass
+    def log_message(self, *args):
+        pass
 
-    seen_urls: list = []
 
-    def fake_urlopen(request, timeout=None):
-        seen_urls.append(request.full_url)
-        return FakeResponse([b"x" * 10])
+@pytest.fixture()
+def loopback_server():
+    import threading
+    from http.server import ThreadingHTTPServer
 
-    real_urlopen = importer.urlopen
-    importer.urlopen = fake_urlopen
-    real_limit = importer.MAX_COMPRESSED_BYTES
-    importer.MAX_COMPRESSED_BYTES = 5
+    _LoopbackState.mode = "ok"
+    _LoopbackState.chunks = [b"x" * 40]
+    _LoopbackState.delay_headers = 0.0
+    _LoopbackState.status = 200
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _LoopbackHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
     try:
-        with pytest.raises(DownloadError, match="exceeds"):
-            download_source()
+        yield f"http://127.0.0.1:{server.server_port}/gtfs.zip"
     finally:
-        importer.urlopen = real_urlopen
-        importer.MAX_COMPRESSED_BYTES = real_limit
-    assert seen_urls and seen_urls[0].startswith("https://transport.tallinn.ee/")
+        server.shutdown()
+        thread.join(timeout=10)
+
+
+def _temp_leftovers() -> set:
+    import glob
+    import os
+    import tempfile
+
+    return set(glob.glob(os.path.join(tempfile.gettempdir(), "gtfs-*.zip")))
+
+
+def test_slow_body_stops_at_total_deadline(loopback_server) -> None:
+    import time
+
+    from app.services.transit_import import download_source
+
+    _LoopbackState.mode = "drip"
+    before = _temp_leftovers()
+    started = time.monotonic()
+    with pytest.raises(DownloadError, match="deadline"):
+        download_source(
+            source_url=loopback_server, deadline_s=0.5, timeout_s=5.0
+        )
+    assert time.monotonic() - started < 8
+    assert _temp_leftovers() - before == set()
+
+
+def test_delayed_headers_stop_at_total_deadline(loopback_server) -> None:
+    import time
+
+    from app.services.transit_import import download_source
+
+    _LoopbackState.delay_headers = 2.0
+    before = _temp_leftovers()
+    started = time.monotonic()
+    with pytest.raises(DownloadError, match="deadline"):
+        download_source(
+            source_url=loopback_server, deadline_s=0.5, timeout_s=5.0
+        )
+    assert time.monotonic() - started < 8
+    assert _temp_leftovers() - before == set()
+
+
+def test_http_error_cleans_up(loopback_server) -> None:
+    from app.services.transit_import import download_source
+
+    _LoopbackState.status = 500
+    before = _temp_leftovers()
+    with pytest.raises(DownloadError):
+        download_source(source_url=loopback_server, deadline_s=5.0)
+    assert _temp_leftovers() - before == set()
+
+
+def test_oversize_body_cleans_up(loopback_server) -> None:
+    from app.services.transit_import import download_source
+
+    before = _temp_leftovers()
+    with pytest.raises(DownloadError, match="exceeds"):
+        download_source(source_url=loopback_server, max_bytes=10)
+    assert _temp_leftovers() - before == set()
+
+
+def test_loopback_success_reports_metadata(loopback_server) -> None:
+    import os
+
+    from app.services.transit_import import download_source
+
+    downloaded = download_source(source_url=loopback_server, deadline_s=10.0)
+    try:
+        assert downloaded.content_sha256 == hashlib.sha256(b"x" * 40).hexdigest()
+        assert downloaded.source_last_modified is not None
+        assert downloaded.source_last_modified.year == 2026
+        assert downloaded.source_etag == '"loopback"'
+    finally:
+        os.unlink(downloaded.path)
 
 
 def test_effective_envelope_uses_actual_service_dates(session) -> None:
@@ -545,6 +642,54 @@ def test_corrupt_crc_in_stops_is_invalid_feed_not_traceback(session) -> None:
         parse_feed(corrupted)
 
 
+def _reserved_block_fixture(member: str) -> str:
+    """Rewrite the first compressed byte with a reserved DEFLATE block type.
+
+    Keeps the central directory intact, so this fails through the
+    decompression path rather than the CRC path.
+    """
+    import struct
+    import tempfile
+
+    source = make_zip(base_files())
+    with open(source, "rb") as handle:
+        data = bytearray(handle.read())
+    with zipfile.ZipFile(source) as archive:
+        info = archive.getinfo(member)
+        offset = info.header_offset
+    name_length, extra_length = struct.unpack_from("<HH", data, offset + 26)
+    first_byte = offset + 30 + name_length + extra_length
+    data[first_byte] = (data[first_byte] & 0xF8) | 0x07
+    handle = tempfile.NamedTemporaryFile(prefix="feed-", suffix=".zip", delete=False)
+    handle.write(bytes(data))
+    handle.close()
+    return handle.name
+
+
+def test_reserved_deflate_block_is_invalid_feed(session) -> None:
+    del session
+    with pytest.raises(FeedError):
+        parse_feed(_reserved_block_fixture("stops.txt"))
+
+
+def test_reserved_deflate_block_cli_reports_concise_error() -> None:
+    import subprocess
+    import sys
+
+    repo_backend = __file__.rsplit("tests", 1)[0]
+    archive = _reserved_block_fixture("stops.txt")
+    proc = subprocess.run(
+        [sys.executable, "-m", "scripts.import_gtfs", "--validate-only", "--file", archive],
+        cwd=repo_backend,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert proc.returncode == 1
+    assert proc.stdout.startswith("error:")
+    assert "Traceback" not in proc.stdout + proc.stderr
+
+
 def test_duplicate_stop_times_headers_rejected(session) -> None:
     del session
     files = base_files()
@@ -646,60 +791,11 @@ def test_supported_route_types_map_modes(session, route_type: str, mode: str) ->
     assert stored == mode
 
 
-def test_slow_drip_stops_at_total_deadline_and_cleans_up() -> None:
-    import glob
-    import os
-    import tempfile
-    import threading
-    import time
+def test_download_connection_refused() -> None:
+    from app.services.transit_import import download_source
 
-    import app.services.transit_import as importer
-
-    release = threading.Event()
-
-    class DripResponse:
-        status = 200
-        headers: dict = {}
-        closed = False
-
-        def read(self, size=-1):
-            # One byte per blocking call, forever: the socket timeout never
-            # fires because every call returns quickly with data.
-            if release.wait(timeout=30):
-                return b""
-            return b"x"
-
-        def close(self):
-            self.closed = True
-            release.set()
-
-    def dripping(request, timeout=None):
-        return DripResponse()
-
-    before = set(glob.glob(os.path.join(tempfile.gettempdir(), "gtfs-*.zip")))
-    real_urlopen = importer.urlopen
-    importer.urlopen = dripping
-    started = time.monotonic()
-    try:
-        with pytest.raises(DownloadError, match="deadline"):
-            download_source(deadline_s=1.0, timeout_s=30.0)
-    finally:
-        importer.urlopen = real_urlopen
-    elapsed = time.monotonic() - started
-    assert elapsed < 15
-    after = set(glob.glob(os.path.join(tempfile.gettempdir(), "gtfs-*.zip")))
-    assert after - before == set()
-
-
-def test_download_http_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    import app.services.transit_import as importer
-
-    def failing(request, timeout=None):
-        raise OSError("network down")
-
-    monkeypatch.setattr(importer, "urlopen", failing)
     with pytest.raises(DownloadError):
-        download_source()
+        download_source(source_url="http://127.0.0.1:1/gtfs.zip", deadline_s=10.0)
 
 
 def test_cli_validate_only_reports_counts() -> None:
