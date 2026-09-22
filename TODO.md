@@ -125,6 +125,35 @@ M06 has not started.
 
 ## Journal (newest first)
 
+- 2026-09-22 · muse-spark (opencode) · **M05 review fixes done — `[R]`.**
+  Addressed both Codex corrections from the M05 review note; no scope
+  expansion, existing tests untouched.
+  · **(1) JSON-safe 422 for overflow/non-finite input** (reproduced via real
+  HTTP: `net_monthly_income: 1e400` and `NaN`/`Infinity`/`-Infinity`
+  literals all returned 500, because the 422 envelope echoed the non-finite
+  `input` and Starlette serializes with `allow_nan=False`). Added a
+  planner-scoped `PlannerRoute` (`backend/app/api/v1/routes/planner.py`)
+  that catches `RequestValidationError` and returns the standard
+  `{"detail": ...}` envelope with non-finite floats replaced by their short
+  names (`"inf"`/`"-inf"`/`"nan"`); byte-identical to the default envelope
+  for finite inputs, no payload logging. Other routers are untouched, so the
+  pre-existing taxes-endpoint behaviour is unchanged.
+  · **(2) Required nullable utilities/move-in keys** per the core contract
+  ("`rent`, `utilities`, `move_in` are required ... amounts may be null"):
+  `UtilitiesInput.summer/winter` and all four `MoveInInput` amounts are now
+  required-but-nullable (reproduced: `utilities={"basis":"unknown"}` and
+  `move_in={}` returned 200). Missing keys → 422; explicit null → 200.
+  · Tests (all real HTTP): raw-body `1e400` overflow and three non-finite
+  literals → 422 with a parseable envelope (shared TestClient raises on
+  500, so green proves no 500); four missing-key payloads added to the 422
+  parametrize list; new all-null `move_in` success case (cash_needed null,
+  known 0.0, all four components missing, `move_in_incomplete` warning).
+  · Verified: full backend suite `pytest` → 106 passed (97 + 9 new).
+  Commit: `fix(budget): json-safe 422 and required nullable fields` (3
+  backend files + this board entry only). Codex review entries, the M04
+  locale repair and planning docs stay uncommitted. M06 not started.
+
+
 - 2026-09-22 · muse-spark (opencode) · **M05 done — `[R]`.** Continued the
   interrupted handoff: the six backend files were already staged, no restart.
   Verified the implementation against the PLANNER contracts, then probed the

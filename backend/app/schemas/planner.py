@@ -94,8 +94,10 @@ Income = Annotated[
 class UtilitiesInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    summer: Money | None = None
-    winter: Money | None = None
+    # Required but nullable: the keys must be present, explicit null marks
+    # an unknown seasonal amount.
+    summer: Money | None
+    winter: Money | None
     basis: UtilityBasis
 
     @model_validator(mode="after")
@@ -111,10 +113,12 @@ class UtilitiesInput(BaseModel):
 class MoveInInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    first_rent: Money | None = None
-    deposit: Money | None = None
-    broker_fee: Money | None = None
-    setup: Money | None = None
+    # Required but nullable: the keys must be present, explicit null marks
+    # an unknown cost component.
+    first_rent: Money | None
+    deposit: Money | None
+    broker_fee: Money | None
+    setup: Money | None
 
 
 class ApartmentInput(BaseModel):

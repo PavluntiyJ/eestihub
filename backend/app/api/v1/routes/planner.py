@@ -1,10 +1,47 @@
-from fastapi import APIRouter, Response
+from math import isfinite
+from typing import Any
+
+from fastapi import APIRouter, Request, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
 from app.schemas.planner import BudgetCalculationRequest, BudgetCalculationResponse
 from app.services.budget_service import calculate_budget
 
 
-router = APIRouter(tags=["planner"])
+def _json_safe(value: Any) -> Any:
+    # Validation errors echo the offending input, but a non-finite float
+    # (Infinity decoded from 1e400, NaN literals) is not JSON-serializable
+    # and would turn the 422 envelope itself into a 500. Replace it with
+    # its short name. The payload itself is never logged here.
+    if isinstance(value, float) and not isfinite(value):
+        return repr(value)
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+class PlannerRoute(APIRoute):
+    def get_route_handler(self):  # type: ignore[no-untyped-def]
+        handler = super().get_route_handler()
+
+        async def json_safe_validation_handler(request: Request):  # type: ignore[no-untyped-def]
+            try:
+                return await handler(request)
+            except RequestValidationError as exc:
+                return JSONResponse(
+                    status_code=422,
+                    content={"detail": _json_safe(jsonable_encoder(exc.errors()))},
+                )
+
+        return json_safe_validation_handler
+
+
+router = APIRouter(tags=["planner"], route_class=PlannerRoute)
 
 
 @router.post(

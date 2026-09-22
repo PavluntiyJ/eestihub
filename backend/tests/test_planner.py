@@ -465,12 +465,92 @@ def test_response_values_are_json_numbers_not_strings() -> None:
         manual_request(apartment={"rent": 650, "utilities": {
             "summer": 100, "winter": 200, "basis": "user_estimate"
         }}),
+        # Required nullable keys: omitted seasonal amounts and move-in
+        # components are 422, explicit null stays valid (see the
+        # explicit-null success tests).
+        manual_request(
+            apartment={"rent": 650, "utilities": {"basis": "unknown"}, "move_in": None}
+        ),
+        manual_request(
+            apartment={
+                "rent": 650,
+                "utilities": {"summer": 100, "basis": "user_estimate"},
+                "move_in": None,
+            }
+        ),
+        manual_request(apartment=apartment(move_in={})),
+        manual_request(apartment=apartment(move_in={"first_rent": 650})),
     ],
 )
 def test_invalid_requests_return_422(payload: dict[str, Any]) -> None:
     response = client.post(ENDPOINT, json=payload)
 
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize("raw_value", ["NaN", "Infinity", "-Infinity"])
+def test_non_finite_literals_return_json_safe_422(raw_value: str) -> None:
+    # Non-strict JSON literals reach the route as non-finite floats. The
+    # validation error echoes them, so the 422 envelope itself must stay
+    # JSON-serializable instead of becoming a 500. The shared TestClient
+    # raises server exceptions, so any 500 would fail loudly here.
+    raw = (
+        '{"income":{"kind":"manual_net","net_monthly_income":'
+        + raw_value
+        + '},"monthly_non_housing":700,"monthly_savings":300,"housing_share":0.35}'
+    )
+    response = client.post(
+        ENDPOINT, content=raw.encode(), headers={"Content-Type": "application/json"}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"][-1] == "net_monthly_income"
+
+
+def test_exponent_overflow_returns_json_safe_422() -> None:
+    # 1e400 is valid JSON number syntax but overflows float decoding to
+    # Infinity; the 422 envelope must still serialize as JSON.
+    raw = (
+        b'{"income":{"kind":"manual_net","net_monthly_income":1e400},'
+        b'"monthly_non_housing":700,"monthly_savings":300,"housing_share":0.35}'
+    )
+    response = client.post(
+        ENDPOINT, content=raw, headers={"Content-Type": "application/json"}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"][-1] == "net_monthly_income"
+
+
+def test_move_in_all_null_is_valid_with_zero_known_subtotal() -> None:
+    response = client.post(
+        ENDPOINT,
+        json=manual_request(
+            apartment=apartment(
+                move_in={
+                    "first_rent": None,
+                    "deposit": None,
+                    "broker_fee": None,
+                    "setup": None,
+                }
+            )
+        ),
+    )
+
+    assert response.status_code == 200
+    move_in = response.json()["apartment"]["move_in"]
+    assert move_in["cash_needed"] is None
+    assert move_in["known_subtotal"] == 0.0
+    assert move_in["missing_components"] == [
+        "first_rent",
+        "deposit",
+        "broker_fee",
+        "setup",
+    ]
+    assert move_in["refundable_deposit"] is None
+    assert [warning["code"] for warning in response.json()["warnings"]] == [
+        "move_in_incomplete"
+    ]
 
 
 def test_schema_rejects_non_finite_values() -> None:
