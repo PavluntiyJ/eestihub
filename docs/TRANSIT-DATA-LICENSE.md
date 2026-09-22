@@ -27,8 +27,9 @@ retained evidence names Tallinn and the distribution — no authorship
 beyond that is claimed. The stored credit reads: "Tallinn public
 transport stops and routes (Tallinna ühistranspordi peatused ja
 marsruudid) via transport.tallinn.ee", plus the registry URL above and
-the license URL. Future transit responses will carry this stored credit;
-no transit HTTP endpoint serves it yet.
+the license URL. `GET /api/v1/transit/nearby` carries this stored credit,
+license URL and transformation record; the frontend displays source/license
+links, credit and check/source dates next to the stop list.
 
 Transformations applied (recorded per generation in `transit_feeds`):
 source rows are filtered to the needed entities, stop/route pairs are
@@ -45,6 +46,5 @@ transient join inputs and are not stored.
   not combined into the licensed transit dataset.
 - This file does not claim that all service software or all database
   contents carry CC BY-SA 3.0 — only the transit rows described above.
-- Public release still requires the retained source-license evidence and
-  attribution above to be reviewed; no production import, push or
-  deployment happened in M08.
+- The owner-authorized planner release uses the retained source-license
+  evidence and attribution above. M08 itself did not publish or deploy.

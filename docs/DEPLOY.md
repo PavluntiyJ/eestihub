@@ -1,7 +1,9 @@
 # DEPLOY.md — EestiHub production deploy runbook
 
-This runbook deploys EestiHub to three free-tier services. Follow the steps
-in order. Every step is a dashboard action — no CLI or code changes needed.
+This runbook deploys EestiHub to Vercel, Render and Neon. Existing accounts
+and services are reused for the September planner release; no paid upgrade
+is required. Initial setup is described below; transit data also needs the
+maintenance CLI described in section 6.
 
 ## Prerequisites
 
@@ -100,14 +102,39 @@ Now that you have the real Vercel domain, update CORS on the backend:
 |---|---|---|
 | Backend health | Open `<render-url>/api/v1/health` | `{"status":"ok","database":"ok"}` |
 | Calculator | Visit the Vercel URL, go to **Calculator**, submit with €3000/2% | 4 regimes, best badge, `€2,409.76` net for Tööleping |
-| Housing dashboard | Go to **Rent** | Table with 8 Tallinn districts, bar chart, "Updated 2026-07-01" |
+| Housing dashboard | Go to **Rent** | Table with 8 Tallinn districts, bar chart and actual snapshot date |
 | i18n | Switch language to ET, then RU | Every string translated, URLs are `/et/...` and `/ru/...` |
-| Sitemap | Open `<vercel-url>/sitemap.xml` | 9 `<url>` entries (3 pages × 3 locales) with alternates |
+| Sitemap | Open `<vercel-url>/sitemap.xml` | 15 `<url>` entries (5 pages × 3 locales) with alternates |
+| Apartment planner | Enter net 2400, spending 700, savings 300, share 35%, rent 650, utilities 100/200 | Allowance 840; seasonal totals 750/850 and remainder 650/550 |
+| Address and transport | Select Mustamäe tee 5, open map | Real nearby platforms, service date and source credit, matching map markers |
 
 If the backend shows a cold start (~30–60 s on first request after a
 pause), wait a moment and retry.
 
 ---
+
+## 6. Transit data for the planner
+
+After the backend release is available, run from `backend/` with the production
+Neon `DATABASE_URL` supplied through the environment (never paste credentials
+into commands committed to Git):
+
+```bash
+python -m scripts.import_gtfs
+```
+
+This creates missing transit tables additively, validates the official Tallinn
+feed and atomically activates a snapshot. It does not modify housing or user
+data. Confirm `/api/v1/transit/nearby?lat=59.426593&lon=24.7034` returns 200,
+nonempty `stops`, source dates and license attribution. A 503 before this first
+import is expected. Refresh through the same CLI; the previous snapshot survives
+a failed refresh. No download is added to API boot or request handling.
+
+Refresh is currently an operator action; a daily run is suggested but no
+schedule is installed by this release. After seven days without a successful
+check, the frontend warns that the snapshot is stale. See
+[TRANSIT-OPERATIONS.md](TRANSIT-OPERATIONS.md) for the full freshness policy,
+failure recovery and exit codes.
 
 ## Free-tier caveats
 

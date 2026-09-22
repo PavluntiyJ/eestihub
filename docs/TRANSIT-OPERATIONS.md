@@ -47,7 +47,8 @@ flip commits exactly once; any failure rolls everything back and the
 previous pointer stays live. Compare-and-swap: a staged generation older
 than a meanwhile-activated one is rolled back as `superseded` instead of
 flipping. An identical content SHA records a new successful `checked_at`
-without new rows. Old generations are retained and stay queryable; M08
+without new rows only when that SHA is active; retained non-active SHA values
+are superseded without changing timestamps. Old generations are retained and stay queryable; M08
 does not delete or prune (avoids races with readers).
 
 ## Refresh failure recovery
@@ -79,5 +80,5 @@ an operator choice, not a feed promise.
 
 See `docs/TRANSIT-DATA-LICENSE.md`: CC BY-SA 3.0 derived transit data,
 Tallinn credit, registry URL, license URL and transformation record,
-stored per generation and served with future transit responses. Project
+stored per generation and served by `GET /api/v1/transit/nearby`. Project
 code stays MIT; salary/scenario data never enters these tables.
