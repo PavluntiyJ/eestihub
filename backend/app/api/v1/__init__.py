@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 
-from app.api.v1.routes import eresidency, health, housing, taxes
+from app.api.v1.routes import eresidency, health, housing, planner, taxes
 
 
 router = APIRouter()
 router.include_router(eresidency.router)
 router.include_router(health.router)
 router.include_router(housing.router)
+router.include_router(planner.router)
 router.include_router(taxes.router)

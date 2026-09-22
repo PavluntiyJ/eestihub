@@ -57,3 +57,7 @@ VAT_REGISTRATION_MONTHLY_THRESHOLD = (
 
 MONEY_QUANT = Decimal("0.01")
 EFFECTIVE_TAX_RATE_QUANT = Decimal("0.001")
+
+# The tax year the rates above are verified for. Surfaced as metadata by the
+# planner budget response; a year switcher would need its own contract change.
+TAX_YEAR = 2026

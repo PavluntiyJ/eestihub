@@ -115,7 +115,49 @@ evidence). Workstreams, all `[R]`:
 M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 ("stop before M04").
 
+## Planner implementation — M05 (owner-directed, in review)
+
+| # | Task | Brief | Status | Worker |
+|---|------|-------|--------|--------|
+| M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
+
+M06 has not started.
+
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M05 done — `[R]`.** Continued the
+  interrupted handoff: the six backend files were already staged, no restart.
+  Verified the implementation against the PLANNER contracts, then probed the
+  real HTTP endpoint for invalid/non-numeric/non-finite inputs (schema tests
+  alone do not establish API errors) and fixed one confirmed defect.
+  · **Defect fixed (confirmed via real HTTP, not schema):** JSON booleans
+  were accepted as money — `True`/`False` became `Decimal(1)`/`Decimal(0)`
+  because `bool` subclasses `int` in `_to_decimal`
+  (`backend/app/schemas/planner.py`). Before the fix: `net_monthly_income:
+  True` → 200 with `1.0`, `housing_share: True` → 200 with `1.0`,
+  `gross_monthly_income: True` → 200 (employment net 0.96),
+  `pension_pillar_rate: False` → 200 as `0.00`. After the fix all six forms
+  → 422 with "value must be a number, not a boolean"; legitimate ints 0/1
+  still 200. Strengthened `test_invalid_requests_return_422` with 9 new
+  strict-JSON-reachable HTTP cases (booleans, `"NaN"`/`"Infinity"`/`"abc"`
+  strings); the schema-only non-finite test is kept unchanged.
+  · Contract checks: the four PLANNER-PRODUCT fixtures (seasonal_risk,
+  within_budget, signed-deficit over_budget, unknown), exact allowance
+  boundary, zero income/share, ROUND_HALF_UP share limit (411.48),
+  reversed seasons (min/max, not winter-assumes-max), partial utilities,
+  explicit-zero vs missing move-in components, employment parity
+  (tooleping net 2409.76, allowance 843.42), JSON number types, 422 envelope
+  on invalid requests, `Cache-Control: no-store` on 200, thin route +
+  Decimal service reusing `calculate_tooleping`, `TAX_YEAR = 2026` metadata
+  with existing rates untouched, no DB/provider dependency.
+  · Verified: full backend suite `pytest` → 97 passed (88 staged + 9 new
+  HTTP cases); targeted HTTP re-probe after the fix (bools 422, ints still
+  200, `"NaN"`/`"Infinity"` strings 422, zero fixture 200).
+  · Commit: `feat(budget): add monthly and move-in calculations` (6 backend
+  files + this board entry only). Preserved uncommitted: Codex planning docs
+  (6 untracked), Codex M04 locale-nesting repair (3 dictionaries), Codex
+  journal/notes insertions in this file. M06 not started.
+
 
 - 2026-09-22 · deepseek-flash (opencode) · **M04 P2 copy fix done.** The home
   copy no longer promises universal sourcing: the housing step now says
@@ -728,6 +770,31 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 ## Notes for the orchestrator
 
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-22 · muse-spark (opencode) · **M05 notes for review.**
+  (1) **Shared 500 on non-strict non-finite literals — not fixed, out of
+  scope.** A raw `NaN`/`Infinity` literal in the request body returns 500
+  Internal Server Error on `POST /api/v1/planner/budget` because the 422
+  error detail echoes `input: nan`, which is not JSON-serializable by the
+  shared FastAPI/Starlette exception handler. Reproduced on the pre-existing
+  `POST /api/v1/calculate-taxes` too, so it is a framework-level issue, not
+  introduced by M05; a global handler would touch shared code outside M05
+  ownership. Strict JSON (what browsers send) cannot carry these literals —
+  `JSON.stringify(NaN)` emits `null`, which the endpoint correctly rejects
+  with 422 — and the strict-JSON-reachable forms (`"NaN"`/`"Infinity"`
+  strings) return 422 via real HTTP, now covered by tests. Recommend a
+  separate hardening task for the shared handler.
+  (2) **Documentation impact (M05 handoff):** no README change — M05 ships
+  no UI, and README refreshes belong to M15. Stale after this commit:
+  `README.md:106` still says "Backend tests (55)" (now 97 with the 9 new
+  M05 HTTP cases). New additive contract to incorporate into CONTEXT §5 by
+  its owner: `POST /api/v1/planner/budget` per docs/PLANNER-CONTRACTS.md
+  "Stable core for M05–M06" (no existing contract changed).
+  (3) Numeric strings (`"2400"`, `"0.02"`) coerce to numbers with 200 — kept
+  as-is: standard FastAPI lax parsing, consistent with the existing taxes
+  endpoint, and the contract even prescribes parsing Decimal from text.
+
+
 
 - 2026-09-21 · deepseek-flash (opencode) · M02 findings that need an
   orchestrator decision before any map/search feature is briefed:
