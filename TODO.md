@@ -117,6 +117,15 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-22 · deepseek-flash (opencode) · **M04 P2 copy fix done.** The home
+  copy no longer promises universal sourcing: the housing step now says
+  "Published 1–3-room rent midpoints ... utilities are shown as a separate
+  estimate", and the transparency block is titled "Sources and estimates" and
+  states that utility costs are our own estimate, not a published figure.
+  EN/ET/RU updated together (parity 168/168); build, lint and e2e (23 passed)
+  green; copy-only change, no code, endpoint or contract touched. The optional
+  header hit-area polish from the same review note is left for a later pass.
+
 - 2026-09-21 · deepseek-flash (opencode) · **M04 done: Baltic theme, shell
   and home — `[R]`.** Implemented the design tokens from PLANNER-DESIGN.md in
   `globals.css` (warm canvas / navy dark, teal primary, terracotta CTA,

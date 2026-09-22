@@ -49,10 +49,11 @@
           "title": "What you keep",
           "text": "Compare four ways of getting paid in Estonia: net income, payer cost and the effective tax rate.",
           "cta": "Compare regimes"
-        },
-        "housing": {
+    }
+  },
+  "housing": {
           "title": "What rent costs",
-          "text": "Average 1–3-room rents and utilities across Tallinn's eight districts, with the capture date of the data.",
+          "text": "Published 1–3-room rent midpoints for Tallinn's eight districts, with capture dates; utilities are shown as a separate estimate.",
           "cta": "View district prices"
         },
         "eresidency": {
@@ -63,10 +64,9 @@
       }
     },
     "transparency": {
-      "title": "Every number has a source",
-      "text": "Tax rates come from EMTA's 2026 table, rents are midpoints of published district ranges with their capture date, and e-Residency fees come from the official knowledge base. No invented prices and no advice — estimates you can check."
-    }
-  },
+      "title": "Sources and estimates",
+      "text": "Tax rates follow EMTA's 2026 table and e-Residency fees come from the official knowledge base. District rents are midpoints of published Tallinn ranges, each with its capture date. Utility costs are our own estimate, not a published figure, and the rent dashboard labels them separately."
+    },
   "housing": {
     "metadata": {
       "title": "Tallinn rent dashboard - EestiHub",
