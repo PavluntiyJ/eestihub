@@ -53,7 +53,7 @@ export function LocationContext({address, locale}: {address: AddressCandidate; l
             </button>
           </li>)}
         </ul>}
-        <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground" data-testid="transit-attribution">
+        <div className="space-y-1 break-words border-t pt-3 text-xs text-muted-foreground" data-testid="transit-attribution">
           <p>{response.feed.attribution}</p>
           <p>{t("sourceDate")}: {response.feed.source_last_modified ? date(response.feed.source_last_modified) : t("unknownDate")} · {t("checkedDate")}: {date(response.feed.checked_at)}</p>
           <p><a href={response.feed.source_url} target="_blank" rel="noopener noreferrer" className="underline">{t("source")}</a>{" · "}<a href={response.feed.license_url} target="_blank" rel="noopener noreferrer" className="underline">{response.feed.data_license}</a></p>

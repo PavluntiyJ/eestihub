@@ -24,7 +24,7 @@ export function TransitMap({address, stops, selected, onSelect}: {
     const timeout = setTimeout(() => setFailed(true), 12_000);
     import("maplibre-gl").then((lib) => {
       if (disposed || !container.current) return;
-      lib.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
+      lib.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       map = new lib.Map({container: container.current, style: "https://tiles.openfreemap.org/styles/liberty",
         center: [address.longitude, address.latitude], zoom: 14.5, attributionControl: false,
         cooperativeGestures: true, locale: {"NavigationControl.ZoomIn": t("zoomIn"), "NavigationControl.ZoomOut": t("zoomOut"), "Map.Title": t("mapLabel")}});

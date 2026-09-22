@@ -95,7 +95,12 @@ test("map loads only on request, synchronizes platforms and survives address cle
   let tileRequests = 0;
   await page.route("https://tiles.openfreemap.org/**", route => {
     tileRequests++;
-    return route.fulfill({json: {version: 8, sources: {}, layers: [{id: "background", type: "background", paint: {"background-color": "#e7eee7"}}]}});
+    return route.fulfill({json: {version: 8,
+      sources: {fixture: {type: "geojson", data: {type: "FeatureCollection", features: [
+        {type: "Feature", properties: {}, geometry: {type: "Point", coordinates: [24.7034, 59.426593]}},
+      ]}}},
+      layers: [{id: "background", type: "background", paint: {"background-color": "#e7eee7"}},
+        {id: "worker-fixture", source: "fixture", type: "circle", paint: {"circle-radius": 5}}]}});
   });
   await page.route("**/api/v1/transit/nearby**", route => route.fulfill({json: nearby}));
   await budget(page);
