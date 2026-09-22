@@ -215,3 +215,16 @@ export type AddressSearchResponse = {
 export type AddressProviderErrorCode =
   | "address_provider_unavailable"
   | "address_search_busy";
+
+export type NearbyStop = {
+  id: string; name: string; longitude: number; latitude: number;
+  straight_line_distance_m: number;
+  routes: {id: string; short_name: string | null; long_name: string | null; mode: "tram" | "bus" | "trolleybus" | "other"}[];
+};
+
+export type NearbyTransitResponse = {
+  radius_m: number; limit: number; service_date: string; timezone: string; stops: NearbyStop[];
+  feed: {source_url: string; attribution: string; license_url: string; data_license: string;
+    transformation: string; fetched_at: string; checked_at: string; source_last_modified: string | null;
+    calendar_start: string | null; calendar_end: string | null; freshness: "current" | "stale" | "unknown"};
+};

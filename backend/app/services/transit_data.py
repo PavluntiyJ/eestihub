@@ -61,14 +61,24 @@ def routes_for_stop(
     with no service that day return an empty list. Deterministic
     route_id order; no timetable or arrival computation.
     """
+    return routes_for_stops(session, feed_id, [stop_id], service_date)[stop_id]
+
+
+def routes_for_stops(
+    session: Session, feed_id: int, stop_ids: list[str], service_date: date
+) -> dict[str, list[TransitRoute]]:
+    """Batch nearby platforms so a remote database needs at most four queries."""
+    result: dict[str, list[TransitRoute]] = {stop_id: [] for stop_id in stop_ids}
+    if not stop_ids:
+        return result
     associations = session.scalars(
         select(TransitStopService).where(
             TransitStopService.feed_id == feed_id,
-            TransitStopService.stop_id == stop_id,
+            TransitStopService.stop_id.in_(stop_ids),
         )
     ).all()
     if not associations:
-        return []
+        return result
     candidate_services = {row.service_id for row in associations}
     calendars = {
         row.service_id: row
@@ -105,7 +115,7 @@ def routes_for_stop(
         if runs:
             active_services.add(service_id)
     if not active_services:
-        return []
+        return result
     route_ids = sorted(
         {
             row.route_id
@@ -120,7 +130,11 @@ def routes_for_stop(
         )
     ).all()
     by_id = {route.route_id: route for route in routes}
-    return [by_id[route_id] for route_id in route_ids if route_id in by_id]
+    for stop_id in stop_ids:
+        ids = sorted({row.route_id for row in associations
+                      if row.stop_id == stop_id and row.service_id in active_services})
+        result[stop_id] = [by_id[route_id] for route_id in ids if route_id in by_id]
+    return result
 
 
 def feed_freshness(

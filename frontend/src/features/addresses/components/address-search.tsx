@@ -51,7 +51,7 @@ function providerErrorCode(body: unknown): AddressProviderErrorCode | null {
 // Optional Tallinn address lookup mounted below a calculated budget. It only
 // selects location context: results never touch budget arithmetic, nothing
 // is persisted, and the query never leaves the client except to the API.
-export function AddressSearch({ requestTimeoutMs = 10_000 }: { requestTimeoutMs?: number }) {
+export function AddressSearch({ requestTimeoutMs = 10_000, onSelect }: { requestTimeoutMs?: number; onSelect?: (address: AddressCandidate | null) => void }) {
   const t = useTranslations("addresses");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -166,6 +166,7 @@ export function AddressSearch({ requestTimeoutMs = 10_000 }: { requestTimeoutMs?
   }, []);
 
   function clearAll() {
+    onSelect?.(null);
     cancelDebounce();
     invalidatePending();
     setQuery("");
@@ -175,6 +176,7 @@ export function AddressSearch({ requestTimeoutMs = 10_000 }: { requestTimeoutMs?
   }
 
   function selectCandidate(candidate: AddressCandidate) {
+    onSelect?.(candidate);
     // The rewritten label must not schedule a search of its own text.
     suppressDebounceRef.current = true;
     cancelDebounce();
@@ -197,6 +199,7 @@ export function AddressSearch({ requestTimeoutMs = 10_000 }: { requestTimeoutMs?
   }
 
   function onQueryChange(value: string) {
+    onSelect?.(null);
     // Every edit immediately invalidates the pending request and the stale
     // dropdown: the selection no longer describes the field, and a late
     // response must never render under new text. The debounce effect below

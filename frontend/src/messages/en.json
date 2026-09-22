@@ -50,9 +50,8 @@
           "title": "What you keep",
           "text": "Compare four ways of getting paid in Estonia: net income, payer cost and the effective tax rate.",
           "cta": "Compare regimes"
-    }
-  },
-  "housing": {
+        },
+        "housing": {
           "title": "What rent costs",
           "text": "Published 1–3-room rent midpoints for Tallinn's eight districts, with capture dates; utilities are shown as a separate estimate.",
           "cta": "View district prices"
@@ -67,7 +66,8 @@
     "transparency": {
       "title": "Sources and estimates",
       "text": "Tax rates follow EMTA's 2026 table and e-Residency fees come from the official knowledge base. District rents are midpoints of published Tallinn ranges, each with its capture date. Utility costs are our own estimate, not a published figure, and the rent dashboard labels them separately."
-    },
+    }
+  },
   "housing": {
     "metadata": {
       "title": "Tallinn rent dashboard - EestiHub",
@@ -293,7 +293,7 @@
     "progress": {
       "income": "Income",
       "budget": "Budget",
-      "explore": "Explore",
+      "explore": "Apartment & location",
       "exploreSoon": "Coming later"
     },
     "incomeKind": {
@@ -401,5 +401,86 @@
       "unknown": "Unverified match"
     },
     "attributionLink": "Source data"
+  },
+  "apartment": {
+    "step": "Next · Your apartment",
+    "title": "Would this apartment fit?",
+    "description": "Enter costs from a listing or your own estimate. Check both seasons before deciding.",
+    "fields": {
+      "rent": "Monthly rent, EUR",
+      "summer": "Summer utilities, EUR / month",
+      "winter": "Winter utilities, EUR / month",
+      "first_rent": "First month's rent",
+      "deposit": "Refundable deposit, EUR",
+      "broker_fee": "Broker fee, EUR",
+      "setup": "Other move-in costs, EUR"
+    },
+    "utilities": "Utilities in each season",
+    "unknownHint": "Leave unknown amounts blank. Enter 0 only if the cost is included or does not apply.",
+    "basis": "Where do the utility amounts come from?",
+    "estimate": "My estimate",
+    "bill": "Previous bills",
+    "moveInTitle": "Cash needed to move in",
+    "moveInHint": "The first month's rent is included automatically. Add the other costs below; leave unknown amounts blank.",
+    "unknown": "Unknown",
+    "invalid": "Enter an amount from 0 to 1,000,000, with at most two decimals.",
+    "budgetStale": "Recalculate your budget above before assessing this apartment.",
+    "error": "The calculation is unavailable. Your inputs are kept; please retry.",
+    "loading": "Calculating…",
+    "retry": "Retry assessment",
+    "calculate": "Assess this apartment",
+    "stale": "Inputs changed. Recalculate to update this assessment.",
+    "fit": {
+      "within_budget": "Fits in both seasons",
+      "seasonal_risk": "Fits in one season only",
+      "over_budget": "Above your housing allowance",
+      "unknown": "Utility costs are still missing"
+    },
+    "fitHint": "Compared with the housing allowance you chose above. This is a budget estimate, not a recommendation to rent.",
+    "summer": "Summer",
+    "winter": "Winter",
+    "total": "Rent + utilities, monthly",
+    "remainder": "Left after housing, spending and savings",
+    "incomplete": "Both seasonal utility amounts are needed to assess the full year. Unknown costs are never treated as zero.",
+    "subtotal": "Known costs so far: {amount}",
+    "missing": "Still needed",
+    "depositHint": "The refundable deposit is cash you need upfront, not a monthly expense.",
+    "empty": "Your seasonal costs and remaining budget will appear here.",
+    "privacy": "Your figures are used for this calculation and are not saved as a profile.",
+    "addressHint": "Optional: choose an address to see its location and nearby public transport. No live rental listings or commute estimates."
+  },
+  "transit": {
+    "title": "Around this address",
+    "description": "Up to 20 stops within 800 m in a straight line. Platforms are shown separately; walking routes may be longer.",
+    "showMap": "Show map",
+    "hideMap": "Hide map",
+    "approximate": "This address is approximate. Check its position before relying on the distances.",
+    "unavailable": "Transport data is temporarily unavailable. Your budget and address are still here.",
+    "retry": "Retry transport",
+    "loading": "Finding nearby stops…",
+    "scheduled": "Routes scheduled for {date} (Tallinn time). These are not live arrivals or a guarantee of service at this hour.",
+    "freshness": {
+      "stale": "This timetable snapshot is old or outside its service dates. Confirm service with the transport operator.",
+      "unknown": "We cannot confirm the age of this timetable. Check current service with the transport operator."
+    },
+    "empty": "No stops found within 800 m in this dataset.",
+    "distance": "{distance} m",
+    "platform": "Stop ID: {id}",
+    "noRoutes": "No routes scheduled for today in this snapshot",
+    "mode": {
+      "bus": "Bus",
+      "tram": "Tram",
+      "trolleybus": "Trolleybus",
+      "other": "Route"
+    },
+    "sourceDate": "Source updated",
+    "checkedDate": "Last checked",
+    "unknownDate": "Unknown",
+    "source": "Download source timetable",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "mapLabel": "Map of the selected address and nearby stops",
+    "mapUnavailable": "The map could not fully load. The address and stop list remain available.",
+    "mapPrivacy": "Map tiles load from OpenFreeMap when you open this map. Your salary and budget are not sent to the map provider."
   }
 }

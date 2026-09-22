@@ -50,9 +50,8 @@
           "title": "Mis palgast alles jääb",
           "text": "Võrdle nelja viisi Eestis raha teenimiseks: netotulu, maksja kulu ja efektiivne maksumäär.",
           "cta": "Võrdle režiime"
-    }
-  },
-  "housing": {
+        },
+        "housing": {
           "title": "Kui palju üür maksab",
           "text": "Avaldatud 1–3-toaliste korterite üüri keskpunktid kaheksas Tallinna linnaosas koos kogumiskuupäevaga; kommunaalid on eraldi hinnang.",
           "cta": "Vaata linnaosade hindu"
@@ -67,7 +66,8 @@
     "transparency": {
       "title": "Allikad ja hinnangud",
       "text": "Maksumäärad järgivad EMTA 2026. aasta tabelit ja e-residentsuse tasud pärinevad ametlikust teadmistebaasist. Linnaosade üürid on avaldatud Tallinna vahemike keskpunktid kogumiskuupäevaga. Kommunaalkulud on meie enda hinnang, mitte avaldatud näitaja, ja üüriülevaade märgib need eraldi."
-    },
+    }
+  },
   "housing": {
     "metadata": {
       "title": "Tallinna üüri töölaud - EestiHub",
@@ -147,7 +147,7 @@
     },
     "errors": {
       "title": "Arvutus ebaõnnestus",
-      "api": "API lükkas päringu tagasi. Kontrolli sisendit ja proovi uuesti.",
+      "api": "Päring lükati tagasi. Kontrolli sisendit ja proovi uuesti.",
       "network": "Backend pole saadaval. Käivita FastAPI teenus lokaalselt ja proovi uuesti."
     },
     "comparison": {
@@ -293,7 +293,7 @@
     "progress": {
       "income": "Sissetulek",
       "budget": "Eelarve",
-      "explore": "Uuri",
+      "explore": "Korter ja asukoht",
       "exploreSoon": "Tulekul"
     },
     "incomeKind": {
@@ -401,5 +401,86 @@
       "unknown": "Kinnitamata vaste"
     },
     "attributionLink": "Lähteandmed"
+  },
+  "apartment": {
+    "step": "Järgmiseks · Sinu korter",
+    "title": "Kas see korter mahub eelarvesse?",
+    "description": "Sisesta kuulutuse kulud või enda hinnang. Võrdle enne otsustamist mõlemat aastaaega.",
+    "fields": {
+      "rent": "Kuuüür, EUR",
+      "summer": "Suvised kommunaalkulud, EUR kuus",
+      "winter": "Talvised kommunaalkulud, EUR kuus",
+      "first_rent": "Esimese kuu üür",
+      "deposit": "Tagastatav tagatisraha, EUR",
+      "broker_fee": "Maakleritasu, EUR",
+      "setup": "Muud sissekolimiskulud, EUR"
+    },
+    "utilities": "Kommunaalkulud eri aastaaegadel",
+    "unknownHint": "Jäta teadmata summad tühjaks. Sisesta 0 ainult siis, kui kulu sisaldub üüris või puudub.",
+    "basis": "Kust kommunaalkulude summad pärinevad?",
+    "estimate": "Minu hinnang",
+    "bill": "Varasemad arved",
+    "moveInTitle": "Sissekolimiseks vajalik raha",
+    "moveInHint": "Esimese kuu üür lisatakse automaatselt. Lisa ülejäänud kulud; jäta teadmata summad tühjaks.",
+    "unknown": "Teadmata",
+    "invalid": "Sisesta summa 0 kuni 1 000 000, kuni kahe komakohaga.",
+    "budgetStale": "Enne korteri hindamist arvuta ülal eelarve uuesti.",
+    "error": "Arvutus pole praegu saadaval. Sisestatud andmed on alles; proovi uuesti.",
+    "loading": "Arvutan…",
+    "retry": "Proovi hindamist uuesti",
+    "calculate": "Hinda seda korterit",
+    "stale": "Andmed muutusid. Hinnangu uuendamiseks arvuta uuesti.",
+    "fit": {
+      "within_budget": "Mahub eelarvesse mõlemal aastaajal",
+      "seasonal_risk": "Mahub eelarvesse ainult ühel aastaajal",
+      "over_budget": "Ületab eluaseme eelarvet",
+      "unknown": "Kommunaalkulud on veel teadmata"
+    },
+    "fitHint": "Võrdlus sinu valitud eluaseme eelarvega. See on eelarvehinnang, mitte soovitus korterit üürida.",
+    "summer": "Suvi",
+    "winter": "Talv",
+    "total": "Üür ja kommunaalkulud kuus",
+    "remainder": "Alles pärast eluaset, muid kulusid ja säästmist",
+    "incomplete": "Terve aasta hindamiseks on vaja mõlema aastaaja kommunaalkulusid. Teadmata kulusid ei loeta nulliks.",
+    "subtotal": "Seni teadaolevad kulud: {amount}",
+    "missing": "Veel vaja",
+    "depositHint": "Tagastatav tagatisraha on ettemaksuks vajalik raha, mitte igakuine kulu.",
+    "empty": "Siia ilmuvad hooajalised kulud ja allesjääv eelarve.",
+    "privacy": "Sinu arve kasutatakse selleks arvutuseks ja neid ei salvestata profiilina.",
+    "addressHint": "Soovi korral vali aadress, et näha asukohta ja lähedal asuvat ühistransporti. Siin pole jooksvaid üürikuulutusi ega sõiduaja hinnanguid."
+  },
+  "transit": {
+    "title": "Selle aadressi ümbruses",
+    "description": "Kuni 20 peatust 800 m raadiuses linnulennult. Platvormid on eraldi; jalgsitee võib olla pikem.",
+    "showMap": "Näita kaarti",
+    "hideMap": "Peida kaart",
+    "approximate": "See aadress on ligikaudne. Enne kaugustele tuginemist kontrolli asukohta.",
+    "unavailable": "Ühistranspordi andmed pole ajutiselt saadaval. Eelarve ja aadress on alles.",
+    "retry": "Laadi peatused uuesti",
+    "loading": "Otsin lähedal asuvaid peatusi…",
+    "scheduled": "Kuupäevaks {date} kavandatud liinid (Tallinna aeg). Need pole reaalaja saabumised ega teenuse garantii sel kellaajal.",
+    "freshness": {
+      "stale": "Sõiduplaani väljavõte on aegunud või väljaspool kehtivusaega. Kontrolli väljumisi vedajalt.",
+      "unknown": "Sõiduplaani vanust ei saa kinnitada. Kontrolli kehtivaid väljumisi vedajalt."
+    },
+    "empty": "Selles andmestikus pole 800 m raadiuses peatusi.",
+    "distance": "{distance} m",
+    "platform": "Peatuse ID: {id}",
+    "noRoutes": "Selles väljavõttes pole tänaseks liine kavandatud",
+    "mode": {
+      "bus": "Buss",
+      "tram": "Tramm",
+      "trolleybus": "Troll",
+      "other": "Liin"
+    },
+    "sourceDate": "Allikas uuendatud",
+    "checkedDate": "Viimati kontrollitud",
+    "unknownDate": "Teadmata",
+    "source": "Laadi alla algne sõiduplaan",
+    "zoomIn": "Suurenda",
+    "zoomOut": "Vähenda",
+    "mapLabel": "Valitud aadressi ja lähedal asuvate peatuste kaart",
+    "mapUnavailable": "Kaarti ei õnnestunud täielikult laadida. Aadress ja peatuste loend on endiselt saadaval.",
+    "mapPrivacy": "Kaardi avamisel laaditakse kaardipaanid OpenFreeMapist. Sinu palka ega eelarvet kaarditeenusele ei saadeta."
   }
 }

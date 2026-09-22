@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { ApiError, calculateBudget } from "@/lib/api";
-import { AddressSearch } from "@/features/addresses/components/address-search";
+import { ApartmentAssessment } from "@/features/apartments/components/apartment-assessment";
 import type {
   PlannerBudgetRequest,
   PlannerBudgetResponse,
@@ -307,7 +307,8 @@ export function PlannerForm({ locale }: PlannerFormProps) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[35rem_1fr]">
+    <div className="space-y-8">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="h-fit space-y-6">
         <ol className="flex items-center gap-2 text-sm" aria-label={t("progress.budget")}>
           <ProgressStep
@@ -325,9 +326,6 @@ export function PlannerForm({ locale }: PlannerFormProps) {
               3
             </span>
             <span>{t("progress.explore")}</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-              {t("progress.exploreSoon")}
-            </span>
           </li>
         </ol>
 
@@ -508,7 +506,6 @@ export function PlannerForm({ locale }: PlannerFormProps) {
               locale={locale}
               result={result}
             />
-            <AddressSearch />
           </>
         ) : (
           <Card
@@ -522,6 +519,8 @@ export function PlannerForm({ locale }: PlannerFormProps) {
           </Card>
         )}
       </section>
+    </div>
+    {result && submittedPayload && <ApartmentAssessment budgetSnapshot={submittedPayload} budgetStale={isStale} locale={locale} />}
     </div>
   );
 }
