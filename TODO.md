@@ -127,6 +127,56 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-22 · muse-spark (opencode) · **M08 review fixes done — `[R]`.**
+  Addressed all six Codex findings; existing checks kept strict, no M09,
+  no push or production.
+  · **(1) Activation:** the compare-and-swap now always compares staged
+  fetched_at against the current activation — an older normal-path import
+  after a newer activation returns superseded (regression per the review
+  repro), ties flip documented; SHA idempotency only refreshes
+  `checked_at` on the actually active generation, retained SHAs report
+  superseded without timestamp moves; unique-constraint races roll back
+  and retry once, then re-resolve.
+  · **(2) Download:** body pumps on a daemon thread with a real total
+  deadline that closes the response mid-block (slow-drip and silent both
+  stop); temp file unlinked inside `download_source` on every failure
+  (slow-drip test asserts prompt termination and no `gtfs-*.zip`
+  leftovers); urllib timeout documented as per-operation inactivity bound.
+  · **(3) Envelope/freshness:** effective first/last dates derive from
+  weekday scans plus both exception types with a bounded per-service
+  range (Monday-only windows and removed-only services reject as
+  no-effective-dates); freshness checks stale evidence before unknown
+  metadata (envelope-stale + missing/future Last-Modified → stale).
+  · **(4) Validation/streaming:** one bounded streaming reader for all
+  members (real byte counts, CRC verified on close including ignored
+  shapes, strict CSV, duplicate headers everywhere); non-negative stop
+  sequences; location_type 0–4; string lengths aligned with DB columns;
+  route types restricted to the reference's exact static+extended codes
+  (333/8/99 rejected, 901/1501 map to other); BadZipFile/zlib mapped to
+  FeedError; archive-limit tests isolated with reason assertions; CLI
+  subprocess coverage (validate/missing-file/bad-flag/unavailable-DB)
+  with static concise messages (no SQL text), distinct unavailable vs
+  lock-conflict exits, superseded stays exit 0 by documented convention.
+  · **(5) CI Postgres:** disposable `estihub_test` service + explicit
+  `TRANSIT_TEST_DATABASE_URL` on the backend job (YAML parses); explicit
+  URL failures fail instead of skip; fixture refuses non-`*_test`
+  databases; first-import and overlapping activation/concurrency paths
+  exercised; local run still skips (no server here) and CI itself is
+  unverified without owner-authorized push.
+  · **(6) Attribution:** transit credit no longer names Maa- ja Ruumiamet
+  (unsupported by retained evidence) — dataset title + distribution +
+  registry + license URL; docs state credit is stored for future
+  responses, none served yet; stale parser-library recommendation fixed.
+  · Verified: `pytest` → 230 passed + 4 PG-skipped (explicit skip
+  reasons); `npm run build`/`lint` clean; `ci.yml` parses; real-feed
+  `--validate-only` still accepts 1120/80/20081/483972/10004. Correct
+  count for the record: M08 total is 230 passed, not the 150 I wrote in
+  the previous entry (150 was the pre-transit baseline).
+  · Commit: `fix(transit): review corrections for import safety`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
+
 - 2026-09-22 · muse-spark (opencode) · **M08 done — `[R]`.** Versioned
   GTFS import and refresh per docs/PLANNER-M08-HANDOFF.md; backend only,
   no nearby endpoint, no frontend, no automation, no push or production.

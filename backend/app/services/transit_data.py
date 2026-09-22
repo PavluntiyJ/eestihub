@@ -128,25 +128,29 @@ def feed_freshness(
 ) -> Freshness:
     """Our freshness policy over stored evidence, never over HTTP 200.
 
-    Stale when the latest successful check is older than 7 days, the known
-    source modification is older than 30 days, or today falls outside the
-    effective calendar envelope. Unknown when not stale by known evidence
-    but the source modification time is missing or implausibly future-dated.
+    Known stale evidence takes precedence over unknown metadata: an old
+    successful check, an old source modification, or today outside the
+    effective calendar envelope is stale even when the modification stamp
+    itself is missing or futuristic. Unknown applies only when nothing
+    proves staleness but the source modification time is missing or more
+    than 24 hours in the future.
     """
     now = as_aware_utc(now_utc)
     checked = as_aware_utc(feed.checked_at)
     if now - checked > CHECK_STALE_AFTER:
         return "stale"
     last_modified = feed.source_last_modified
-    if last_modified is None:
-        return "unknown"
-    last_modified = as_aware_utc(last_modified)
-    if last_modified > now + LAST_MODIFIED_FUTURE_TOLERANCE:
-        return "unknown"
-    if now - last_modified > LAST_MODIFIED_STALE_AFTER:
-        return "stale"
+    if last_modified is not None:
+        last_modified = as_aware_utc(last_modified)
+        if last_modified <= now + LAST_MODIFIED_FUTURE_TOLERANCE:
+            if now - last_modified > LAST_MODIFIED_STALE_AFTER:
+                return "stale"
     if feed.calendar_start is not None and today < feed.calendar_start:
         return "stale"
     if feed.calendar_end is not None and today > feed.calendar_end:
         return "stale"
+    if last_modified is None:
+        return "unknown"
+    if last_modified > now + LAST_MODIFIED_FUTURE_TOLERANCE:
+        return "unknown"
     return "current"

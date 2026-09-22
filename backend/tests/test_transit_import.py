@@ -2,7 +2,7 @@
 
 import io
 import zipfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -251,9 +251,10 @@ def test_injected_failure_rolls_back_everything(session) -> None:
     assert session.scalar(select(TransitState.active_feed_id).where(TransitState.id == 1)) is None
 
 
-def test_stale_staged_generation_does_not_flip(session) -> None:
-    import app.services.transit_import as importer
-
+def test_older_import_after_newer_activation_is_superseded(session) -> None:
+    # Review reproduction: activate A fetched at 12:00, then run the normal
+    # import path for B fetched at 11:50. B must not overwrite A, no matter
+    # that nothing changed during B's own staging.
     new_feed = parse_feed(make_zip(base_files()))
     new_result = import_feed(
         session,
@@ -267,31 +268,51 @@ def test_stale_staged_generation_does_not_flip(session) -> None:
     )
     assert new_result.status == "activated"
     old_feed = parse_feed(make_zip(base_files()))
-    staged_id_holder: dict = {}
-
-    real_activate = importer._activate_generation
-
-    def capture(session_, staged_id, staged_fetched_at, based_on):
-        staged_id_holder["id"] = staged_id
-        # Simulate a worker that staged when nothing was active.
-        return real_activate(session_, staged_id, staged_fetched_at, None)
-
-    importer._activate_generation = capture
-    try:
-        stale = import_feed(
-            session,
-            old_feed,
-            source_url="x",
-            content_sha256="f" * 64,
-            fetched_at=datetime(2026, 9, 20, 12, 0, tzinfo=timezone.utc),
-            checked_at=NOW,
-            source_last_modified=None,
-            source_etag=None,
-        )
-    finally:
-        importer._activate_generation = real_activate
+    stale = import_feed(
+        session,
+        old_feed,
+        source_url="x",
+        content_sha256="f" * 64,
+        fetched_at=datetime(2026, 9, 22, 11, 50, tzinfo=timezone.utc),
+        checked_at=NOW,
+        source_last_modified=None,
+        source_etag=None,
+    )
 
     assert stale.status == "superseded"
+    assert stale.feed_id is None
+    assert session.scalar(
+        select(TransitState.active_feed_id).where(TransitState.id == 1)
+    ) == new_result.feed_id
+    assert session.query(TransitFeed).count() == 1
+
+
+def test_newer_import_after_older_activation_flips(session) -> None:
+    old_feed = parse_feed(make_zip(base_files()))
+    old_result = import_feed(
+        session,
+        old_feed,
+        source_url="x",
+        content_sha256="e" * 64,
+        fetched_at=datetime(2026, 9, 22, 11, 50, tzinfo=timezone.utc),
+        checked_at=NOW,
+        source_last_modified=None,
+        source_etag=None,
+    )
+    assert old_result.status == "activated"
+    new_feed = parse_feed(make_zip(base_files()))
+    new_result = import_feed(
+        session,
+        new_feed,
+        source_url="x",
+        content_sha256="f" * 64,
+        fetched_at=datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc),
+        checked_at=NOW,
+        source_last_modified=None,
+        source_etag=None,
+    )
+
+    assert new_result.status == "activated"
     assert session.scalar(
         select(TransitState.active_feed_id).where(TransitState.id == 1)
     ) == new_result.feed_id
@@ -372,21 +393,7 @@ def test_missing_parent_reference_rejected(session) -> None:
         parse_feed(make_zip(files))
 
 
-def test_archive_safety_limits(monkeypatch: pytest.MonkeyPatch) -> None:
-    import app.services.transit_import as importer
-
-    monkeypatch.setattr(importer, "MAX_ENTRIES", 2)
-    with pytest.raises(FeedError):
-        parse_feed(make_zip(base_files()))
-    monkeypatch.setattr(importer, "MAX_ROWS_PER_FILE", 1)
-    with pytest.raises(FeedError):
-        parse_feed(make_zip(base_files()))
-    monkeypatch.setattr(importer, "MAX_CELL_BYTES", 4)
-    with pytest.raises(FeedError):
-        parse_feed(make_zip(base_files()))
-
-
-def test_download_limits_and_slow_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_archive_size_limit_rejects() -> None:
     import app.services.transit_import as importer
 
     class FakeResponse:
@@ -401,11 +408,8 @@ def test_download_limits_and_slow_deadline(monkeypatch: pytest.MonkeyPatch) -> N
                 return b""
             return self._chunks.pop(0)
 
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            return False
+        def close(self):
+            pass
 
     seen_urls: list = []
 
@@ -413,25 +417,278 @@ def test_download_limits_and_slow_deadline(monkeypatch: pytest.MonkeyPatch) -> N
         seen_urls.append(request.full_url)
         return FakeResponse([b"x" * 10])
 
-    monkeypatch.setattr(importer, "urlopen", fake_urlopen)
-    monkeypatch.setattr(importer, "MAX_COMPRESSED_BYTES", 5)
-    with pytest.raises(DownloadError):
-        download_source()
+    real_urlopen = importer.urlopen
+    importer.urlopen = fake_urlopen
+    real_limit = importer.MAX_COMPRESSED_BYTES
+    importer.MAX_COMPRESSED_BYTES = 5
+    try:
+        with pytest.raises(DownloadError, match="exceeds"):
+            download_source()
+    finally:
+        importer.urlopen = real_urlopen
+        importer.MAX_COMPRESSED_BYTES = real_limit
     assert seen_urls and seen_urls[0].startswith("https://transport.tallinn.ee/")
 
-    ticks = [0.0]
 
-    def fake_clock():
-        ticks[0] += 61.0
-        return ticks[0]
+def test_effective_envelope_uses_actual_service_dates(session) -> None:
+    del session
+    files = base_files()
+    files["calendar.txt"] = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "M,1,0,0,0,0,0,0,20260101,20260110\n"
+    )
+    files["trips.txt"] = "route_id,service_id,trip_id\nR1,M,T1\n"
+    files["stop_times.txt"] = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "T1,08:00:00,08:00:00,00123,1\n"
+    )
+    files["calendar_dates.txt"] = "service_id,date,exception_type\n"
+    feed = parse_feed(make_zip(files))
 
-    def slow_drip(request, timeout=None):
-        return FakeResponse([b"x"])
+    # 2026-01-05 is the only Monday in range: endpoints are not effective.
+    assert (feed.calendar_start, feed.calendar_end) == (
+        date(2026, 1, 5),
+        date(2026, 1, 5),
+    )
 
-    monkeypatch.setattr(importer, "urlopen", slow_drip)
-    monkeypatch.setattr(importer, "MAX_COMPRESSED_BYTES", 10**9)
-    with pytest.raises(DownloadError):
-        download_source(deadline_s=60.0, clock=fake_clock)
+
+def test_single_day_band_without_service_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["calendar.txt"] = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "M,1,0,0,0,0,0,0,20260106,20260106\n"
+    )
+    files["trips.txt"] = "route_id,service_id,trip_id\nR1,M,T1\n"
+    files["stop_times.txt"] = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "T1,08:00:00,08:00:00,00123,1\n"
+    )
+    files["calendar_dates.txt"] = "service_id,date,exception_type\n"
+    with pytest.raises(FeedError, match="no effective service dates"):
+        parse_feed(make_zip(files))
+
+
+def test_removed_only_date_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["calendar.txt"] = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "M,1,0,0,0,0,0,0,20260105,20260105\n"
+    )
+    files["trips.txt"] = "route_id,service_id,trip_id\nR1,M,T1\n"
+    files["stop_times.txt"] = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "T1,08:00:00,08:00:00,00123,1\n"
+    )
+    files["calendar_dates.txt"] = "service_id,date,exception_type\nM,20260105,2\n"
+    with pytest.raises(FeedError, match="no effective service dates"):
+        parse_feed(make_zip(files))
+
+
+def test_implausible_service_range_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["calendar.txt"] = files["calendar.txt"].replace("20260101,20261231", "20000101,29990101")
+    with pytest.raises(FeedError, match="implausible service range"):
+        parse_feed(make_zip(files))
+
+
+def test_archive_entry_row_and_cell_limits(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.services.transit_import as importer
+
+    monkeypatch.setattr(importer, "MAX_ROWS_PER_FILE", 1)
+    with pytest.raises(FeedError, match="too many rows"):
+        parse_feed(make_zip(base_files()))
+
+
+def test_archive_cell_limit_rejects(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.services.transit_import as importer
+
+    monkeypatch.setattr(importer, "MAX_CELL_BYTES", 4)
+    with pytest.raises(FeedError, match="cell exceeds"):
+        parse_feed(make_zip(base_files()))
+
+
+def _corrupt_member(path: str, member: str, delta: int) -> str:
+    import tempfile
+
+    with open(path, "rb") as handle:
+        data = bytearray(handle.read())
+    archive = zipfile.ZipFile(path)
+    try:
+        offset = archive.getinfo(member).header_offset
+    finally:
+        archive.close()
+    data[offset + delta] ^= 0xFF
+    handle = tempfile.NamedTemporaryFile(prefix="feed-", suffix=".zip", delete=False)
+    handle.write(bytes(data))
+    handle.close()
+    return handle.name
+
+
+def test_corrupt_crc_in_ignored_shapes_rejected(session) -> None:
+    del session
+    import app.services.transit_import as importer
+
+    files = base_files()
+    files["shapes.txt"] = "shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\nS,59.4,24.7,1\n"
+    corrupted = _corrupt_member(make_zip(files), "shapes.txt", 60)
+    with pytest.raises(FeedError):
+        parse_feed(corrupted)
+
+
+def test_corrupt_crc_in_stops_is_invalid_feed_not_traceback(session) -> None:
+    del session
+    corrupted = _corrupt_member(make_zip(base_files()), "stops.txt", 120)
+    with pytest.raises(FeedError):
+        parse_feed(corrupted)
+
+
+def test_duplicate_stop_times_headers_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["stop_times.txt"] = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_id,stop_sequence\n"
+        "T1,08:00:00,08:00:00,00123,00123,1\n"
+        "T1,08:10:00,08:10:00,S2,S2,2\n"
+        "T2,09:00:00,09:00:00,00123,00123,1\n"
+        "T3,10:00:00,10:00:00,00123,00123,1\n"
+        "T8,11:00:00,11:00:00,00123,00123,1\n"
+        "T9,07:00:00,07:00:00,00123,00123,1\n"
+    )
+    with pytest.raises(FeedError, match="duplicate headers"):
+        parse_feed(make_zip(files))
+
+
+def test_malformed_csv_strict_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["routes.txt"] = files["routes.txt"].replace(
+        "R1,10,Alpha - Beta,3\n", 'R1,"Alpha,3\n', 1
+    )
+    with pytest.raises(FeedError, match="malformed CSV"):
+        parse_feed(make_zip(files))
+
+
+@pytest.mark.parametrize(
+    "filename, old, new",
+    [
+        ("stops.txt", "00123,", "x" * 65 + ","),
+        ("stops.txt", "Alpha,", "A" * 256 + ","),
+        ("routes.txt", "R1,", "R" * 129 + ","),
+        ("trips.txt", "R1,WD,T1", "R1," + "W" * 129 + ",T1"),
+    ],
+)
+def test_overlong_values_rejected(session, filename: str, old: str, new: str) -> None:
+    del session
+    files = base_files()
+    assert old in files[filename]
+    files[filename] = files[filename].replace(old, new, 1)
+    with pytest.raises(FeedError, match="too long"):
+        parse_feed(make_zip(files))
+
+
+@pytest.mark.parametrize("location_type", ["9", "abc", "-1"])
+def test_invalid_location_type_rejected(
+    session, location_type: str
+) -> None:
+    del session
+    files = base_files()
+    files["stops.txt"] = (
+        "stop_id,stop_code,stop_name,stop_lat,stop_lon,location_type\n"
+        "00123,1001-1,Alpha,59.4370,24.7450,\n"
+        f"S2,,Beta,59.4400,24.7500,{location_type}\n"
+        "S3,,Gamma,59.4500,24.7600,\n"
+    )
+    with pytest.raises(FeedError, match="location_type"):
+        parse_feed(make_zip(files))
+
+
+def test_negative_stop_sequence_rejected(session) -> None:
+    del session
+    files = base_files()
+    files["stop_times.txt"] = files["stop_times.txt"].replace(",00123,1\n", ",00123,-1\n", 1)
+    with pytest.raises(FeedError, match="negative stop_sequence"):
+        parse_feed(make_zip(files))
+
+
+@pytest.mark.parametrize("route_type", ["8", "99", "333", "1701", "-1", "abc", "3.5"])
+def test_unsupported_route_types_rejected(session, route_type: str) -> None:
+    del session
+    files = base_files()
+    files["routes.txt"] = files["routes.txt"].replace(",3\n", f",{route_type}\n", 1)
+    with pytest.raises(FeedError):
+        parse_feed(make_zip(files))
+
+
+@pytest.mark.parametrize(
+    "route_type, mode", [("0", "tram"), ("901", "other"), ("700", "bus"), ("701", "other"), ("11", "trolleybus"), ("1501", "other"), ("100", "other")]
+)
+def test_supported_route_types_map_modes(session, route_type: str, mode: str) -> None:
+    files = base_files()
+    files["routes.txt"] = (
+        "route_id,route_short_name,route_long_name,route_type\n"
+        f"RX,9,Long,{route_type}\n"
+    )
+    files["trips.txt"] = "route_id,service_id,trip_id\nRX,WD,TX\n"
+    files["stop_times.txt"] = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "TX,08:00:00,08:00:00,00123,1\n"
+    )
+    result, _feed = import_valid(session, files=files, sha=route_type + "z" * 60)
+    assert result.status == "activated"
+    stored = session.scalar(
+        select(_transit_models.TransitRoute.mode).where(
+            _transit_models.TransitRoute.route_id == "RX"
+        )
+    )
+    assert stored == mode
+
+
+def test_slow_drip_stops_at_total_deadline_and_cleans_up() -> None:
+    import glob
+    import os
+    import tempfile
+    import threading
+    import time
+
+    import app.services.transit_import as importer
+
+    release = threading.Event()
+
+    class DripResponse:
+        status = 200
+        headers: dict = {}
+        closed = False
+
+        def read(self, size=-1):
+            # One byte per blocking call, forever: the socket timeout never
+            # fires because every call returns quickly with data.
+            if release.wait(timeout=30):
+                return b""
+            return b"x"
+
+        def close(self):
+            self.closed = True
+            release.set()
+
+    def dripping(request, timeout=None):
+        return DripResponse()
+
+    before = set(glob.glob(os.path.join(tempfile.gettempdir(), "gtfs-*.zip")))
+    real_urlopen = importer.urlopen
+    importer.urlopen = dripping
+    started = time.monotonic()
+    try:
+        with pytest.raises(DownloadError, match="deadline"):
+            download_source(deadline_s=1.0, timeout_s=30.0)
+    finally:
+        importer.urlopen = real_urlopen
+    elapsed = time.monotonic() - started
+    assert elapsed < 15
+    after = set(glob.glob(os.path.join(tempfile.gettempdir(), "gtfs-*.zip")))
+    assert after - before == set()
 
 
 def test_download_http_failure(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -443,3 +700,86 @@ def test_download_http_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(importer, "urlopen", failing)
     with pytest.raises(DownloadError):
         download_source()
+
+
+def test_cli_validate_only_reports_counts() -> None:
+    import subprocess
+    import sys
+
+    repo_backend = __file__.rsplit("tests", 1)[0]
+    archive = make_zip(base_files())
+    proc = subprocess.run(
+        [sys.executable, "-m", "scripts.import_gtfs", "--validate-only", "--file", archive],
+        cwd=repo_backend,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "validated: stops=3 routes=2" in proc.stdout
+
+
+def test_cli_missing_file_reports_concise_error(tmp_path) -> None:
+    import subprocess
+    import sys
+
+    repo_backend = __file__.rsplit("tests", 1)[0]
+    proc = subprocess.run(
+        [sys.executable, "-m", "scripts.import_gtfs", "--file", str(tmp_path / "nope.zip")],
+        cwd=repo_backend,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert proc.returncode == 1
+    assert proc.stdout.startswith("error:")
+    assert "Traceback" not in proc.stdout + proc.stderr
+
+
+def test_cli_invalid_metadata_flag_exits_usage_error(tmp_path) -> None:
+    import subprocess
+    import sys
+
+    repo_backend = __file__.rsplit("tests", 1)[0]
+    archive = make_zip(base_files())
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "scripts.import_gtfs",
+            "--file",
+            archive,
+            "--last-modified",
+            "not-a-date",
+        ],
+        cwd=repo_backend,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert proc.returncode != 0
+    assert "Traceback" not in proc.stdout + proc.stderr
+
+
+def test_cli_unavailable_database_reports_concisely(tmp_path) -> None:
+    import os
+    import subprocess
+    import sys
+
+    repo_backend = __file__.rsplit("tests", 1)[0]
+    archive = make_zip(base_files())
+    env = dict(os.environ)
+    # Unresolvable host fails fast; a refused localhost port can hang the
+    # OS connect path, which would test timeouts instead of the message.
+    env["DATABASE_URL"] = "postgresql+psycopg://estihub:estihub@nonexistent.invalid/estihub_test"
+    proc = subprocess.run(
+        [sys.executable, "-m", "scripts.import_gtfs", "--file", archive],
+        cwd=repo_backend,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=env,
+    )
+    assert proc.returncode == 3
+    assert "database unavailable" in proc.stdout
+    assert "SELECT" not in proc.stdout + proc.stderr

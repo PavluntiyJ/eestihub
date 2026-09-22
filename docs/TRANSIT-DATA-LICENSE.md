@@ -20,13 +20,15 @@ recorded distribution and stored on every feed generation:
 
 ## What the CC BY-SA 3.0 covers
 
-The imported and normalized transport rows served from this database
+The imported and normalized transport rows stored in this database
 (stops, routes, scheduled stop/route/service relationships, calendars and
-exceptions) are distributed derived data under **CC BY-SA 3.0**. Every
-served transit response carries the credit: "Tallinn public transport
-stops and routes (Tallinna ühistranspordi peatused ja marsruudid),
-Maa- ja Ruumiamet via transport.tallinn.ee", the registry URL above and
-the license URL.
+exceptions) are distributed derived data under **CC BY-SA 3.0**. The
+retained evidence names Tallinn and the distribution — no authorship
+beyond that is claimed. The stored credit reads: "Tallinn public
+transport stops and routes (Tallinna ühistranspordi peatused ja
+marsruudid) via transport.tallinn.ee", plus the registry URL above and
+the license URL. Future transit responses will carry this stored credit;
+no transit HTTP endpoint serves it yet.
 
 Transformations applied (recorded per generation in `transit_feeds`):
 source rows are filtered to the needed entities, stop/route pairs are

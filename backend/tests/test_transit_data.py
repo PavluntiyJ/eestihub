@@ -224,6 +224,24 @@ def test_freshness_stale_envelope_edges() -> None:
     assert freshness(today=date(2026, 1, 1)) == "current"
 
 
+def test_freshness_stale_envelope_beats_unknown_timestamps() -> None:
+    old_envelope = {"calendar_start": date(2025, 1, 1), "calendar_end": date(2025, 12, 31)}
+    assert (
+        freshness(
+            source_last_modified=None, today=date(2026, 9, 22), **old_envelope
+        )
+        == "stale"
+    )
+    assert (
+        freshness(
+            source_last_modified=NOW + timedelta(days=2),
+            today=date(2026, 9, 22),
+            **old_envelope,
+        )
+        == "stale"
+    )
+
+
 def test_freshness_unknown_timestamps() -> None:
     assert freshness(source_last_modified=None) == "unknown"
     assert (

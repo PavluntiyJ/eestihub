@@ -7,8 +7,9 @@ Run from backend/:
     python -m scripts.import_gtfs --file /tmp/gtfs.zip [--last-modified "..." --etag "..."]
 
 Exit codes: 0 success (including already-current and superseded), 1 invalid
-feed, 2 download/HTTP failure, 3 database lock conflict, 4 transaction error.
-Only concise counts and reasons are printed, never credentials or records.
+feed, 2 download/HTTP failure, 3 unavailable database or lock conflict,
+4 transaction error. Output is a concise `validated:`/`activated:` line
+with entity counts plus warnings; never credentials, records or SQL text.
 No download happens on API startup or HTTP reads; there is no automation.
 """
 
@@ -19,6 +20,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
 from app.core.db import SessionLocal, engine
@@ -126,6 +128,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"validated: {_summarize(feed, content_sha256)}")
         if args.validate_only:
             return 0
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+        except OperationalError:
+            print("error: database unavailable")
+            return 3
         Base.metadata.create_all(bind=engine)
         checked_at = datetime.now(timezone.utc)
         with SessionLocal() as session:
@@ -141,11 +149,15 @@ def main(argv: list[str] | None = None) -> int:
             )
         _report_result(result)
         return 0
-    except OperationalError as exc:
-        print(f"error: database lock conflict: {exc}")
+    except OperationalError:
+        # Lock contention once work has started; connection loss was ruled
+        # out above. Previous generations stay active either way.
+        print("error: database lock conflict (another import may be running)")
         return 3
-    except (IntegrityError, SQLAlchemyError) as exc:
-        print(f"error: transaction failed: {exc}")
+    except (IntegrityError, SQLAlchemyError):
+        # Concise on purpose: raw exception strings can embed SQL text,
+        # bound parameters and whole records.
+        print("error: transaction failed, previous feed intact")
         return 4
     finally:
         if downloaded_path is not None:

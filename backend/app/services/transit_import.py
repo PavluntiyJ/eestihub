@@ -1,4 +1,4 @@
-"""Versioned Tallinn GTFS import from the fixed In-AKS distribution.
+"""Versioned Tallinn GTFS import from the fixed transport distribution.
 
 Pipeline: download (bounded) -> validate fully -> idempotent SHA check ->
 stage one generation -> atomic pointer flip, all inside a single database
@@ -12,12 +12,14 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import os
 import tempfile
+import threading
 import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -58,8 +60,8 @@ DATA_LICENSE = "CC-BY-SA-3.0"
 LICENSE_URL = "https://creativecommons.org/licenses/by-sa/3.0/legalcode.en"
 ATTRIBUTION = (
     "Tallinn public transport stops and routes (Tallinna ühistranspordi "
-    "peatused ja marsruudid), Maa- ja Ruumiamet via transport.tallinn.ee, "
-    "registry https://avaandmed.eesti.ee/api/datasets/5ccad39d-98a0-4ac4-ba0a-233ad5a83604. "
+    "peatused ja marsruudid) via transport.tallinn.ee, registry "
+    "https://avaandmed.eesti.ee/api/datasets/5ccad39d-98a0-4ac4-ba0a-233ad5a83604. "
     "Derived transit data under CC BY-SA 3.0."
 )
 TRANSFORMATION = (
@@ -69,10 +71,36 @@ TRANSFORMATION = (
     "rows are transient join inputs and are not stored."
 )
 
-# GTFS static route_type values 0-7, 11, 12 plus the extended 100-1700 code
-# space (https://developers.google.com/transit/gtfs/reference/extended-route-types).
-_VALID_ROUTE_TYPES = (
-    frozenset({0, 1, 2, 3, 4, 5, 6, 7, 11, 12}) | frozenset(range(100, 1701))
+# GTFS static route_type values 0-7, 11, 12 plus the extended HVT codes
+# actually defined by the reference (not every integer in the gaps):
+# https://developers.google.com/transit/gtfs/reference/extended-route-types
+_VALID_ROUTE_TYPES = frozenset(
+    {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        11,
+        12,
+        800,
+        1000,
+        1100,
+        1200,
+        1400,
+        1700,
+        1702,
+    }
+    | set(range(100, 118))
+    | set(range(200, 210))
+    | set(range(400, 406))
+    | set(range(700, 717))
+    | set(range(900, 907))
+    | set(range(1300, 1308))
+    | set(range(1500, 1508))
 )
 _TRAM_TYPES = frozenset({0, 900})
 _BUS_TYPES = frozenset({3, 700})
@@ -151,6 +179,26 @@ def _fail(reason: str) -> FeedError:
     return FeedError(reason)
 
 
+class _TooLarge(Exception):
+    pass
+
+
+def _pump_body(response, handle, max_bytes: int, box: dict, stop) -> None:
+    """Copy one response body to a temp file; runs on a daemon worker thread."""
+    total = 0
+    try:
+        while not stop.is_set():
+            chunk = response.read(CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise _TooLarge(f"archive exceeds {max_bytes} bytes")
+            handle.write(chunk)
+    except BaseException as exc:  # noqa: BLE001 (marshalled to the caller)
+        box["error"] = exc
+
+
 def download_source(
     *,
     timeout_s: float = SOCKET_TIMEOUT_SECONDS,
@@ -162,43 +210,56 @@ def download_source(
     """Fetch the fixed source into bounded temporary storage.
 
     The socket timeout covers each blocking operation while the monotonic
-    deadline bounds the total wall time, so slow-drip responses stop as
-    well as silent ones. No retry loop. The size cap resolves at call time
-    so tests can tighten it with monkeypatch.
+    deadline bounds the total wall time: the body pumps on a daemon worker
+    thread, and on expiry the response is closed, which actually stops the
+    in-flight I/O instead of leaving the transfer running. Slow-drip peers
+    (bytes more frequent than the socket timeout) and silent peers both
+    stop at the deadline. No retry loop. The size cap resolves at call time
+    so tests can tighten it with monkeypatch. The temporary file is
+    unlinked inside this function on every failure path; only success hands
+    a path to the caller (the CLI deletes it afterwards).
     """
     if max_bytes is None:
         max_bytes = MAX_COMPRESSED_BYTES
     request = Request(SOURCE_URL, headers={"User-Agent": user_agent})
     started = clock()
-    total = 0
-    handle = tempfile.NamedTemporaryFile(
-        prefix="gtfs-", suffix=".zip", delete=False
-    )
     try:
+        response = urlopen(request, timeout=timeout_s)
+    except (URLError, TimeoutError, OSError, ValueError) as exc:
+        raise DownloadError(f"fetch failed: {exc}") from exc
+    if response.status != 200:
+        raise DownloadError(f"unexpected HTTP status {response.status}")
+    handle = tempfile.NamedTemporaryFile(prefix="gtfs-", suffix=".zip", delete=False)
+    box: dict = {}
+    stop = threading.Event()
+    worker = threading.Thread(
+        target=_pump_body, args=(response, handle, max_bytes, box, stop), daemon=True
+    )
+    worker.start()
+    worker.join(max(0.0, deadline_s - (clock() - started)))
+    if worker.is_alive():
+        stop.set()
         try:
-            response = urlopen(request, timeout=timeout_s)
-        except (URLError, TimeoutError, OSError, ValueError) as exc:
-            raise DownloadError(f"fetch failed: {exc}") from exc
-        with response:
-            if response.status != 200:
-                raise DownloadError(f"unexpected HTTP status {response.status}")
-            while True:
-                if clock() - started > deadline_s:
-                    raise DownloadError("download deadline exceeded")
-                try:
-                    chunk = response.read(CHUNK_BYTES)
-                except (TimeoutError, OSError) as exc:
-                    raise DownloadError(f"stalled download: {exc}") from exc
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > max_bytes:
-                    raise DownloadError("archive exceeds size limit")
-                handle.write(chunk)
-    except BaseException:
+            response.close()
+        except Exception:  # noqa: BLE001 (teardown only)
+            pass
+        worker.join(timeout_s + 1)
         handle.close()
-        raise
+        try:
+            os.unlink(handle.name)
+        except OSError:
+            pass
+        raise DownloadError("download deadline exceeded")
     handle.close()
+    error = box.get("error")
+    if error is not None:
+        try:
+            os.unlink(handle.name)
+        except OSError:
+            pass
+        if isinstance(error, _TooLarge):
+            raise DownloadError(str(error))
+        raise DownloadError(f"fetch failed: {error}") from error
     last_modified = _parse_http_date(response.headers.get("Last-Modified"))
     etag = response.headers.get("ETag")
     digest = _sha256_file(handle.name)
@@ -307,37 +368,139 @@ def _check_archive_members(archive: zipfile.ZipFile) -> None:
         raise _fail("at least one calendar file is required")
 
 
-def _read_rows(
-    archive: zipfile.ZipFile, name: str, required: frozenset[str]
-) -> tuple[list[str], list[list[str]]]:
+class _ByteBudget:
+    """Shared cap over actually streamed uncompressed bytes."""
+
+    def __init__(self, total_cap: int) -> None:
+        self.used = 0
+        self.cap = total_cap
+
+    def add(self, count: int, what: str) -> None:
+        self.used += count
+        if self.used > self.cap:
+            raise _fail(f"{what}: total uncompressed size exceeds limit")
+
+
+def _open_member(
+    archive: zipfile.ZipFile, info: zipfile.ZipInfo
+):
     try:
-        raw = archive.read(name)
-    except KeyError as exc:
-        raise _fail(f"missing file: {name}") from exc
+        return archive.open(info)
+    except (zipfile.BadZipFile, RuntimeError, NotImplementedError) as exc:
+        raise _fail(f"{info.filename!r}: cannot open member: {exc}") from exc
+
+
+def _iter_member_lines(
+    archive: zipfile.ZipFile,
+    info: zipfile.ZipInfo,
+    budget: _ByteBudget,
+):
+    """Yield decoded lines of one member, enforcing real byte counts.
+
+    Central-directory sizes can lie, so every streamed byte is counted and
+    closing the handle verifies the CRC. Errors anywhere — open, read,
+    decode, CRC — become FeedError, never raw library exceptions.
+    """
+    import codecs
+
+    name = info.filename
+    handle = _open_member(archive, info)
+    decoder = codecs.getincrementaldecoder("utf-8-sig")()
+    pending = ""
+    entry_total = 0
+    exhausted = False
     try:
-        text = raw.decode("utf-8-sig")
-    except UnicodeDecodeError as exc:
-        raise _fail(f"{name}: invalid UTF-8") from exc
-    reader = csv.reader(io.StringIO(text))
+        while True:
+            try:
+                chunk = handle.read(CHUNK_BYTES)
+            except (zipfile.BadZipFile, OSError, EOFError) as exc:
+                raise _fail(f"{name}: corrupt data: {exc}") from exc
+            if not chunk:
+                break
+            entry_total += len(chunk)
+            if entry_total > MAX_ENTRY_BYTES:
+                raise _fail(f"{name}: entry too large")
+            budget.add(len(chunk), name)
+            try:
+                pending += decoder.decode(chunk)
+            except UnicodeDecodeError as exc:
+                raise _fail(f"{name}: invalid UTF-8") from exc
+            *complete, pending = pending.split("\n")
+            yield from complete
+        try:
+            pending += decoder.decode(b"", final=True)
+        except UnicodeDecodeError as exc:
+            raise _fail(f"{name}: invalid UTF-8") from exc
+        if pending:
+            yield pending
+        exhausted = True
+    finally:
+        try:
+            handle.close()
+        except Exception as exc:  # noqa: BLE001 (CRC surface)
+            if exhausted:
+                raise _fail(f"{name}: CRC check failed: {exc}") from exc
+
+
+def _iter_records(
+    archive: zipfile.ZipFile,
+    name: str,
+    required: frozenset[str],
+    budget: _ByteBudget,
+):
+    """Yield ("headers", headers) then ("row", lineno, record) dicts.
+
+    Strict CSV with duplicate/missing header checks; ragged rows, cell and
+    row caps enforced per record. Header-only files yield headers alone.
+    """
+    infos = [info for info in archive.infolist() if info.filename == name]
+    if not infos:
+        raise _fail(f"missing file: {name}")
+    lines = _iter_member_lines(archive, infos[0], budget)
+    reader = csv.reader(lines, strict=True)
     try:
         headers = next(reader)
     except StopIteration:
         raise _fail(f"{name}: empty file") from None
+    except csv.Error as exc:
+        raise _fail(f"{name}: malformed CSV: {exc}") from exc
     missing = required - set(headers)
     if missing:
         raise _fail(f"{name}: missing headers: {', '.join(sorted(missing))}")
     if len(headers) != len(set(headers)):
         raise _fail(f"{name}: duplicate headers")
-    rows: list[list[str]] = []
-    for lineno, fields in enumerate(reader, start=2):
-        if len(fields) != len(headers):
-            raise _fail(f"{name} line {lineno}: ragged row")
-        for cell in fields:
-            if len(cell.encode("utf-8")) > MAX_CELL_BYTES:
-                raise _fail(f"{name} line {lineno}: cell exceeds size limit")
-        rows.append(fields)
-        if len(rows) > MAX_ROWS_PER_FILE:
-            raise _fail(f"{name}: too many rows")
+    yield "headers", headers
+    lineno = 1
+    try:
+        for fields in reader:
+            lineno += 1
+            if len(fields) != len(headers):
+                raise _fail(f"{name} line {lineno}: ragged row")
+            for cell in fields:
+                if len(cell.encode("utf-8")) > MAX_CELL_BYTES:
+                    raise _fail(f"{name} line {lineno}: cell exceeds size limit")
+            if lineno - 1 > MAX_ROWS_PER_FILE:
+                raise _fail(f"{name}: too many rows")
+            yield "row", lineno, dict(zip(headers, fields))
+    except csv.Error as exc:
+        raise _fail(f"{name}: malformed CSV: {exc}") from exc
+
+
+def _read_rows(
+    archive: zipfile.ZipFile,
+    name: str,
+    required: frozenset[str],
+    budget: _ByteBudget,
+) -> tuple[list[str], list[dict[str, str]]]:
+    headers: list[str] = []
+    rows: list[dict[str, str]] = []
+    for kind, *payload in _iter_records(archive, name, required, budget):
+        if kind == "headers":
+            headers = payload[0]
+        else:
+            rows.append(payload[1])
+    if not headers:
+        raise _fail(f"{name}: empty file")
     return headers, rows
 
 
@@ -389,27 +552,48 @@ def _derive_mode(route_type: int) -> str:
 def parse_feed(path: str) -> ParsedFeed:
     """Validate an archive fully and return the normalized in-memory feed."""
     archive = _open_zip(path)
+    budget = _ByteBudget(MAX_TOTAL_UNCOMPRESSED_BYTES)
+    consumed = set(REQUIRED_FILES) | {"calendar.txt", "calendar_dates.txt"}
     with archive:
         _check_archive_members(archive)
         feed = ParsedFeed(agency_timezone="")
-        _parse_agency(archive, feed)
-        _parse_stops(archive, feed)
-        _parse_routes(archive, feed)
-        _parse_trips(archive, feed)
-        _parse_stop_times(archive, feed)
-        _parse_calendars(archive, feed)
+        _parse_agency(archive, feed, budget)
+        _parse_stops(archive, feed, budget)
+        _parse_routes(archive, feed, budget)
+        _parse_trips(archive, feed, budget)
+        _parse_stop_times(archive, feed, budget)
+        _parse_calendars(archive, feed, budget)
+        # Tolerated extras (shapes and friends) are still streamed within
+        # the budget so their CRC is verified instead of trusted blindly.
+        for info in archive.infolist():
+            if info.is_dir() or info.filename in consumed:
+                continue
+            for _line in _iter_member_lines(archive, info, budget):
+                pass
         _resolve_services(feed)
     return feed
 
 
-def _parse_agency(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
-    headers, rows = _read_rows(archive, "agency.txt", frozenset({"agency_timezone"}))
+def _check_len(value: str, limit: int, what: str) -> None:
+    # Persisted columns are bounded; validate-only must not approve values
+    # that fail only when written to PostgreSQL.
+    if len(value.encode("utf-8")) > limit:
+        raise _fail(f"{what}: value too long")
+
+
+def _parse_agency(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
+    _headers, rows = _read_rows(
+        archive, "agency.txt", frozenset({"agency_timezone"}), budget
+    )
     if not rows:
         raise _fail("agency.txt: no rows")
-    zones = {dict(zip(headers, row))["agency_timezone"] for row in rows}
+    zones = {row["agency_timezone"] for row in rows}
     if len(zones) != 1:
         raise _fail("agency.txt: ambiguous timezones")
     timezone_name = next(iter(zones))
+    _check_len(timezone_name, 64, "agency.txt timezone")
     try:
         ZoneInfo(timezone_name)
     except ZoneInfoNotFoundError as exc:
@@ -417,75 +601,94 @@ def _parse_agency(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
     feed.agency_timezone = timezone_name
 
 
-def _parse_stops(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
-    headers, rows = _read_rows(
+def _parse_stops(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
+    _headers, rows = _read_rows(
         archive,
         "stops.txt",
         frozenset({"stop_id", "stop_name", "stop_lat", "stop_lon"}),
+        budget,
     )
     if not rows:
         raise _fail("stops.txt: no rows")
-    index = {name: position for position, name in enumerate(headers)}
-    for lineno, fields in enumerate(rows, start=2):
-        record = dict(zip(headers, fields))
+    for lineno, record in enumerate(rows, start=2):
         stop_id = record["stop_id"]
         if not stop_id:
             raise _fail(f"stops.txt line {lineno}: empty stop_id")
         if stop_id in feed.stops:
             raise _fail(f"stops.txt line {lineno}: duplicate stop_id")
+        _check_len(stop_id, 64, f"stops.txt line {lineno} stop_id")
         latitude = _parse_float(record["stop_lat"], f"stops.txt line {lineno}")
         longitude = _parse_float(record["stop_lon"], f"stops.txt line {lineno}")
         if not -90.0 <= latitude <= 90.0 or not -180.0 <= longitude <= 180.0:
             raise _fail(f"stops.txt line {lineno}: coordinates out of bounds")
         if not record["stop_name"]:
             raise _fail(f"stops.txt line {lineno}: empty stop_name")
+        _check_len(record["stop_name"], 255, f"stops.txt line {lineno} stop_name")
+        stop_code = record.get("stop_code") or None
+        if stop_code is not None:
+            _check_len(stop_code, 64, f"stops.txt line {lineno} stop_code")
         parent = record.get("parent_station") or None
+        if parent is not None:
+            _check_len(parent, 64, f"stops.txt line {lineno} parent_station")
+        location_type = record.get("location_type") or None
+        if location_type is not None and location_type not in ("0", "1", "2", "3", "4"):
+            raise _fail(f"stops.txt line {lineno}: invalid location_type")
         feed.stops[stop_id] = StopRow(
             stop_id=stop_id,
-            stop_code=record.get("stop_code") or None,
+            stop_code=stop_code,
             stop_name=record["stop_name"],
             stop_lat=latitude,
             stop_lon=longitude,
             parent_station=parent,
-            location_type=record.get("location_type") or None,
+            location_type=location_type,
         )
     for stop in feed.stops.values():
         if stop.parent_station is not None and stop.parent_station not in feed.stops:
             raise _fail(f"stops.txt: unknown parent_station {stop.parent_station!r}")
-    _ = index
 
 
-def _parse_routes(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
-    headers, rows = _read_rows(
-        archive, "routes.txt", frozenset({"route_id", "route_type"})
+def _parse_routes(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
+    _headers, rows = _read_rows(
+        archive, "routes.txt", frozenset({"route_id", "route_type"}), budget
     )
     if not rows:
         raise _fail("routes.txt: no rows")
-    for lineno, fields in enumerate(rows, start=2):
-        record = dict(zip(headers, fields))
+    for lineno, record in enumerate(rows, start=2):
         route_id = record["route_id"]
         if not route_id:
             raise _fail(f"routes.txt line {lineno}: empty route_id")
         if route_id in feed.routes:
             raise _fail(f"routes.txt line {lineno}: duplicate route_id")
+        _check_len(route_id, 128, f"routes.txt line {lineno} route_id")
         route_type = _parse_route_type(record["route_type"])
+        short_name = record.get("route_short_name") or None
+        long_name = record.get("route_long_name") or None
+        if short_name is not None:
+            _check_len(short_name, 64, f"routes.txt line {lineno} short_name")
+        if long_name is not None:
+            _check_len(long_name, 255, f"routes.txt line {lineno} long_name")
         feed.routes[route_id] = RouteRow(
             route_id=route_id,
-            short_name=record.get("route_short_name") or None,
-            long_name=record.get("route_long_name") or None,
+            short_name=short_name,
+            long_name=long_name,
             route_type=route_type,
             mode=_derive_mode(route_type),
         )
 
 
-def _parse_trips(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
-    headers, rows = _read_rows(
-        archive, "trips.txt", frozenset({"route_id", "service_id", "trip_id"})
+def _parse_trips(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
+    _headers, rows = _read_rows(
+        archive, "trips.txt", frozenset({"route_id", "service_id", "trip_id"}), budget
     )
     if not rows:
         raise _fail("trips.txt: no rows")
-    for lineno, fields in enumerate(rows, start=2):
-        record = dict(zip(headers, fields))
+    for lineno, record in enumerate(rows, start=2):
         trip_id = record["trip_id"]
         if not trip_id:
             raise _fail(f"trips.txt line {lineno}: empty trip_id")
@@ -495,62 +698,72 @@ def _parse_trips(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
             raise _fail(f"trips.txt line {lineno}: unknown route_id")
         if not record["service_id"]:
             raise _fail(f"trips.txt line {lineno}: empty service_id")
+        _check_len(record["service_id"], 128, f"trips.txt line {lineno} service_id")
         feed.trips[trip_id] = (record["route_id"], record["service_id"])
 
 
-def _parse_stop_times(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
-    try:
-        raw = archive.read("stop_times.txt")
-    except KeyError as exc:
-        raise _fail("missing file: stop_times.txt") from exc
-    try:
-        text = raw.decode("utf-8-sig")
-    except UnicodeDecodeError as exc:
-        raise _fail("stop_times.txt: invalid UTF-8") from exc
-    reader = csv.reader(io.StringIO(text))
+def _parse_stop_times(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
+    required = frozenset(
+        {"trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence"}
+    )
+    infos = [info for info in archive.infolist() if info.filename == "stop_times.txt"]
+    if not infos:
+        raise _fail("missing file: stop_times.txt")
+    lines = _iter_member_lines(archive, infos[0], budget)
+    reader = csv.reader(lines, strict=True)
     try:
         headers = next(reader)
     except StopIteration:
         raise _fail("stop_times.txt: empty file") from None
-    required = frozenset(
-        {"trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence"}
-    )
+    except csv.Error as exc:
+        raise _fail(f"stop_times.txt: malformed CSV: {exc}") from exc
     missing = required - set(headers)
     if missing:
         raise _fail(f"stop_times.txt: missing headers: {', '.join(sorted(missing))}")
+    if len(headers) != len(set(headers)):
+        raise _fail("stop_times.txt: duplicate headers")
     index = {name: position for position, name in enumerate(headers)}
     sequences: dict[str, set[int]] = defaultdict(set)
     count = 0
-    for lineno, fields in enumerate(reader, start=2):
-        if len(fields) != len(headers):
-            raise _fail(f"stop_times.txt line {lineno}: ragged row")
-        for cell in fields:
-            if len(cell.encode("utf-8")) > MAX_CELL_BYTES:
-                raise _fail(f"stop_times.txt line {lineno}: cell exceeds size limit")
-        count += 1
-        if count > MAX_ROWS_PER_FILE:
-            raise _fail("stop_times.txt: too many rows")
-        trip_id = fields[index["trip_id"]]
-        stop_id = fields[index["stop_id"]]
-        if trip_id not in feed.trips:
-            raise _fail(f"stop_times.txt line {lineno}: unknown trip_id")
-        if stop_id not in feed.stops:
-            raise _fail(f"stop_times.txt line {lineno}: unknown stop_id")
-        try:
-            sequence = int(fields[index["stop_sequence"]].strip())
-        except ValueError as exc:
-            raise _fail(
-                f"stop_times.txt line {lineno}: malformed stop_sequence"
-            ) from exc
-        if sequence in sequences[trip_id]:
-            raise _fail(
-                f"stop_times.txt line {lineno}: duplicate stop_sequence"
-            )
-        sequences[trip_id].add(sequence)
-        for column in ("arrival_time", "departure_time"):
-            _parse_gtfs_time(fields[index[column]], f"stop_times.txt line {lineno}")
-        route_id, _service_id = feed.trips[trip_id]
-        feed.stop_services.add((stop_id, route_id, feed.trips[trip_id][1]))
+    lineno = 1
+    try:
+        for fields in reader:
+            lineno += 1
+            if len(fields) != len(headers):
+                raise _fail(f"stop_times.txt line {lineno}: ragged row")
+            for cell in fields:
+                if len(cell.encode("utf-8")) > MAX_CELL_BYTES:
+                    raise _fail(f"stop_times.txt line {lineno}: cell exceeds size limit")
+            count += 1
+            if count > MAX_ROWS_PER_FILE:
+                raise _fail("stop_times.txt: too many rows")
+            trip_id = fields[index["trip_id"]]
+            stop_id = fields[index["stop_id"]]
+            if trip_id not in feed.trips:
+                raise _fail(f"stop_times.txt line {lineno}: unknown trip_id")
+            if stop_id not in feed.stops:
+                raise _fail(f"stop_times.txt line {lineno}: unknown stop_id")
+            try:
+                sequence = int(fields[index["stop_sequence"]].strip())
+            except ValueError as exc:
+                raise _fail(
+                    f"stop_times.txt line {lineno}: malformed stop_sequence"
+                ) from exc
+            if sequence < 0:
+                raise _fail(
+                    f"stop_times.txt line {lineno}: negative stop_sequence"
+                )
+            if sequence in sequences[trip_id]:
+                raise _fail(f"stop_times.txt line {lineno}: duplicate stop_sequence")
+            sequences[trip_id].add(sequence)
+            for column in ("arrival_time", "departure_time"):
+                _parse_gtfs_time(fields[index[column]], f"stop_times.txt line {lineno}")
+            route_id, _service_id = feed.trips[trip_id]
+            feed.stop_services.add((stop_id, route_id, feed.trips[trip_id][1]))
+    except csv.Error as exc:
+        raise _fail(f"stop_times.txt: malformed CSV: {exc}") from exc
     if count == 0:
         raise _fail("stop_times.txt: no rows")
     feed.counts["stop_times"] = count
@@ -584,21 +797,24 @@ _WEEKDAYS = (
 )
 
 
-def _parse_calendars(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
+def _parse_calendars(
+    archive: zipfile.ZipFile, feed: ParsedFeed, budget: _ByteBudget
+) -> None:
     names = set(archive.namelist())
     if "calendar.txt" in names:
-        headers, rows = _read_rows(
+        _headers, rows = _read_rows(
             archive,
             "calendar.txt",
             frozenset({"service_id", *_WEEKDAYS, "start_date", "end_date"}),
+            budget,
         )
-        for lineno, fields in enumerate(rows, start=2):
-            record = dict(zip(headers, fields))
+        for lineno, record in enumerate(rows, start=2):
             service_id = record["service_id"]
             if not service_id:
                 raise _fail(f"calendar.txt line {lineno}: empty service_id")
             if service_id in feed.calendars:
                 raise _fail(f"calendar.txt line {lineno}: duplicate service_id")
+            _check_len(service_id, 128, f"calendar.txt line {lineno} service_id")
             flags = {
                 day: _parse_bool_flag(record[day], f"calendar.txt line {lineno}")
                 for day in _WEEKDAYS
@@ -613,16 +829,19 @@ def _parse_calendars(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
                 "end_date": end,
             }
     if "calendar_dates.txt" in names:
-        headers, rows = _read_rows(
+        _headers, rows = _read_rows(
             archive,
             "calendar_dates.txt",
             frozenset({"service_id", "date", "exception_type"}),
+            budget,
         )
         seen: set[tuple[str, date]] = set()
-        for lineno, fields in enumerate(rows, start=2):
-            record = dict(zip(headers, fields))
+        for lineno, record in enumerate(rows, start=2):
             if not record["service_id"]:
                 raise _fail(f"calendar_dates.txt line {lineno}: empty service_id")
+            _check_len(
+                record["service_id"], 128, f"calendar_dates.txt line {lineno} service_id"
+            )
             day = _parse_date(record["date"], f"calendar_dates.txt line {lineno}")
             if record["exception_type"] not in ("1", "2"):
                 raise _fail(
@@ -635,6 +854,48 @@ def _parse_calendars(archive: zipfile.ZipFile, feed: ParsedFeed) -> None:
             feed.exceptions.append((record["service_id"], day, int(record["exception_type"])))
 
 
+# Upper bound for scanning one service band day by day; real bands span
+# months, and anything wider is rejected as implausible rather than scanned.
+_MAX_SERVICE_RANGE_DAYS = 3660
+
+
+def _service_effective_span(
+    feed: ParsedFeed,
+    service_id: str,
+    removed: set[date],
+    added: list[date],
+) -> tuple[date, date] | None:
+    """First/last dates a referenced service actually runs, if any."""
+    first: date | None = None
+    last: date | None = None
+    calendar = feed.calendars.get(service_id)
+    if calendar is not None and any(calendar["flags"].values()):
+        start, end = calendar["start_date"], calendar["end_date"]
+        if (end - start).days > _MAX_SERVICE_RANGE_DAYS:
+            raise _fail(f"implausible service range for {service_id!r}")
+        day = start
+        while day <= end:
+            if calendar["flags"][_WEEKDAYS[day.weekday()]] and day not in removed:
+                first = day
+                break
+            day += timedelta(days=1)
+        if first is not None:
+            day = end
+            while day >= first:
+                if calendar["flags"][_WEEKDAYS[day.weekday()]] and day not in removed:
+                    last = day
+                    break
+                day -= timedelta(days=1)
+    for day in added:
+        if first is None or day < first:
+            first = day
+        if last is None or day > last:
+            last = day
+    if first is None or last is None:
+        return None
+    return first, last
+
+
 def _resolve_services(feed: ParsedFeed) -> None:
     known_services = set(feed.calendars) | {
         service_id for service_id, _day, _kind in feed.exceptions
@@ -642,19 +903,26 @@ def _resolve_services(feed: ParsedFeed) -> None:
     for trip_id, (_route_id, service_id) in feed.trips.items():
         if service_id not in known_services:
             raise _fail(f"trips.txt: unresolvable service_id for trip {trip_id!r}")
-    effective: list[date] = []
-    for service_id in {service for _r, service in feed.trips.values()}:
-        calendar = feed.calendars.get(service_id)
-        if calendar is not None and any(calendar["flags"].values()):
-            effective.append(calendar["start_date"])
-            effective.append(calendar["end_date"])
-        for exception_service, day, kind in feed.exceptions:
-            if exception_service == service_id and kind == 1:
-                effective.append(day)
-    if not effective:
+    removed: dict[str, set[date]] = defaultdict(set)
+    added: dict[str, list[date]] = defaultdict(list)
+    for service_id, day, kind in feed.exceptions:
+        if kind == 1:
+            added[service_id].append(day)
+        else:
+            removed[service_id].add(day)
+    spans: list[tuple[date, date]] = []
+    for service_id in {service for _route, service in feed.trips.values()}:
+        span = _service_effective_span(
+            feed, service_id, removed.get(service_id, set()), added.get(service_id, [])
+        )
+        if span is not None:
+            spans.append(span)
+    if not spans:
         raise _fail("no effective service dates")
-    feed.calendar_start = min(effective)
-    feed.calendar_end = max(effective)
+    # The envelope is only the outer bounds of effective service; gaps
+    # inside stay gaps, and routes_for_stop decides per actual date.
+    feed.calendar_start = min(first for first, _last in spans)
+    feed.calendar_end = max(last for _first, last in spans)
     feed.counts.update(
         {
             "stops": len(feed.stops),
@@ -690,12 +958,13 @@ def _activate_generation(
     session: Session,
     staged_id: int,
     staged_fetched_at: datetime,
-    based_on: int | None,
 ) -> str:
-    """Flip the singleton pointer under a row lock with compare-and-swap.
+    """Flip the singleton pointer under a row lock with an age check.
 
-    Returns "activated", or "superseded" when another activation landed
-    after this import staged and the staged content is older. A first
+    The check is unconditional: staged content older than the current
+    activation never flips, no matter whether the worker was delayed
+    before staging or during the transaction. Ties flip (last writer
+    wins within one timestamp) and are documented as such. A first
     import has no row to protect; a concurrent first-import primary-key
     race surfaces as IntegrityError for the caller to map.
     """
@@ -712,10 +981,10 @@ def _activate_generation(
         if current_active_id is not None
         else None
     )
-    if current_active is not None and current_active_id != based_on:
-        current_fetched = as_aware_utc(current_active.fetched_at)
-        if not as_aware_utc(staged_fetched_at) >= current_fetched:
-            return "superseded"
+    if current_active is not None and not as_aware_utc(
+        staged_fetched_at
+    ) >= as_aware_utc(current_active.fetched_at):
+        return "superseded"
     state.active_feed_id = staged_id
     return "activated"
 
@@ -730,24 +999,39 @@ def import_feed(
     checked_at: datetime,
     source_last_modified: datetime | None,
     source_etag: str | None,
+    _attempt: int = 0,
 ) -> ImportResult:
     """Stage one generation and flip the active pointer atomically.
 
     Download and parsing happen before this call, outside the transaction.
     Everything below commits once; any failure rolls the staging back and
-    the previous pointer stays intact. An identical SHA only records a new
-    successful check time. A staged generation older than the current
-    activation is rolled back as superseded instead of flipping.
+    the previous pointer stays intact. An identical SHA only refreshes the
+    check time of the actually active generation; a retained non-active
+    generation with the same SHA is reported as superseded without touching
+    its timestamps. A unique-constraint race (concurrent same-content
+    imports, concurrent first imports) rolls back and retries once, then
+    re-resolves against the winner.
     """
     existing = session.scalar(
         select(TransitFeed).where(TransitFeed.content_sha256 == content_sha256)
     )
     if existing is not None:
-        existing.checked_at = checked_at
-        session.commit()
+        active_id = session.scalar(
+            select(TransitState.active_feed_id).where(TransitState.id == 1)
+        )
+        if active_id is not None and existing.id == active_id:
+            existing.checked_at = checked_at
+            session.commit()
+            return ImportResult(
+                status="already_current",
+                feed_id=existing.id,
+                content_sha256=content_sha256,
+                counts=dict(feed.counts),
+                warnings=[],
+            )
         return ImportResult(
-            status="already_current",
-            feed_id=existing.id,
+            status="superseded",
+            feed_id=None,
             content_sha256=content_sha256,
             counts=dict(feed.counts),
             warnings=[],
@@ -828,7 +1112,25 @@ def import_feed(
             )
         )
     session.flush()
-    outcome = _activate_generation(session, staged.id, fetched_at, based_on)
+    try:
+        outcome = _activate_generation(session, staged.id, fetched_at)
+    except IntegrityError:
+        # Concurrent same-content import or first-import row race: roll back
+        # and re-resolve once against whoever won.
+        session.rollback()
+        if _attempt > 0:
+            raise
+        return import_feed(
+            session,
+            feed,
+            source_url=source_url,
+            content_sha256=content_sha256,
+            fetched_at=fetched_at,
+            checked_at=checked_at,
+            source_last_modified=source_last_modified,
+            source_etag=source_etag,
+            _attempt=_attempt + 1,
+        )
     if outcome == "superseded":
         session.rollback()
         return ImportResult(
@@ -838,7 +1140,23 @@ def import_feed(
             counts=dict(feed.counts),
             warnings=warnings,
         )
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        if _attempt > 0:
+            raise
+        return import_feed(
+            session,
+            feed,
+            source_url=source_url,
+            content_sha256=content_sha256,
+            fetched_at=fetched_at,
+            checked_at=checked_at,
+            source_last_modified=source_last_modified,
+            source_etag=source_etag,
+            _attempt=_attempt + 1,
+        )
     return ImportResult(
         status="activated",
         feed_id=staged.id,

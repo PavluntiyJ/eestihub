@@ -178,8 +178,8 @@ including exceptions. See `docs/TRANSIT-OPERATIONS.md` and
 
 **Recommendation:** ingest the GTFS zip, keep `stop_id`/`route_id` as keys,
 attribute Tallinn and keep the share-alike obligation in mind for anything
-redistributed. A GTFS parser library is worth adding at implementation time
-(`stop_times.txt` is the large file).
+redistributed. M08 implements the ingest with stdlib `csv`/`zipfile` only;
+no parser library is used.
 
 ## 3. Tallinn district boundaries
 

@@ -73,16 +73,42 @@ TEST_DATABASE_URL = os.environ.get(
     "TRANSIT_TEST_DATABASE_URL",
     "postgresql+psycopg://estihub:estihub@localhost:5432/estihub_test",
 )
+EXPLICIT_TEST_DATABASE_URL = "TRANSIT_TEST_DATABASE_URL" in os.environ
+
+
+def _assert_test_database(url: str) -> None:
+    name = url.rsplit("/", 1)[-1].split("?")[0]
+    if not name.endswith("_test"):
+        pytest.fail(
+            f"refusing to clean non-test database {name!r}: "
+            "point TRANSIT_TEST_DATABASE_URL at a disposable *_test database"
+        )
 
 
 def _engine_or_skip():
+    _assert_test_database(TEST_DATABASE_URL)
     try:
         engine = create_engine(TEST_DATABASE_URL, connect_args={"connect_timeout": 5})
         with engine.connect():
             pass
     except Exception as exc:
+        if EXPLICIT_TEST_DATABASE_URL:
+            # An explicitly configured test database must work, not skip.
+            raise
         pytest.skip(f"local Postgres unavailable: {exc}")
     return engine
+
+
+def test_only_test_databases_are_cleaned() -> None:
+    from _pytest.outcomes import Failed
+
+    with pytest.raises(Failed):
+        _assert_test_database(
+            "postgresql+psycopg://estihub:estihub@localhost:5432/estihub_dev"
+        )
+    _assert_test_database(
+        "postgresql+psycopg://estihub:estihub@localhost:5432/estihub_test"
+    )
 
 
 @pytest.fixture()
@@ -166,11 +192,11 @@ def test_postgres_concurrent_newer_activation_wins(pg_session) -> None:
 
     real_activate = importer._activate_generation
 
-    def gated_activate(session, staged_id, staged_fetched_at, based_on):
+    def gated_activate(session, staged_id, staged_fetched_at):
         if staged_fetched_at <= NOW:
             started_old.set()
             assert release_old.wait(timeout=30)
-        return real_activate(session, staged_id, staged_fetched_at, based_on)
+        return real_activate(session, staged_id, staged_fetched_at)
 
     importer._activate_generation = gated_activate
     try:
@@ -198,6 +224,56 @@ def test_postgres_concurrent_newer_activation_wins(pg_session) -> None:
     assert outcomes["old"] == "superseded"
     new_id = pg_session.scalar(
         select(TransitFeed.id).where(TransitFeed.content_sha256 == "d" * 64)
+    )
+    assert get_active_feed_id(pg_session) == new_id
+
+
+def test_postgres_concurrent_first_imports_newer_wins(pg_session) -> None:
+    entered = threading.Event()
+    release = threading.Event()
+    outcomes: dict = {}
+
+    import app.services.transit_import as importer
+
+    real_activate = importer._activate_generation
+
+    def gated_activate(session, staged_id, staged_fetched_at):
+        entered.set()
+        assert release.wait(timeout=30)
+        return real_activate(session, staged_id, staged_fetched_at)
+
+    importer._activate_generation = gated_activate
+
+    def run_import(sha, fetched_at, key):
+        factory = sessionmaker(
+            bind=pg_session.get_bind(), autoflush=False, expire_on_commit=False
+        )
+        with factory() as session:
+            try:
+                outcomes[key] = _import(session, sha, fetched_at).status
+            except Exception as exc:  # noqa: BLE001
+                outcomes[key] = f"error: {exc}"
+
+    try:
+        first = threading.Thread(target=run_import, args=("e" * 64, NOW, "older"))
+        second = threading.Thread(target=run_import, args=("f" * 64, _later(5), "newer"))
+        first.start()
+        second.start()
+        assert entered.wait(timeout=30)
+        # Both workers staged; let the older flip first, then the newer.
+        release.set()
+        first.join(timeout=60)
+        second.join(timeout=60)
+    finally:
+        importer._activate_generation = real_activate
+
+    # No state row existed: both workers stage concurrently, and the newer
+    # content ends up active regardless of flip order (older-first flips,
+    # then newer flips over it; newer-first supersedes the older flip).
+    assert outcomes["newer"] == "activated"
+    assert outcomes["older"] in ("activated", "superseded")
+    new_id = pg_session.scalar(
+        select(TransitFeed.id).where(TransitFeed.content_sha256 == "f" * 64)
     )
     assert get_active_feed_id(pg_session) == new_id
 

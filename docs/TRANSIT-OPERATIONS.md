@@ -15,11 +15,13 @@ python -m scripts.import_gtfs --file /tmp/gtfs.zip \
   --last-modified "Fri, 18 Sep 2026 12:29:14 GMT" --etag '"abc123"'
 ```
 
-Exit codes: `0` success (including `already_current` and `superseded`),
-`1` invalid feed or unusable local file, `2` download/HTTP failure,
-`3` database lock conflict, `4` transaction error. Output is a concise
+Exit codes: `0` success (including `already_current`, and `superseded`
+when staged content is older than the current activation — a safe no-op,
+reported explicitly), `1` invalid feed, `2` download/HTTP failure,
+`3` unavailable database or lock conflict (distinct messages; previous
+generations stay active either way), `4` transaction error. Output is a concise
 `validated:`/`activated:` line with entity counts plus warnings; never
-credentials or full records.
+credentials, records or SQL text.
 
 ## Tables (all additive, all writes go through the import CLI)
 
