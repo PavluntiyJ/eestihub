@@ -22,6 +22,9 @@ import type {
 
 const MAX_MONEY = 1_000_000;
 const DEFAULT_SHARE_PERCENT = "30";
+// The budget call needs a bound even though the user can cancel it by
+// editing: fetchJson only applies its own timeout when no signal is passed.
+const REQUEST_TIMEOUT_MS = 10_000;
 
 type PensionRate = 0 | 0.02 | 0.04 | 0.06;
 
@@ -36,6 +39,22 @@ const INCOME_KINDS: PlannerIncomeKind[] = ["employment", "manual_net"];
 
 function parseAmount(raw: string): number {
   return Number(raw.trim().replace(",", "."));
+}
+
+function isPresent(raw: string): boolean {
+  // Number("") and Number("   ") are both 0, so blank fields must be
+  // rejected before conversion: an empty input is not an explicit zero.
+  return raw.trim() !== "";
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function roundShareFraction(value: number): number {
+  // Percent input carries two decimals; the contract allows four fractional
+  // digits on the share, so normalize the float division before serializing.
+  return Math.round(value * 10_000) / 10_000;
 }
 
 function hasMaxDecimals(raw: string, max: number): boolean {
@@ -132,13 +151,15 @@ export function PlannerForm({ locale }: PlannerFormProps) {
   const abortRef = useRef<AbortController | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  const isGrossValid = isMoney(grossIncome, 0) && parseAmount(grossIncome) > 0;
+  const isGrossValid =
+    isPresent(grossIncome) && isMoney(grossIncome, 0) && parseAmount(grossIncome) > 0;
   const isPensionValid = pensionRate !== "";
-  const isNetValid = isMoney(netIncome, 0);
-  const isSpendingValid = isMoney(spending, 0);
-  const isSavingsValid = isMoney(savings, 0);
+  const isNetValid = isPresent(netIncome) && isMoney(netIncome, 0);
+  const isSpendingValid = isPresent(spending) && isMoney(spending, 0);
+  const isSavingsValid = isPresent(savings) && isMoney(savings, 0);
   const shareValue = parseAmount(sharePercent);
   const isShareValid =
+    isPresent(sharePercent) &&
     Number.isFinite(shareValue) &&
     shareValue >= 0 &&
     shareValue <= 100 &&
@@ -154,16 +175,16 @@ export function PlannerForm({ locale }: PlannerFormProps) {
         incomeKind === "employment"
           ? {
               kind: "employment",
-              gross_monthly_income: parseAmount(grossIncome),
+              gross_monthly_income: roundMoney(parseAmount(grossIncome)),
               pension_pillar_rate: pensionRate as PensionRate,
             }
           : {
               kind: "manual_net",
-              net_monthly_income: parseAmount(netIncome),
+              net_monthly_income: roundMoney(parseAmount(netIncome)),
             },
-      monthly_non_housing: parseAmount(spending),
-      monthly_savings: parseAmount(savings),
-      housing_share: shareValue / 100,
+      monthly_non_housing: roundMoney(parseAmount(spending)),
+      monthly_savings: roundMoney(parseAmount(savings)),
+      housing_share: roundShareFraction(shareValue / 100),
       apartment: null,
     };
   }
@@ -180,12 +201,42 @@ export function PlannerForm({ locale }: PlannerFormProps) {
     savings !== "" ||
     sharePercent !== DEFAULT_SHARE_PERCENT;
 
-  // A fresh result already reflects the inputs, so only uncalculated
-  // edits count as an unsaved draft worth warning about.
-  const hasUnsavedDraft =
-    isDirty && (result === null || isStale);
+  // A draft is unsaved until the user discards it, even after a fresh
+  // result: leaving remounts this client state and resets the form.
+  useUnsavedDraftWarning(isDirty, t("unsaved.confirm"));
 
-  useUnsavedDraftWarning(hasUnsavedDraft, t("unsaved.confirm"));
+  // Editing cancels the obsolete request and invalidates its late response;
+  // unmounting aborts outright. Submitting never aborts: overlapping
+  // requests are ordered by id instead, so a second submit can complete
+  // while the first is still held.
+  const inputsKey = JSON.stringify({
+    incomeKind,
+    grossIncome,
+    pensionRate,
+    netIncome,
+    spending,
+    savings,
+    sharePercent,
+  });
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+
+    abortRef.current?.abort();
+    abortRef.current = null;
+    requestIdRef.current += 1;
+    setIsLoading(false);
+  }, [inputsKey]);
+  useEffect(() => {
+    const controller = abortRef;
+
+    return () => {
+      controller.current?.abort();
+    };
+  }, []);
 
   function focusFirstInvalid() {
     const order: { id: string; valid: boolean }[] =
@@ -214,9 +265,9 @@ export function PlannerForm({ locale }: PlannerFormProps) {
       return;
     }
 
-    // A newer submit aborts the previous request; a late response with an
-    // older id is ignored so it can never overwrite fresher numbers.
-    abortRef.current?.abort();
+    // A newer submit supersedes by id; the previous request is cancelled
+    // by edits or unmount, never here, so a held first response can still
+    // arrive late and must be ignored below.
     const controller = new AbortController();
     abortRef.current = controller;
     const requestId = (requestIdRef.current += 1);
@@ -226,7 +277,9 @@ export function PlannerForm({ locale }: PlannerFormProps) {
     setError(null);
 
     try {
-      const response = await calculateBudget(payload, { signal: controller.signal });
+      const response = await calculateBudget(payload, {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      });
 
       if (requestIdRef.current !== requestId) {
         return;
@@ -405,7 +458,7 @@ export function PlannerForm({ locale }: PlannerFormProps) {
                 value={sharePercent}
               />
 
-              <Button className="w-full" disabled={isLoading} size="lg" type="submit">
+              <Button className="w-full" size="lg" type="submit">
                 {isLoading ? t("form.loading") : t("form.submit")}
               </Button>
             </form>

@@ -288,7 +288,7 @@
     "hero": {
       "eyebrow": "Eelarve planeerija",
       "title": "Palgast eluasemetoetuseni.",
-      "description": "Sisesta töine brutopalk või netotulu käsitsi, kaitse igapäevased kulud ja säästud ning vaata, mis jääb üüriks ja kommunaalkuludeks. Kõik numbrid arvutab API."
+      "description": "Sisesta töine brutopalk või netotulu käsitsi, kaitse igapäevased kulud ja säästud ning vaata, mis jääb üüriks ja kommunaalkuludeks — iga number arvutatakse värskelt sinu sisenditest."
     },
     "progress": {
       "income": "Sissetulek",
@@ -342,7 +342,7 @@
     "errors": {
       "title": "Arvutus ebaõnnestus",
       "api": "API lükkas päringu tagasi. Kontrolli sisendit ja proovi uuesti.",
-      "network": "Taustateenus pole kättesaadav. Käivita FastAPI teenus kohapeal ja proovi uuesti.",
+      "network": "Arvutusteenus pole kättesaadav. Kontrolli ühendust ja proovi uuesti.",
       "validationTitle": "Kontrolli esiletõstetud välju ja saada uuesti."
     },
     "results": {

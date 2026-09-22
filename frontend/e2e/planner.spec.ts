@@ -93,6 +93,87 @@ test("validates before calling the API and focuses the first error", async ({ pa
   expect(apiCalls).toBe(0);
 });
 
+test("rejects a blank manual net without calling the API", async ({ page }) => {
+  let apiCalls = 0;
+  await page.route("**/api/v1/planner/budget", async (route) => {
+    apiCalls += 1;
+    await route.continue();
+  });
+  await page.goto("/en/planner");
+
+  await page.getByLabel("Manual net income").check();
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "35");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  await expect(page.getByText("Enter a net income of 0 or more")).toBeVisible();
+  await expect(page.locator("#planner-net-income")).toBeFocused();
+  await expect(page.getByTestId("planner-results")).toHaveCount(0);
+  expect(apiCalls).toBe(0);
+});
+
+test("rejects blank spending and savings without calling the API", async ({ page }) => {
+  let apiCalls = 0;
+  await page.route("**/api/v1/planner/budget", async (route) => {
+    apiCalls += 1;
+    await route.continue();
+  });
+  await page.goto("/en/planner");
+
+  await fillStable(page.getByLabel("Monthly gross salary, EUR"), "3000");
+  await selectStable(page.getByLabel("II pension pillar contribution"), "0.02");
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  await expect(page.getByText("Enter spending of 0 or more")).toBeVisible();
+  await expect(page.getByText("Enter a savings target of 0 or more")).toBeVisible();
+  await expect(page.locator("#planner-spending")).toBeFocused();
+  await expect(page.getByTestId("planner-results")).toHaveCount(0);
+  expect(apiCalls).toBe(0);
+});
+
+test("rejects a blank share without calling the API", async ({ page }) => {
+  let apiCalls = 0;
+  await page.route("**/api/v1/planner/budget", async (route) => {
+    apiCalls += 1;
+    await route.continue();
+  });
+  await page.goto("/en/planner");
+
+  await fillStable(page.getByLabel("Monthly gross salary, EUR"), "3000");
+  await selectStable(page.getByLabel("II pension pillar contribution"), "0.02");
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  await expect(page.getByText("Enter a share from 0 to 100.")).toBeVisible();
+  await expect(page.locator("#planner-share")).toBeFocused();
+  await expect(page.getByTestId("planner-results")).toHaveCount(0);
+  expect(apiCalls).toBe(0);
+});
+
+test("serializes fractional shares without float artifacts", async ({ page }) => {
+  await page.goto("/en/planner");
+
+  await fillStable(page.getByLabel("Monthly gross salary, EUR"), "3000");
+  await selectStable(page.getByLabel("II pension pillar contribution"), "0.02");
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "33.34");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  // 33.34% / 100 must reach the API as 0.3334, not 0.33340000000000003.
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€803.41");
+
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "35.01");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€843.66");
+});
+
 test("accepts zero spending and savings", async ({ page }) => {
   await page.goto("/en/planner");
 
@@ -257,11 +338,110 @@ test("warns before locale navigation discards an unsaved draft", async ({ page }
   await expect(page).toHaveURL(/\/et\/planner$/);
 });
 
+test("warns on locale navigation even after a fresh result", async ({ page }) => {
+  await page.goto("/en/planner");
+
+  await page.getByLabel("Manual net income").check();
+  await fillStable(page.getByLabel("Monthly net income, EUR"), "2400");
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "35");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€840.00");
+
+  // Dismissing keeps the calculated draft: inputs and result stay intact.
+  page.once("dialog", (dialog) => void dialog.dismiss());
+  await page.getByRole("link", { name: "ET", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/planner$/);
+  await expect(page.locator("#planner-net-income")).toHaveValue("2400");
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€840.00");
+
+  // Accepting navigates; client state resets by design.
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("link", { name: "ET", exact: true }).click();
+  await expect(page).toHaveURL(/\/et\/planner$/);
+});
+
+test("lets the second response win while the first is held", async ({ page }) => {
+  const firstResponse = {
+    schema_version: 1,
+    income: { kind: "manual_net", net_monthly_income: 1000.0, tax_year: null },
+    budget: {
+      monthly_non_housing: 700.0,
+      monthly_savings: 300.0,
+      housing_share: 0.35,
+      available_after_commitments: 0.0,
+      share_limit: 350.0,
+      housing_allowance: 0.0,
+    },
+    apartment: null,
+    warnings: [],
+  };
+  const secondResponse = {
+    schema_version: 1,
+    income: { kind: "manual_net", net_monthly_income: 2000.0, tax_year: null },
+    budget: {
+      monthly_non_housing: 700.0,
+      monthly_savings: 300.0,
+      housing_share: 0.35,
+      available_after_commitments: 1000.0,
+      share_limit: 700.0,
+      housing_allowance: 700.0,
+    },
+    apartment: null,
+    warnings: [],
+  };
+
+  let releaseFirst!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  let calls = 0;
+  await page.route("**/api/v1/planner/budget", async (route) => {
+    calls += 1;
+
+    try {
+      if (calls === 1) {
+        await gate;
+        await route.fulfill({ json: firstResponse });
+      } else {
+        await route.fulfill({ json: secondResponse });
+      }
+    } catch {
+      // Editing aborts the held request; nothing left to answer.
+    }
+  });
+  await page.goto("/en/planner");
+
+  await page.getByLabel("Manual net income").check();
+  await fillStable(page.getByLabel("Monthly net income, EUR"), "1000");
+  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
+  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
+  await fillStable(page.getByLabel("Maximum housing share, % of net"), "35");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+
+  await fillStable(page.getByLabel("Monthly net income, EUR"), "2000");
+  // The first submit is still in flight, so the button reads "Calculating..."
+  // and stays enabled for the superseding submission.
+  await page.getByRole("button", { name: /calculat/i }).click();
+
+  // Request two completes while request one is still held.
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€700.00");
+
+  releaseFirst();
+  await expect.poll(() => calls).toBe(2);
+
+  // The late first response must not overwrite the fresher numbers.
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€700.00");
+});
+
 test("links the housing overview as general context", async ({ page }) => {
   await page.goto("/en/planner");
 
   await fillEmploymentBudget(page);
 
+  // The calculated draft is unsaved client state, so leaving confirms first.
+  page.once("dialog", (dialog) => void dialog.accept());
   await page
     .getByRole("link", { name: "See Tallinn district averages as general context" })
     .click();

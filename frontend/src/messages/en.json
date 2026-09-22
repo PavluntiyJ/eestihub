@@ -288,7 +288,7 @@
     "hero": {
       "eyebrow": "Budget planner",
       "title": "From salary to housing allowance.",
-      "description": "Enter employment income or a manual net, protect everyday spending and savings, and see what is left for rent and utilities. The backend calculates every number."
+      "description": "Enter employment income or a manual net, protect everyday spending and savings, and see what is left for rent and utilities — every number is calculated fresh from your inputs."
     },
     "progress": {
       "income": "Income",
@@ -341,8 +341,8 @@
     },
     "errors": {
       "title": "Calculation failed",
-      "api": "The API rejected the request. Check the input and try again.",
-      "network": "The backend is unavailable. Start the FastAPI service locally and try again.",
+      "api": "The calculation was rejected. Check the input and try again.",
+      "network": "The calculation service is unavailable. Check your connection and try again.",
       "validationTitle": "Check the highlighted fields, then submit again."
     },
     "results": {

@@ -122,9 +122,49 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 | M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
 | M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
 
-M06 has not started.
 
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M06 review fixes done — `[R]`.**
+  Addressed all four Codex corrections plus the listed follow-ups; existing
+  tests untouched, backend precision validation unchanged.
+  · **(1) Blank inputs no longer become zero:** `Number("")` is 0, so every
+  money/share field now requires non-blank trimmed text before conversion;
+  explicit `"0"` stays valid. New browser tests assert no request, visible
+  error and focus for blank manual net, blank spending+savings (focus lands
+  on spending) and blank share separately.
+  · **(2) Share normalization:** `housing_share` is quantized to the
+  contract's four fractional digits client-side (money to two), so 33.34%
+  arrives as 0.3334 instead of `0.33340000000000003`. Real-API browser
+  regressions: 33.34% → €803.41 and 35.01% → €843.66 allowances, 200.
+  · **(3) Draft guard after a fresh result:** the warning now fires whenever
+  inputs differ from pristine, calculated or not — reproduced Codex case
+  (manual 2400/700/300, calculate, ET) warns again. New test covers
+  dismiss (stays, inputs + €840.00 intact) and accept (navigates, resets);
+  the housing-context link test accepts the confirm.
+  · **(4) Request lifecycle:** submit carries a bounded 10s timeout combined
+  with its cancellation signal (`AbortSignal.any`); edits abort and
+  invalidate the pending request, unmount aborts, and the submit button
+  stays enabled in flight for retry/new submissions. Overlapping order is
+  by request id — submit never aborts. New held-response test fulfills a
+  different second response while the first is gated, then releases the
+  first and asserts the fresher numbers stand; the older abort-path test
+  is kept.
+  · **Follow-ups:** removed the stale "M06 has not started" sentence;
+  customer copy no longer names backend/API (hero, calculation-rejected
+  and service-unavailable texts, mirrored in ET/RU); shared API types now
+  mirror the nullable apartment contract shapes without any apartment UI;
+  planner tool heading set to M03's 28/34px.
+  · Verified: `npm run build` clean; `npm run lint` clean; `npx tsc`
+  clean; `pytest` → 106 passed; `npm run e2e` → 46 passed (15 smoke + 20
+  planner + 11 axe, seeded SQLite backend); desktop/mobile screenshots
+  retaken after the copy/heading changes and inspected (€803.41 at 33.34%,
+  no overflow). One stale `next start` had to be killed mid-pass again
+  before the final green run.
+  · Commit: `fix(planner): review corrections for validation and lifecycle`.
+  Only my hunks staged; Codex board/dictionary work stays uncommitted.
+  M07 not started.
+
 
 - 2026-09-22 · muse-spark (opencode) · **M06 done — `[R]`.** Guided income
   and budget UI against the reviewed M05 contract; no apartment/map/

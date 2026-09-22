@@ -98,7 +98,62 @@ export type PlannerBudgetRequest = {
   monthly_non_housing: number;
   monthly_savings: number;
   housing_share: number;
-  apartment: null;
+  apartment: PlannerApartmentInput | null;
+};
+
+export type PlannerUtilityBasis =
+  | "user_bill"
+  | "user_estimate"
+  | "legacy_assumption"
+  | "unknown";
+
+export type PlannerFit = "within_budget" | "seasonal_risk" | "over_budget" | "unknown";
+
+export type PlannerMissingComponent = "first_rent" | "deposit" | "broker_fee" | "setup";
+
+// Mirrors of the budget contract's apartment shapes. The M06 flow never
+// sends an apartment; the types exist so the client matches the API 1:1.
+export type PlannerUtilitiesInput = {
+  summer: number | null;
+  winter: number | null;
+  basis: PlannerUtilityBasis;
+};
+
+export type PlannerMoveInInput = {
+  first_rent: number | null;
+  deposit: number | null;
+  broker_fee: number | null;
+  setup: number | null;
+};
+
+export type PlannerApartmentInput = {
+  rent: number;
+  utilities: PlannerUtilitiesInput;
+  move_in: PlannerMoveInInput | null;
+};
+
+export type PlannerUtilitiesResult = {
+  summer: number | null;
+  winter: number | null;
+  basis: PlannerUtilityBasis;
+};
+
+export type PlannerMoveInResult = {
+  cash_needed: number | null;
+  known_subtotal: number;
+  missing_components: PlannerMissingComponent[];
+  refundable_deposit: number | null;
+};
+
+export type PlannerApartmentResult = {
+  rent: number;
+  utilities: PlannerUtilitiesResult;
+  summer_total: number | null;
+  winter_total: number | null;
+  summer_remainder: number | null;
+  winter_remainder: number | null;
+  fit: PlannerFit;
+  move_in: PlannerMoveInResult | null;
 };
 
 export type PlannerWarningCode =
@@ -129,6 +184,6 @@ export type PlannerBudgetResponse = {
   schema_version: 1;
   income: PlannerIncome;
   budget: PlannerBudget;
-  apartment: null;
+  apartment: PlannerApartmentResult | null;
   warnings: PlannerWarning[];
 };

@@ -57,7 +57,7 @@ export default async function PlannerPage({ params }: PlannerPageParams) {
             {t("hero.eyebrow")}
           </Badge>
           <div className="space-y-4">
-            <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+            <h1 className="text-[1.75rem] font-semibold leading-[2.125rem] tracking-tight text-balance">
               {t("hero.title")}
             </h1>
             <p className="max-w-3xl text-lg leading-8 text-muted-foreground sm:text-xl">
