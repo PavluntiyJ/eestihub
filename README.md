@@ -71,7 +71,7 @@ Principles the codebase holds throughout:
 
 - Routes are thin; all tax math lives in the service layer with unit-tested manual derivations.
 - Backend Pydantic schemas are mirrored 1:1 (snake_case) in `frontend/src/types/` — the API is locale-neutral, UI labels come only from dictionaries.
-- Pages are Server Components; `'use client'` appears only on interactive leaves (forms, chart, language switcher, theme toggle, status badge).
+- Pages are Server Components; `'use client'` appears only on interactive leaves (forms, chart, navigation, language switcher, theme toggle).
 - Tax rates exist in exactly one file, each constant annotated with its official source.
 
 ## Getting started
