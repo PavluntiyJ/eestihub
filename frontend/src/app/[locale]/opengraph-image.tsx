@@ -27,6 +27,9 @@ export default async function OpengraphImage({
 
   return new ImageResponse(
     (
+      // ImageResponse renders Satori, not the DOM: the Baltic palette from
+      // docs/PLANNER-DESIGN.md has to be inlined as hex, CSS variables are
+      // not available here.
       <div
         style={{
           width: "100%",
@@ -35,8 +38,8 @@ export default async function OpengraphImage({
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px",
-          backgroundColor: "#0f1318",
-          color: "#e4e9f0",
+          backgroundColor: "#101f2a",
+          color: "#eff5f5",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -44,7 +47,7 @@ export default async function OpengraphImage({
             style={{
               width: "14px",
               height: "44px",
-              backgroundColor: "#74aae9",
+              backgroundColor: "#8edac8",
             }}
           />
           <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: "-0.01em" }}>
@@ -68,7 +71,7 @@ export default async function OpengraphImage({
             style={{
               fontSize: 30,
               lineHeight: 1.35,
-              color: "#9ba6b4",
+              color: "#b9cbd3",
               maxWidth: "900px",
             }}
           >
@@ -76,11 +79,11 @@ export default async function OpengraphImage({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "20px", fontSize: 24, color: "#74aae9" }}>
+        <div style={{ display: "flex", gap: "20px", fontSize: 24, color: "#8edac8" }}>
           <div>{nav("calculator")}</div>
-          <div style={{ color: "#3a4350" }}>·</div>
+          <div style={{ color: "#45616e" }}>·</div>
           <div>{nav("housing")}</div>
-          <div style={{ color: "#3a4350" }}>·</div>
+          <div style={{ color: "#45616e" }}>·</div>
           <div>{nav("eresidency")}</div>
         </div>
       </div>
