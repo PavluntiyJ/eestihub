@@ -13,6 +13,28 @@ jobs:
     name: Backend tests
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: estihub
+          POSTGRES_PASSWORD: estihub
+          POSTGRES_DB: estihub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U estihub -d estihub_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # Explicitly configured: the transit integration tests run against
+      # this disposable database and must fail (not skip) when it is
+      # unreachable. The name guard in the test module refuses any
+      # database that does not look like a *_test database.
+      TRANSIT_TEST_DATABASE_URL: postgresql+psycopg://estihub:estihub@localhost:5432/estihub_test
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4

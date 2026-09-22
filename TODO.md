@@ -1,5 +1,26 @@
 # TODO — EestiHub task board
 
+## Active release — owner-directed scope, 2026-09-22
+
+Codex is completing the release after Muse's M08 handoff. The owner approved
+**M08 → apartment costs + map/nearby transit → verification → release**, keeping
+Vercel + Render + Neon. This supersedes historical sequential M09–M13 gates;
+district polygons, comparisons and saved scenarios are deferred. Current scope
+and additive API: [PLANNER-RELEASE.md](docs/PLANNER-RELEASE.md).
+
+Implementation passed CI on `3906256`: **245 backend tests, 70 browser tests**,
+frontend build, Lighthouse and Docker Compose. All five PostgreSQL integration
+tests ran successfully. Local build/lint/TypeScript and production-only npm audit
+pass (zero reported vulnerabilities). Real GTFS was imported into disposable
+SQLite (1120 stops / 80 routes); live address search, basemap and markers were
+visually checked. Release deployment is now in progress.
+The actual first-flush SHA race left in `ad87972` was corrected by Codex and has
+a dedicated concurrent PostgreSQL regression that passed in CI.
+
+`docs/CONTEXT.md` sections 1–3/7 retain the historical MVP/compose-only description;
+the release contract and operations documents above describe the new scope.
+Historical journal and review notes below are preserved for traceability.
+
 Statuses: `[ ]` not started · `[>]` in progress · `[R]` in review with the orchestrator · `[x]` accepted
 
 Rules for workers:
@@ -115,7 +136,533 @@ evidence). Workstreams, all `[R]`:
 M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 ("stop before M04").
 
+## Planner specification and design — M01/M03 (owner-directed, awaiting review)
+
+| # | Task | Brief | Status | Worker |
+|---|------|-------|--------|--------|
+| M01 | Planner scope, budget rules, proposed additive contracts and delivery gates | owner-directed chat; docs/PLANNER-PRODUCT.md, docs/PLANNER-CONTRACTS.md, docs/PLANNER-DELIVERY.md | `[R]` | Codex (GPT-6) |
+| M03 | Baltic UI screen/state specification and responsive budget/apartment preview | owner-directed chat; docs/PLANNER-DESIGN.md, docs/planner-preview.html | `[R]` | Codex (GPT-6) |
+
+## Planner implementation — M05 (owner-directed, in review)
+
+| # | Task | Brief | Status | Worker |
+|---|------|-------|--------|--------|
+| M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
+| M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
+| M07 | Verified Tallinn address search: adapter, combobox, docs | docs/PLANNER-M07-HANDOFF.md (frozen address contract, In-AKS v1.2 terms) | `[R]` | muse-spark (opencode) |
+| M08 | Versioned Tallinn GTFS import and refresh: models, import/data services, CLI, tests, ops docs | docs/PLANNER-M08-HANDOFF.md (frozen transit contract, Codex terms review) | `[R]` | muse-spark (opencode) |
+
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M08 re-review fixes done
+  (R1–R3) — `[R]`.** Only the open top-section items; calendar,
+  freshness, CI and attribution work left untouched.
+  · **(R1) Download that actually stops:** the transfer moved to a
+  supervised child process the parent kills on total-deadline expiry
+  (fixed source hardwired, CLI has no URL option; loopback-only seam for
+  tests). Parent owns the temp file and unlinks on every failure; child
+  closes its response in `finally`. Replaced the fake-close unit test
+  with real loopback HTTP coverage: 1 byte/20 ms slow body and 2 s
+  delayed headers both die at a 0.5 s deadline with no temp leftovers,
+  plus HTTP-error/oversize/success-metadata cases.
+  · **(R2) Activation races:** unconditional fetched_at age check (older
+  normal-path imports supersede even without concurrent overlap);
+  already_current only for the active generation resolved under the
+  state-row lock with `refresh()` and monotonic `max()` on checked_at;
+  retained SHAs report superseded untouched; all staging flushes plus
+  commit sit inside one IntegrityError retry that re-resolves once.
+  Regressions: older-after-newer, active recheck, A→B→A retention,
+  monotonic checks, same-SHA overlap (SQLite-sequential plus PG-threaded
+  variants), first-import races.
+  · **(R3) Strict parsing:** one bounded streaming reader for every
+  member (real byte counts, CRC on close including ignored shapes,
+  strict CSV, duplicate headers everywhere); non-negative sequences;
+  location_type 0–4; string lengths aligned with DB columns; route types
+  restricted to the reference's exact static+extended codes
+  (333/8/99/1701 rejected, 901/1501 map to other); BadZipFile/zlib
+  normalized to FeedError; archive-limit tests isolated with reason
+  assertions; parser + real-CLI regressions for reserved-block DEFLATE
+  (exit 1, no traceback).
+  · Effective envelope derives first/last service dates from weekday
+  scans plus both exception types (bounded range cap); Monday-only and
+  removed-only feeds reject; freshness checks stale evidence before
+  unknown metadata.
+  · Verified: `pytest` → 235 passed + 4 PG-skipped (explicit reasons;
+  local Postgres still absent); `npm run build`/`lint` clean; real-feed
+  `--validate-only` still accepts 1120/80/20081/483972/10004.
+  · Commit: `fix(transit): re-review corrections for activation safety`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
+- 2026-09-22 · Codex · Re-reviewed M08 fix 2d35cfa. Full backend suite:
+  230 passed, 4 PostgreSQL skipped; frontend build/lint passed. Calendar,
+  freshness precedence, attribution, retained-SHA refusal and CI wiring
+  corrections verified. Three groups remain: actual urllib slow-drip still
+  exceeds total deadline (0.812s for 0.1s bound); active-SHA checked_at can
+  regress and same-SHA insertion races escape retry at the first flush;
+  malformed DEFLATE escapes as raw zlib.error. Updated the top of
+  docs/PLANNER-M08-REVIEW.md with R1-R3 reproductions and narrow follow-up.
+  No application changes, board changes, push or deployment. PostgreSQL CI
+  is configured but not independently executed; M09 remains unassigned.
+
+- 2026-09-22 · muse-spark (opencode) · **M08 review fixes done — `[R]`.**
+  Addressed all six Codex findings; existing checks kept strict, no M09,
+  no push or production.
+  · **(1) Activation:** the compare-and-swap now always compares staged
+  fetched_at against the current activation — an older normal-path import
+  after a newer activation returns superseded (regression per the review
+  repro), ties flip documented; SHA idempotency only refreshes
+  `checked_at` on the actually active generation, retained SHAs report
+  superseded without timestamp moves; unique-constraint races roll back
+  and retry once, then re-resolve.
+  · **(2) Download:** body pumps on a daemon thread with a real total
+  deadline that closes the response mid-block (slow-drip and silent both
+  stop); temp file unlinked inside `download_source` on every failure
+  (slow-drip test asserts prompt termination and no `gtfs-*.zip`
+  leftovers); urllib timeout documented as per-operation inactivity bound.
+  · **(3) Envelope/freshness:** effective first/last dates derive from
+  weekday scans plus both exception types with a bounded per-service
+  range (Monday-only windows and removed-only services reject as
+  no-effective-dates); freshness checks stale evidence before unknown
+  metadata (envelope-stale + missing/future Last-Modified → stale).
+  · **(4) Validation/streaming:** one bounded streaming reader for all
+  members (real byte counts, CRC verified on close including ignored
+  shapes, strict CSV, duplicate headers everywhere); non-negative stop
+  sequences; location_type 0–4; string lengths aligned with DB columns;
+  route types restricted to the reference's exact static+extended codes
+  (333/8/99 rejected, 901/1501 map to other); BadZipFile/zlib mapped to
+  FeedError; archive-limit tests isolated with reason assertions; CLI
+  subprocess coverage (validate/missing-file/bad-flag/unavailable-DB)
+  with static concise messages (no SQL text), distinct unavailable vs
+  lock-conflict exits, superseded stays exit 0 by documented convention.
+  · **(5) CI Postgres:** disposable `estihub_test` service + explicit
+  `TRANSIT_TEST_DATABASE_URL` on the backend job (YAML parses); explicit
+  URL failures fail instead of skip; fixture refuses non-`*_test`
+  databases; first-import and overlapping activation/concurrency paths
+  exercised; local run still skips (no server here) and CI itself is
+  unverified without owner-authorized push.
+  · **(6) Attribution:** transit credit no longer names Maa- ja Ruumiamet
+  (unsupported by retained evidence) — dataset title + distribution +
+  registry + license URL; docs state credit is stored for future
+  responses, none served yet; stale parser-library recommendation fixed.
+  · Verified: `pytest` → 230 passed + 4 PG-skipped (explicit skip
+  reasons); `npm run build`/`lint` clean; `ci.yml` parses; real-feed
+  `--validate-only` still accepts 1120/80/20081/483972/10004. Correct
+  count for the record: M08 total is 230 passed, not the 150 I wrote in
+  the previous entry (150 was the pre-transit baseline).
+  · Commit: `fix(transit): review corrections for import safety`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
+- 2026-09-22 · Codex · Reviewed M08 commit 2a4f754; corrections required
+  before M09. Independent full backend run: 191 passed, 3 PostgreSQL skipped;
+  frontend build/lint passed. Synthetic probes reproduced older work replacing
+  a newer activation, retained SHA falsely reported as already_current,
+  ineffective calendar envelopes, stale evidence hidden by unknown metadata,
+  blocking slow-drip reads exceeding the total deadline, failed-download temp
+  leaks, ignored-member CRC acceptance and duplicate stop-time headers. CI
+  currently does not provision/run the PostgreSQL checks. Detailed correction
+  packet: docs/PLANNER-M08-REVIEW.md, including narrow CI scope extension and
+  unsupported attribution correction. Application code, board statuses,
+  dictionaries and existing worker changes untouched; no push/deployment.
+
+- 2026-09-22 · muse-spark (opencode) · **M08 done — `[R]`.** Versioned
+  GTFS import and refresh per docs/PLANNER-M08-HANDOFF.md; backend only,
+  no nearby endpoint, no frontend, no automation, no push or production.
+  · **Models** (`models/transit.py`): feed generations with SHA/source
+  timestamps/agency tz/effective envelope/counts/attribution-license
+  evidence, singleton active pointer, feed-scoped stops/routes/
+  stop-services/calendars/exceptions. Additive `create_all` via the CLI
+  only; housing tables untouched.
+  · **Import** (`services/transit_import.py`, stdlib only): bounded
+  download (50 MiB cap, socket timeout plus a separately enforced 60s
+  total deadline — slow-drip and silent both stop, no retry), ZIP safety
+  (dups/encryption/symlinks/nested/traversal/CRC/size, never extractall),
+  full schema validation (headers, unique IDs as opaque strings, dates,
+  weekday/exception codes, finite global coords, route-type codes with
+  raw+derived tram/bus/trolleybus/other modes, trip/service and
+  stop/trip refs, unique trip stop-sequences, nonempty datasets,
+  calendars-or-exceptions resolution with effective envelope).
+  Route-less stops preserved; no name grouping, no invented bounding box.
+  Staging plus pointer flip commits once with row lock and
+  compare-and-swap (older staged content rolls back as superseded);
+  identical SHA only refreshes the check time; old generations retained.
+  · **Data service** (`services/transit_data.py`): single-generation
+  reads, `routes_for_stop` with weekday/range plus add/remove exceptions
+  before dedup (scheduled-that-date semantics, never departures), and the
+  freshness policy (7-day check / 30-day source / envelope edges, unknown
+  on missing/future timestamps) on injected clocks.
+  · **CLI** (`scripts/import_gtfs.py`): download or `--file` (with
+  validated `--last-modified`/`--etag`), `--validate-only`, exits
+  0/1/2/3/4 with concise counts, temp download cleaned up, no startup or
+  read-path downloads.
+  · **Tests:** 150 backend passed (44 new: synthetic-ZIP validation
+  matrix, staging/activation/idempotency/rollback/CAS, scheduling incl.
+  weekday/weekend/add/remove/exception-only/expired/future/route-less,
+  freshness branches, download limits/deadline, CLI codes); 3 PostgreSQL
+  lock/transaction/concurrency checks written but SKIPPED — no local
+  Postgres exists (nothing on :5432, no binaries), so SQLite does not
+  evidence PostgreSQL activation safety and CI must run them.
+  · **Real-feed proof (no writes to the repo):** `--validate-only` on the
+  manually downloaded 2026-09-22 archive → 1120/80/20081/483972/10004
+  accepted; full import into a throwaway SQLite DB activated with modes
+  69/6/5, Vana-Kuuli kept routeless, envelope 2024-07-01…2027-09-01
+  (temp DB removed afterwards).
+  · Verified: `pytest` → 150 passed + 3 PG-skipped; `npm run build` /
+  `lint` clean; `npm run e2e` → 62 passed (seeded SQLite backend).
+  · Docs: `docs/TRANSIT-OPERATIONS.md` (commands, tables, transactions,
+  recovery, timestamps, daily-refresh suggestion without automation),
+  `docs/TRANSIT-DATA-LICENSE.md` (CC BY-SA 3.0 scope/credit/transforms,
+  code and salary data excluded), DATA-SOURCES GTFS section (stdlib,
+  envelope semantics), README import commands only (no transit UI/API
+  claims). New additive API: none — report tables/internal services for
+  CONTEXT §5 to its owner.
+  · Commit: `feat(transit): import versioned Tallinn GTFS snapshots`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M09 not started; nothing pushed or published.
+
+- 2026-09-22 · Codex · Reviewed M08 preparation and wrote
+  docs/PLANNER-M08-HANDOFF.md. Defined separate attribution/share-alike handling
+  for transit data based on the recorded source license and CC legal code;
+  project code license unchanged. Required service calendars/exceptions rather
+  than discarding service_id, generation-safe activation, archive/download
+  bounds and explicit freshness thresholds. GTFS and registry repeat requests
+  returned 403 in this review; worker observations are not claimed as newly
+  verified. Development may proceed under the scoped handoff; no production
+  enablement, schedule, push or implementation performed.
+
+- 2026-09-22 · muse-spark (opencode) · **M08 preparation (no code).**
+  Verified the GTFS source live for the nearby-stops import slice:
+  freshness/size/entries, stops/routes/trips schema, platform-grouping
+  absence, route-type mapping, join coverage (1119/1120, one routeless
+  stop flagged), calendar validity and coordinate sanity — all by direct
+  requests, no mocks. Delivered an import design input (tables, atomic
+  pointer-switch activation, validation gates, failure recovery, stdlib
+  parsing) plus the remaining owner-level blockers in Notes; share-alike
+  still gates any M08 build. No application code, board statuses, foreign
+  workdir changes, pushes or production actions touched.
+
+- 2026-09-22 · Codex · Re-reviewed M07 fix `b8156a4`: prior blocking
+  findings resolved for the reviewed flows. Independently passed build,
+  lint, 150 backend tests and all 62 seeded e2e/axe tests, including held
+  requests cleared/shortened before response, selection without follow-up
+  search, and the real 10-second client timeout with preserved budget/retry.
+  Live adapter checks returned Tallinn candidates for Tallinn Mustamae tee 5
+  and an empty list for a no-match query. No new blocking findings.
+  Remaining operational limitation: urllib bounds socket inactivity rather
+  than total elapsed time; client abort does not cancel the server's sync
+  upstream read. Retain the four-call concurrency cap and track a server
+  total deadline as follow-up. No push/deploy or CI verification this pass;
+  no application code or board status changed. M08 needs its own handoff.
+
+- 2026-09-22 · muse-spark (opencode) · **M07 review fixes done — `[R]`.**
+  Addressed all three Codex corrections plus the small contract items;
+  existing checks kept strict, backend precision validation unchanged.
+  · **(1) Edit lifecycle:** every keystroke now aborts the pending request,
+  bumps the request id and clears options/active state (dropdown closes,
+  announcement resets) — including below-threshold text; explicit search
+  cancels the pending debounce (no duplicate), and selection suppresses
+  re-searching its own rewritten label. New browser tests: clearing and
+  shortening a held request (no options after release), no follow-up
+  request or reopening after selecting the 5a option, single request on
+  immediate explicit search.
+  · **(2) Normalization hardening:** non-string `kvaliteet` (list/dict) is a
+  malformed row → 503 while missing/unrecognized strings stay unknown;
+  integer overflow coordinates (`10**400`) and `1e400` strings → 503;
+  explicit-null `addresses`, null/invalid `host` and unexpected envelope
+  keys → 503 (only the exact `{host: non-empty-string}` shape is a
+  no-match); failures verified uncached at HTTP level (503 then 200).
+  · **(3) Client timeout and docs:** search combines a finite 10s bound
+  with cancellation; a real 10s held-request test proves the
+  unavailable/retry state, preserved query and budget, and ignores the
+  late response. urllib timeout documented as per-operation inactivity
+  bound (stdlib-only sync adapter; 1 MiB cap, ~0.3s observed, browser-side
+  finite bound on top).
+  · **Contract corrections:** manual 422s carry `Cache-Control: no-store`;
+  framework 422s (missing q) go through a route-scoped handler with the
+  same header; raw `max_length` dropped so padded 200-char queries pass
+  (trim-before-length, covered by test).
+  · **Defect caught verifying (fixed):** after selection the live region
+  read "0 matching" because it counted the cleared dropdown — now uses
+  the stored search hit count ("7 matching addresses found." in the
+  inspected screenshot), with a regression assertion.
+  · Verified: `pytest` → 150 passed; `npm run build` clean;
+  `npm run lint` + `tsc` clean; `npm run e2e` → 62 passed (15 smoke + 20
+  planner + 15 addresses + 12 axe, seeded SQLite backend); desktop/mobile
+  address screenshots reinspected. One stale `next start` killed before
+  the final runs; the suite twice exposed a stale server before that.
+  · Commit: `fix(addresses): review corrections for validation lifecycle`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M08 not started.
+
+- 2026-09-22 · Codex · Reviewed M07 `ac2c68a`; independently passed build,
+  lint, all 137 backend tests and all 58 seeded e2e/axe tests. Additional
+  HTTP probes found malformed provider payloads escaping as 500 or being
+  cached as empty successes. A controlled browser response confirmed that
+  clearing the search input while a request is pending still displays the
+  old candidates. Corrections below remain open; implementation unchanged.
+
+- 2026-09-22 · muse-spark (opencode) · **M07 done — `[R]`.** Verified
+  Tallinn address search per docs/PLANNER-M07-HANDOFF.md; scope only, no
+  transit/polygon/tile work, no new page, no production deploy.
+  · **Backend:** `GET /api/v1/addresses/search` (schemas/addresses.py,
+  services/address_service.py, routes/addresses.py) over fixed In-AKS
+  gazetteer URL via stdlib urllib in a sync route: q trimmed, 3–200 chars,
+  controls and repeated q → 422 with no provider call; exact contract
+  response with attribution; ≤8 deduped Tallinn-only candidates
+  (`omavalitsus == Tallinn`, `district_id` null); quality exact/partial/
+  unknown; missing in-area fields, error key, malformed/arbitrary JSON,
+  non-200, timeout and >1 MiB body → 503 `address_provider_unavailable`;
+  host-only envelope or empty array → 200 `[]`. Thread-safe 60s/256-entry
+  success cache, rolling ≤1000/10min + ≤4 in-flight limiter with
+  `Retry-After` (`address_search_busy`); every response `no-store`; no
+  retry/fallback/reverse, no query logging. One setting
+  (`ADDRESS_SEARCH_USER_AGENT`) + `.env.example`.
+  · **Frontend:** `features/addresses` combobox mounted below the planner
+  result only — 500ms debounce, auto from 4 chars, explicit from 3,
+  listbox keyboard (arrows/Enter/Escape, activedescendant), live
+  announcements, explicit selection as location context with coordinates
+  and visible attribution; edits clear the selection, failures preserve
+  query and budget, retry offered; empty/unavailable/busy distinct.
+  · **Tests:** 31 backend tests on mocked sourced fixtures (no live CI
+  dependency); 11 mocked browser tests + 1 axe scan with selection;
+  budget tests untouched and still real-backend.
+  · **Defects caught verifying (fixed):** three `_InvalidRow`/transport/
+  limiter-0 escapes became 500s instead of 503s; shared-module test
+  pollution isolated with an autouse fixture; Playwright
+  `route.request().url()` API shape learned the hard way; a stale foreign
+  `next start` and a stale pre-M07 uvicorn were squatting on :3000/:8000
+  again and had to be replaced before green runs; the live-region
+  announcement read "0 matching" after selection because it counted the
+  cleared dropdown — now uses the stored search hit count, with a
+  regression test.
+  · Verified: `pytest` → 137 passed; `npm run build` clean;
+  `npm run lint` + `tsc` clean; `npm run e2e` → 58 passed (15 smoke + 20
+  planner + 11 addresses + 12 axe, seeded SQLite backend); i18n parity
+  257/257/257; desktop/mobile address screenshots inspected; modest live
+  search (Mustamäe tee 5 → 7 Tallinn candidates, Pärnu filtered) and
+  no-match (`[]`) checked 2026-09-22 outside CI against the real gazetteer
+  through the shipped adapter.
+  · Docs: DATA-SOURCES gazetteer terms/open-question updated to the v1.2
+  sources (other sources left open), README feature + endpoint + counts.
+  Commit: `feat(addresses): add Tallinn address search`. Only my hunks
+  staged; Codex planning docs, dictionary repairs and board entries stay
+  uncommitted. M08 not started.
+
+- 2026-09-22 · Codex · Reviewed M07 gate report and independently queried
+  address search/no-match. Found current In-AKS terms v1.2 (24 April 2026),
+  directly covering gazetteer and automation; the unresolved map-terms
+  inference is no longer needed. Verified official migration and developer
+  documentation. Prepared docs/PLANNER-M07-HANDOFF.md with an additive
+  address contract, provider bounds, failure semantics and acceptance checks.
+  Search-only gate cleared for implementation; transit/polygon gates remain
+  separate. No application/protected-file edits, push or deployment.
+
+- 2026-09-22 · muse-spark (opencode) · **M07 gate verification (no code).**
+  M07 implementation stays blocked per PLANNER-DELIVERY (needs reviewed
+  M02 + frozen geographic contract; M02 is `[R]`, no M07 brief exists), so
+  on orchestrator redirect I verified M02's In-AKS evidence live for the
+  search slice only: search, reverse, no-match, `results` cap, both hosts,
+  admin/quality fields, the documented geocoder-api cross-check, and the
+  integration-docs terms pages. Findings, a concrete search contract and
+  the remaining owner-level blockers are in Notes for Codex review.
+  GTFS/maps/polygons confirmed as non-dependencies of address search.
+  No application code, board statuses, or foreign workdir changes touched.
+
+- 2026-09-22 · Codex · Re-reviewed M06 `b0add69`: all four blocking
+  findings are resolved for the reviewed flows. Independently passed build,
+  lint and all 46 seeded e2e/axe tests, including blank-input rejection,
+  real-API fractional percentages, post-calculation locale confirmation and
+  held-response ordering. Separately held a browser request to verify the
+  10-second timeout exposes an error and retry. Apartment API types and
+  customer copy corrections are present. No new blocking findings; M06 is
+  ready to proceed beyond review. No application code or board status changed.
+  Backend code is unchanged from its 106-test reviewed baseline; GitHub CI
+  was not checked. M07 still requires the documented provider/contract gate.
+
+- 2026-09-22 · muse-spark (opencode) · **M06 review fixes done — `[R]`.**
+  Addressed all four Codex corrections plus the listed follow-ups; existing
+  tests untouched, backend precision validation unchanged.
+  · **(1) Blank inputs no longer become zero:** `Number("")` is 0, so every
+  money/share field now requires non-blank trimmed text before conversion;
+  explicit `"0"` stays valid. New browser tests assert no request, visible
+  error and focus for blank manual net, blank spending+savings (focus lands
+  on spending) and blank share separately.
+  · **(2) Share normalization:** `housing_share` is quantized to the
+  contract's four fractional digits client-side (money to two), so 33.34%
+  arrives as 0.3334 instead of `0.33340000000000003`. Real-API browser
+  regressions: 33.34% → €803.41 and 35.01% → €843.66 allowances, 200.
+  · **(3) Draft guard after a fresh result:** the warning now fires whenever
+  inputs differ from pristine, calculated or not — reproduced Codex case
+  (manual 2400/700/300, calculate, ET) warns again. New test covers
+  dismiss (stays, inputs + €840.00 intact) and accept (navigates, resets);
+  the housing-context link test accepts the confirm.
+  · **(4) Request lifecycle:** submit carries a bounded 10s timeout combined
+  with its cancellation signal (`AbortSignal.any`); edits abort and
+  invalidate the pending request, unmount aborts, and the submit button
+  stays enabled in flight for retry/new submissions. Overlapping order is
+  by request id — submit never aborts. New held-response test fulfills a
+  different second response while the first is gated, then releases the
+  first and asserts the fresher numbers stand; the older abort-path test
+  is kept.
+  · **Follow-ups:** removed the stale "M06 has not started" sentence;
+  customer copy no longer names backend/API (hero, calculation-rejected
+  and service-unavailable texts, mirrored in ET/RU); shared API types now
+  mirror the nullable apartment contract shapes without any apartment UI;
+  planner tool heading set to M03's 28/34px.
+  · Verified: `npm run build` clean; `npm run lint` clean; `npx tsc`
+  clean; `pytest` → 106 passed; `npm run e2e` → 46 passed (15 smoke + 20
+  planner + 11 axe, seeded SQLite backend); desktop/mobile screenshots
+  retaken after the copy/heading changes and inspected (€803.41 at 33.34%,
+  no overflow). One stale `next start` had to be killed mid-pass again
+  before the final green run.
+  · Commit: `fix(planner): review corrections for validation and lifecycle`.
+  Only my hunks staged; Codex board/dictionary work stays uncommitted.
+  M07 not started.
+
+- 2026-09-22 · Codex · Reviewed M06 `6c6d8ac`: independently passed build,
+  lint, 106 backend tests and all 40 seeded browser tests including axe.
+  Inspected actual desktop EN and mobile RU screenshots. Additional browser
+  probes found empty fields silently submitted as zero and calculated inputs
+  discarded on locale switch without confirmation. API probes reproduced
+  valid percentage inputs rejected after binary division. Review findings
+  below remain open; no implementation code or acceptance status changed.
+
+- 2026-09-22 · muse-spark (opencode) · **M06 done — `[R]`.** Guided income
+  and budget UI against the reviewed M05 contract; no apartment/map/
+  comparison screens, no persistence, no salary in URLs, calculator URLs
+  untouched.
+  · **UI:** new `/{locale}/planner` Server page (metadata, hreflang,
+  x-default) + `features/planner` client form. Gross starts empty, pension
+  is an explicit choice (placeholder, no default), manual-net alternative,
+  explicit spending/savings including zero, share in percent defaulting to
+  30. Backend is the only calculator: net, employment tax year, both limits,
+  final allowance, deficit styling and dictionary-rendered warnings; housing
+  overview linked as labelled general context only. Progress Income →
+  Budget → Explore (Explore marked coming-soon, no dead link); assumptions
+  in an expandable panel; validation focuses the first invalid field with
+  `aria-invalid`/`describedby`, no API call when invalid.
+  · **State:** `AbortController` + monotonic request id aborts obsolete
+  requests and ignores stale responses; results marked stale after edits;
+  inputs preserved on errors with retry via `requestSubmit`; unsaved draft
+  warns through `beforeunload` and a capture-phase confirm on in-app
+  navigation (locale switch included) — only while edits are uncalculated,
+  so a fresh result never blocks navigation.
+  · **Shared edits, limited to this feature:** planner types in
+  `types/api.ts`, `calculateBudget` in `lib/api.ts`, planner namespace +
+  `nav.planner` + retargeted home primary CTA in en/et/ru (parity
+  238/238/238), nav item, sitemap entry, README feature list + endpoint row
+  + counts. Codex dictionary-structure repair and other board entries left
+  untouched and out of the commit.
+  · **Defects found while verifying (fixed, tests kept strict):** the
+  planner axe scan caught its own click-then-scan hover state
+  (`hover:bg-primary/80` white text is 4.38:1) — the resting UI is clean,
+  the scan now moves the cursor away first; same latent hover token exists
+  on the shared Button, reported below, component untouched. A stale
+  `next start` (+ stale uvicorn with pre-fix API) from another session was
+  squatting on :3000/:8000 and made the first e2e attempt fail; killed both,
+  reseeded SQLite, restarted the API on current code, reran green.
+  · Verified: `npm run build` clean with `/[locale]/planner` prerendered;
+  `npm run lint` clean; `pytest` → 106 passed; `npm run e2e` → 40 passed
+  (15 smoke + 14 planner + 11 axe, seeded SQLite backend); desktop 1440
+  (EN/ET, dark) and mobile 390 (EN/RU) screenshots inspected, no overflow,
+  translations and themes correct.
+  · Commit: `feat(planner): add guided income and budget flow`. M07 not
+  started.
+
+- 2026-09-22 · Codex · Re-reviewed M05 fix `df4f675` against both findings.
+  Planner-scoped validation handling now serializes non-finite inputs safely;
+  raw-body HTTP regression tests cover NaN, both infinities and valid JSON
+  exponent overflow (1e400). Seasonal and move-in keys are required while
+  explicit null remains valid. Independently ran the full backend suite:
+  106 passed. Both M05 review findings are resolved; M06 can proceed under
+  the existing handoff. No application code or board status changed; CI was
+  not checked in this re-review.
+
+- 2026-09-22 · muse-spark (opencode) · **M05 review fixes done — `[R]`.**
+  Addressed both Codex corrections from the M05 review note; no scope
+  expansion, existing tests untouched.
+  · **(1) JSON-safe 422 for overflow/non-finite input** (reproduced via real
+  HTTP: `net_monthly_income: 1e400` and `NaN`/`Infinity`/`-Infinity`
+  literals all returned 500, because the 422 envelope echoed the non-finite
+  `input` and Starlette serializes with `allow_nan=False`). Added a
+  planner-scoped `PlannerRoute` (`backend/app/api/v1/routes/planner.py`)
+  that catches `RequestValidationError` and returns the standard
+  `{"detail": ...}` envelope with non-finite floats replaced by their short
+  names (`"inf"`/`"-inf"`/`"nan"`); byte-identical to the default envelope
+  for finite inputs, no payload logging. Other routers are untouched, so the
+  pre-existing taxes-endpoint behaviour is unchanged.
+  · **(2) Required nullable utilities/move-in keys** per the core contract
+  ("`rent`, `utilities`, `move_in` are required ... amounts may be null"):
+  `UtilitiesInput.summer/winter` and all four `MoveInInput` amounts are now
+  required-but-nullable (reproduced: `utilities={"basis":"unknown"}` and
+  `move_in={}` returned 200). Missing keys → 422; explicit null → 200.
+  · Tests (all real HTTP): raw-body `1e400` overflow and three non-finite
+  literals → 422 with a parseable envelope (shared TestClient raises on
+  500, so green proves no 500); four missing-key payloads added to the 422
+  parametrize list; new all-null `move_in` success case (cash_needed null,
+  known 0.0, all four components missing, `move_in_incomplete` warning).
+  · Verified: full backend suite `pytest` → 106 passed (97 + 9 new).
+  Commit: `fix(budget): json-safe 422 and required nullable fields` (3
+  backend files + this board entry only). Codex review entries, the M04
+  locale repair and planning docs stay uncommitted. M06 not started.
+
+- 2026-09-22 · Codex · Reviewed M05 commit `704fc5a`; independently ran
+  the full backend suite: 97 passed. Additional TestClient HTTP probes found
+  two validation gaps recorded below. Arithmetic fixtures and tax-service
+  reuse look consistent with the brief. M05 remains in review; no application
+  code or acceptance statuses changed.
+
+- 2026-09-22 · muse-spark (opencode) · **M05 done — `[R]`.** Continued the
+  interrupted handoff: the six backend files were already staged, no restart.
+  Verified the implementation against the PLANNER contracts, then probed the
+  real HTTP endpoint for invalid/non-numeric/non-finite inputs (schema tests
+  alone do not establish API errors) and fixed one confirmed defect.
+  · **Defect fixed (confirmed via real HTTP, not schema):** JSON booleans
+  were accepted as money — `True`/`False` became `Decimal(1)`/`Decimal(0)`
+  because `bool` subclasses `int` in `_to_decimal`
+  (`backend/app/schemas/planner.py`). Before the fix: `net_monthly_income:
+  True` → 200 with `1.0`, `housing_share: True` → 200 with `1.0`,
+  `gross_monthly_income: True` → 200 (employment net 0.96),
+  `pension_pillar_rate: False` → 200 as `0.00`. After the fix all six forms
+  → 422 with "value must be a number, not a boolean"; legitimate ints 0/1
+  still 200. Strengthened `test_invalid_requests_return_422` with 9 new
+  strict-JSON-reachable HTTP cases (booleans, `"NaN"`/`"Infinity"`/`"abc"`
+  strings); the schema-only non-finite test is kept unchanged.
+  · Contract checks: the four PLANNER-PRODUCT fixtures (seasonal_risk,
+  within_budget, signed-deficit over_budget, unknown), exact allowance
+  boundary, zero income/share, ROUND_HALF_UP share limit (411.48),
+  reversed seasons (min/max, not winter-assumes-max), partial utilities,
+  explicit-zero vs missing move-in components, employment parity
+  (tooleping net 2409.76, allowance 843.42), JSON number types, 422 envelope
+  on invalid requests, `Cache-Control: no-store` on 200, thin route +
+  Decimal service reusing `calculate_tooleping`, `TAX_YEAR = 2026` metadata
+  with existing rates untouched, no DB/provider dependency.
+  · Verified: full backend suite `pytest` → 97 passed (88 staged + 9 new
+  HTTP cases); targeted HTTP re-probe after the fix (bools 422, ints still
+  200, `"NaN"`/`"Infinity"` strings 422, zero fixture 200).
+  · Commit: `feat(budget): add monthly and move-in calculations` (6 backend
+  files + this board entry only). Preserved uncommitted: Codex planning docs
+  (6 untracked), Codex M04 locale-nesting repair (3 dictionaries), Codex
+  journal/notes insertions in this file. M06 not started.
+
+- 2026-09-22 · Codex · Recovered the interrupted M05 handoff after the
+  worker exhausted credits. Six backend files are staged, not committed;
+  M06 has not started. Independently ran backend pytest: 88 passed.
+  Restored TODO from Temp/opencode/todo-codex.md after verifying the backup
+  was a strict superset of the current journal (insertions only). Planning
+  documents and locale nesting repairs remain on disk. Review is incomplete:
+  check the non-finite request HTTP path and strict validation before M05
+  acceptance; green schema tests alone do not establish correct API errors.
+
+- 2026-09-22 · Codex · Reviewed copy fix `620b2ec` (CI 35701006917 green).
+  Copy addresses the utilities finding, but the edit moved housing/eresidency
+  outside home.steps.items and transparency outside home in all three locales.
+  Repaired only the dictionary nesting locally, retaining the corrected copy.
+  Verified all 168 leaf paths match pre-fix M04 in EN/ET/RU and all home paths
+  resolve; production build passed. Changes remain uncommitted. Prepared
+  docs/PLANNER-M05-M06-HANDOFF.md for the owner's requested sequential M05/M06
+  packet, separate commits and review before M07; existing APIs stay intact.
 
 - 2026-09-22 · deepseek-flash (opencode) · **M04 P2 copy fix done.** The home
   copy no longer promises universal sourcing: the housing step now says
@@ -125,6 +672,19 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
   EN/ET/RU updated together (parity 168/168); build, lint and e2e (23 passed)
   green; copy-only change, no code, endpoint or contract touched. The optional
   header hit-area polish from the same review note is left for a later pass.
+
+- 2026-09-22 · Codex · Independent M04 review at `4ee395d`.
+  Local production build and lint passed. Verified all five jobs in GitHub
+  run 35656012311 passed for this exact commit. Inspected desktop English
+  and mobile Russian screenshots; tested home in EN/ET/RU, both themes,
+  with no horizontal overflow. Six stable-theme home axe scans passed;
+  initial scans during forced theme transitions were discarded after
+  rerunning with persisted theme and reduced motion. Example link preserves
+  gross/pillar/basis, locale navigation carries them, and skip-link focus
+  reaches main-content. Backend-status removal is complete. Local backend
+  was offline; full seeded e2e, housing data and Docker verification rely
+  on the checked CI run, not a local rerun. One P2 copy correction remains
+  (see Notes); no application code or acceptance statuses changed.
 
 - 2026-09-21 · deepseek-flash (opencode) · **M04 done: Baltic theme, shell
   and home — `[R]`.** Implemented the design tokens from PLANNER-DESIGN.md in
@@ -154,6 +714,21 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
   part of the contract.
   · Note for review: README screenshots still show the previous theme; they
   are real but visually stale, and M15 owns README/screenshots.
+
+- 2026-09-21 · Codex (GPT-6) · M01/M03 ready for review. Specified the
+  employment-to-budget journey (never choose the highest-net regime), explicit
+  spending/savings, seasonal utilities with unknown values, move-in cash and
+  comparison/share boundaries. Added proposed core budget and provisional
+  geographic contracts, module gates/ownership, Baltic screen/state design and
+  an interactive two-screen preview. No application code, existing contracts,
+  protected instructions or task briefs changed. M02 report was read as worker
+  evidence; provider licenses/identity still require independent review.
+  Verification: existing tax service returned EUR 2409.76 for the read-only
+  employment fixture; Playwright checked initial allowance, seasonal risk,
+  unknown utilities/deposit, negative available budget, mobile overflow and
+  theme switching with no page errors. Four axe scans (budget/apartment,
+  light/dark at 390px) reported zero WCAG A/AA violations. Desktop/mobile
+  screenshots inspected. This is a design preview, not production e2e approval.
 
 - 2026-09-21 · deepseek-flash (opencode) · **M02 done: data-source research,
   report and probes — `[R]`.** Delivered `docs/DATA-SOURCES.md` plus
@@ -727,7 +1302,284 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Notes for the orchestrator
 
+- 2026-09-22 · Codex · **M08 second review: R1-R3 remain.** Follow the
+  new re-review section at the top of docs/PLANNER-M08-REVIEW.md. Do not
+  repeat already corrected findings from the historical section. The real
+  HTTPResponse close behavior differs from the mock; same-SHA retry must
+  include the initial insert flush, and active check timestamps must be
+  monotonic/synchronized. Normalize zlib.error into invalid-feed output.
+  Another focused fix commit and review before M09; no push authorized.
+
+- 2026-09-22 · Codex · **M08 review: changes requested.** Follow
+  docs/PLANNER-M08-REVIEW.md before M09. It includes reproductions, required
+  regression cases, deadline/cleanup and generation/calendar fixes, bounded
+  archive validation, and explicit permission to wire disposable PostgreSQL
+  integration checks into CI. Local skips are not PostgreSQL verification;
+  no CI run or live-feed/license revalidation is claimed by this review.
+  Keep M08 at [R], preserve unrelated hunks, use a separate fix commit and
+  stop for re-review. No push or production import is authorized.
+
+- 2026-09-22 · Codex · **M08 preparation review.** Use the concrete handoff
+  docs/PLANNER-M08-HANDOFF.md. Share-alike is addressed by separately attributed
+  CC BY-SA 3.0 transit data/derivatives, not by relicensing all project code.
+  Retain source-license evidence for release review; this pass's direct
+  registry/feed requests returned 403. Critical correction: stop-route pairs
+  and max(end_date) alone cannot determine current service. Keep service IDs,
+  calendars and exceptions; preserve route-less stops and generation identity.
+  Freshness is an application policy (7-day successful-check / 30-day source
+  age thresholds plus calendar envelope), not a claimed publisher cadence.
+  PostgreSQL activation/concurrency checks are required; no M09 work yet.
+
+- 2026-09-22 · muse-spark (opencode) · **M08 prep: GTFS verified live for
+  the nearby-stops import — no code written, nothing pushed/deployed.**
+  Verified 2026-09-22 by direct requests against
+  `transport.tallinn.ee/data/gtfs.zip` (2,629,427 bytes, Last-Modified Fri
+  18 Sep 2026 12:29:14 GMT — republished since M02's 11:10:54 read; ETag
+  changed, cadence still unpublished, no `feed_info.txt`).
+  **Confirmed:** 8 expected entries, all present; stops 1120 (unique
+  `stop_id` AND unique `stop_code`); routes 80 (69 bus `route_type=3`, 5
+  trolleybus `800`, 6 tram `900` — mapping confirmed by line names T1–T6 /
+  72–85); trips 20081, all with `route_id`, unique `trip_id`; stop_times
+  483,972 with zero orphan trip refs; calendar validity through
+  2027-09-01; coordinates inside the Tallinn bbox. Join coverage:
+  1119/1120 stops resolve to ≥1 route (max 17); stop `164600`
+  ("Vana-Kuuli") has no routes — M08 micro-decision (recommend serving it
+  with an empty route list rather than silently dropping it).
+  Platform grouping: `location_type` and `parent_station` are EMPTY on all
+  1120 rows, so no collapsing is possible — each row is atomic (Vabaduse
+  väljak exists 13×); the contract's "do not collapse by name" is
+  satisfied by keying on `stop_id`. Vendor column `thoreb_id` present
+  everywhere — recommend ignoring it (no invented fields).
+  **Import design input for the M08 brief:** stdlib `csv`+`zipfile`
+  streamed fine (no new dependency needed, contra the M02 suggestion);
+  import only stops/routes/trips/stop_times (shapes+calendar+agency not
+  served — but read calendar max `end_date` as validity); store
+  stops/routes/`stop_routes` pairs (~thousands of rows, tiny) plus a feed
+  generation row (`fetched_at`, source Last-Modified, `valid_through`);
+  activate by flipping an `active_feed_id` pointer in one transaction and
+  deleting the old generation after — failed refresh never touches the
+  pointer (last good stays live); gate activation on entry presence,
+  row counts, zero orphan refs and coordinate bounds; reject oversized
+  zips (suggest >50 MB) before unpacking. Freshness enum needs an owner
+  policy (suggest `stale` when source Last-Modified is >30 days old;
+  `unknown` when unparseable — never infer from HTTP 200).
+  **Still open (owner/orchestrator):** (1) CC BY-SA 3.0 share-alike product
+  decision — importing into Postgres and serving an API is derived-data
+  handling the M02 report left open, and it still blocks any M08 build;
+  (2) M08 implementation brief; (3) `valid_through`/staleness thresholds.
+  GTFS/maps/polygons were verified as designed; tiles remain M09's
+  problem, not M08's.
+
+- 2026-09-22 · Codex · **M07 review corrections (`ac2c68a`).**
+  (1) `features/addresses/components/address-search.tsx`, onQueryChange and
+  debounce/selection lifecycle: edits only clear selection, not the pending
+  request, request ID, candidate list or active index. Reproduced in browser:
+  hold Tartu mnt 1 response, empty the input, release response -> old Tartu
+  candidates appear under an empty field and remain selectable. Invalidate
+  and abort immediately on every edit, including below the search threshold;
+  clear stale options/active state. Cancel the debounce on explicit search
+  and selection; selecting a different short label currently schedules
+  another search. Test clearing/shortening pending input, stale selection
+  during debounce, and no new request/list reopening after explicit selection.
+  (2) `backend/app/services/address_service.py`, normalization: a valid
+  Tallinn row with kvaliteet=[] or {} causes TypeError in set membership
+  and HTTP 500; an integer coordinate 10**400 causes OverflowError and 500.
+  Both reproduced through TestClient with mocked upstream bytes. Type-check
+  provider values and map malformed rows to JSON-safe 503, never 500; missing
+  or unrecognized string quality may remain unknown as specified. Also,
+  {"addresses":null,"host":"x"} and {"host":null} currently return and cache
+  200 empty. Distinguish missing addresses in a valid host-only envelope from
+  explicit null/invalid host/unexpected envelope fields, which must be 503.
+  Add HTTP regressions and verify failures are not cached.
+  (3) AddressSearch passes a bare AbortController signal, again bypassing
+  fetchJson's default timeout. A hanging API connection can show loading
+  indefinitely. Combine a finite client timeout with cancellation, show the
+  unavailable/retry state, preserve query/budget and ignore a late response.
+  Add a held-request timeout test. The urllib timeout is an inactivity timeout,
+  not a five-second total deadline; document this distinction or bound the
+  total upstream operation as required by the brief.
+  Small contract corrections in the same pass: 422 responses (missing,
+  invalid, repeated q) currently lack Cache-Control:no-store because raising
+  bypasses the injected Response headers; cover framework validation too.
+  Keep trim-before-length semantics (raw Query max_length currently rejects
+  a valid 200-character trimmed query surrounded by spaces). Do not weaken
+  existing checks or stage unrelated files. Stop for re-review before M08.
+
+- 2026-09-22 · Codex · **M07 gate review supersedes the earlier blocked
+  conclusion for address search.** Current terms:
+  https://geoportaal.maaruum.ee/docs/aadress/In-AKS_kasutustingimused.pdf
+  explicitly include direct gazetteer access, permit free automated use and
+  set a 2500 requests/10-minute per-IP limit outside Estonia. The old host
+  is a temporary redirect, not independent failover. An HTTP 200 error
+  envelope must not become no-match. Match quality has additional values;
+  the handoff defines unknown rather than inventing exactness. See
+  docs/PLANNER-M07-HANDOFF.md for scoped implementation instructions and
+  the contract to incorporate into CONTEXT by its owner. M02 as a whole
+  is not accepted here; GTFS/polygon issues do not block M07.
+
+- 2026-09-22 · muse-spark (opencode) · **M07 gate: In-AKS verified live for
+  address search — for Codex review. No M07 code written.**
+  Verified 2026-09-22 by direct requests (probe + raw urllib, no mocks).
+  **Confirmed:** `GET aks.geoportaal.ee/inaks/inaadress/gazetteer` answers
+  200 in ~0.2–0.3s without a key — search (`address=`), reverse (`x`/`y`
+  L-EST97), no-match (200, `addresses` key ABSENT — normalize to `[]`),
+  `results=8` honored, older `inaadress.maaamet.ee` host answers identically
+  (same `ads_oid`, fallback viable). `ads_oid` stable across passes
+  (`EE04064863` since M02; `ME02092715` for Mustamäe tee 5 on both the
+  gazetteer and the documented geocoder-api — treat prefixes `EE`/`ME` as
+  opaque, never validate the format). Coordinates arrive as strings:
+  `viitepunkt_l` = longitude, `viitepunkt_b` = latitude (24.7/59.4 for
+  Tallinn — order verified by geography); `viitepunkt_x`/`y` are L-EST97.
+  `omavalitsus == "Tallinn"` holds on street matches — the service-area
+  filter predicate. `kvaliteet` is `tapne_lahiaadress` (exact) or `osaline`
+  (partial), server-ordered exact-first. Documented cross-check
+  `inaadress.maaamet.ee/geocoder-api/api/online?text=&output=json` returns
+  ONE best match with the same `ads_oid` plus county/city/district names,
+  and explicit `quality: "EILEITUD"` on no-match — use for spot-checks, not
+  candidates (no list endpoint verified). **Concrete M07 search contract:**
+  `GET /api/v1/addresses/search?q=` (trimmed 3–200 chars) → 200 always on
+  provider success, `{query, candidates: [{id, label (=pikkaadress),
+  short_label (=aadresstekst), longitude, latitude, district_id: null,
+  quality: exact|partial}], attribution}`; empty list on no-match; 503 on
+  provider non-200/timeout. Adapter: fixed `results=8`, Tallinn filter,
+  cap 8, backend timeout ~5s, descriptive User-Agent, `/aks-api/ava/...`
+  excluded. GTFS, tiles and polygons are NOT dependencies of search
+  (district names come from our seeded DB; `district_id` stays null until
+  M09) and must not gate M07. **Still open (owner/orchestrator, not
+  worker-fixable):** (1) whether the Maa- ja Ruumiamet map-service terms
+  cover the gazetteer — confirm with the agency before production
+  (integration docs verified live but silent on gazetteer coverage);
+  (2) M02 board status `[R]` and CONTEXT incorporation; (3) no M07 brief
+  yet — this note is its technical input. Minor: geocoder-api reverse
+  params returned 400 for `x`/`y` and `lon`/`lat` (not needed for M07);
+  geocoder-api `lestx`/`lesty` values look swapped — never use them.
+
+- 2026-09-22 · Codex · **M06 corrections before acceptance (`6c6d8ac`).**
+  (1) `planner-form.tsx:37-60`: Number("") and whitespace become zero.
+  Selecting manual net then submitting otherwise empty fields sends income,
+  spending and savings as 0 and displays a result. Reject blank trimmed fields
+  before numeric conversion, including share; retain explicit zero support.
+  Test blank manual net, blank spending/savings with valid income, and blank
+  share separately, asserting no request and focus/error feedback.
+  (2) `planner-form.tsx:166`: unrounded shareValue / 100 sends 33.34% as
+  0.33340000000000003 and 35.01% as 0.35009999999999997; real API returns
+  422 decimal_max_places. Normalize to the contract's four fractional digits
+  before serializing, without weakening backend precision validation; add
+  real-API browser regressions for these valid percentage values.
+  (3) `planner-form.tsx:185-188`: a successful calculation disables the
+  navigation guard although nothing has been saved. Reproduced: fill manual
+  net 2400, spending 700, savings 300, calculate, click ET -> no dialog and
+  all inputs reset. Preserve the draft or warn on locale change even after
+  a fresh result. Test accept/dismiss after calculation, not only before it.
+  (4) Request lifecycle: supplying controller.signal bypasses fetchJson's
+  default timeout (`lib/api.ts:37`), while submit remains disabled in flight.
+  Edits do not cancel/invalidate the pending request and unmount has no abort
+  cleanup. Keep a bounded timeout alongside cancellation; cancel obsolete
+  requests on edits/unmount and allow retry/new submission. The current
+  stale-response test waits on the disabled button until request one finishes,
+  so it does not establish overlapping request ordering. Use controlled held
+  responses and prove request two can complete before request one is released.
+  Documentation/UI follow-ups: remove the current-state sentence "M06 has not
+  started" above the journal; replace customer copy about "backend/API" with
+  useful budget explanation. Shared API types narrow apartment to null rather
+  than mirroring the existing contract; define nullable apartment types without
+  adding apartment UI. Tool-page heading is oversized relative to M03's 28/34px
+  direction. Existing hover-contrast finding remains separately documented.
+
+- 2026-09-22 · Codex · **M05 review: two corrections before acceptance.**
+  (1) `backend/app/schemas/planner.py:28`: a raw request with
+  `income={"kind":"manual_net","net_monthly_income":1e400}` and otherwise
+  valid budget inputs returns HTTP 500. Unlike NaN literals, `1e400` is valid
+  JSON number syntax; float decoding overflows and the validation error cannot
+  serialize its non-finite input. Return a JSON-safe 422 envelope, preferably
+  scoped to the planner route, without logging salary payloads. Add raw-body
+  HTTP regression tests for exponent overflow and non-finite literals; string
+  inputs and schema-only tests do not cover this path.
+  (2) `backend/app/schemas/planner.py:94-118`: utilities summer/winter and
+  all four move-in amounts default to None, but the agreed core contract
+  requires these keys and permits explicit null. A request with
+  `utilities={"basis":"unknown"}` and `move_in={}` currently returns 200.
+  Require these nullable fields and test missing-key 422 versus explicit-null
+  success. Preserve other working-tree changes; use a focused follow-up commit.
+
 _(workers write questions and out-of-scope findings here)_
+
+- 2026-09-22 · muse-spark (opencode) · **Shared hover token below AA (not
+  fixed, out of scope).** The shadcn `Button` default variant uses
+  `hover:bg-primary/80` with white text, which computes to 4.38:1 — under
+  the 4.5:1 text threshold. It only surfaces when an axe scan runs while
+  the cursor hovers a button (caught on the planner submit; the resting
+  state is clean and the scan now moves the cursor first, as the
+  calculator URL-driven scans implicitly do). Retokening the shared
+  component belongs to a design pass, not M06.
+
+- 2026-09-22 · muse-spark (opencode) · **M05 notes for review.**
+  (1) **Shared 500 on non-strict non-finite literals — not fixed, out of
+  scope.** A raw `NaN`/`Infinity` literal in the request body returns 500
+  Internal Server Error on `POST /api/v1/planner/budget` because the 422
+  error detail echoes `input: nan`, which is not JSON-serializable by the
+  shared FastAPI/Starlette exception handler. Reproduced on the pre-existing
+  `POST /api/v1/calculate-taxes` too, so it is a framework-level issue, not
+  introduced by M05; a global handler would touch shared code outside M05
+  ownership. Strict JSON (what browsers send) cannot carry these literals —
+  `JSON.stringify(NaN)` emits `null`, which the endpoint correctly rejects
+  with 422 — and the strict-JSON-reachable forms (`"NaN"`/`"Infinity"`
+  strings) return 422 via real HTTP, now covered by tests. Recommend a
+  separate hardening task for the shared handler.
+  (2) **Documentation impact (M05 handoff):** no README change — M05 ships
+  no UI, and README refreshes belong to M15. Stale after this commit:
+  `README.md:106` still says "Backend tests (55)" (now 97 with the 9 new
+  M05 HTTP cases). New additive contract to incorporate into CONTEXT §5 by
+  its owner: `POST /api/v1/planner/budget` per docs/PLANNER-CONTRACTS.md
+  "Stable core for M05–M06" (no existing contract changed).
+  (3) Numeric strings (`"2400"`, `"0.02"`) coerce to numbers with 200 — kept
+  as-is: standard FastAPI lax parsing, consistent with the existing taxes
+  endpoint, and the contract even prescribes parsing Decimal from text.
+
+- 2026-09-22 · Codex · **M04 P2 — distinguish sourced rents from utility
+  assumptions in the new home copy.** `frontend/src/messages/en.json:65-67`
+  and corresponding ET/RU strings claim every number has a source and no
+  prices are invented, while `housing_service.py:66-69` still falls back
+  to legacy utility estimates. The new housing-tool description also groups
+  utilities with dated rent averages. Revise all three locales to explicitly
+  separate published rent figures and estimated utilities; qualify legacy
+  fallback rather than promising universal source coverage. No new endpoint
+  is needed. Optional design polish: header navigation/language/theme targets
+  remain about 28–32px tall, below M03's proposed 44px control height; make
+  their hit areas larger without crowding mobile navigation. README screenshot
+  refresh remains the documented M15 follow-up. M04 is otherwise review-ready.
+
+- 2026-09-21 · Codex (GPT-6) · Independent H2/H4 re-review and M02 review
+  at `2174d5b`. H2/H4 findings are resolved: read the scoped diff and verified
+  all five jobs in CI run 35653359141 succeeded at `1281132`; later commits
+  add workflow wording and research only. Re-ran all four probe modules and
+  independently requested address search and coordinate-only reverse lookup:
+  search/reverse returned 200, GTFS downloaded, district counts were 8/84,
+  OpenFreeMap style returned 200. M02 needs small corrections before closure:
+  (1) `probe_inaks.py:59-64` sends default address even in reverse mode;
+  omit address for coordinate-only requests. (2) `probe_districts.py:51-52`
+  assumes name/geometry shape of layer 1 for layer 0: the neighbourhood probe
+  prints None and counts coordinate positions as rings for Polygon; select
+  asumi_nimi and branch on Polygon/MultiPolygon. (3) DATA-SOURCES.md's
+  recommendation at lines 210-212 overstates license evidence: the registry's
+  downloadable-files license is not proof of the live ArcGIS layer's license;
+  mark that mapping unresolved until directly supported. Gazetteer terms
+  already remain explicitly open. Optional probe improvement: return nonzero
+  for unexpected HTTP/shape failures (reverse 0/0 returned HTTP 500 yet exit 0).
+  OpenFreeMap official homepage independently confirms free commercial use,
+  attribution requirements and absence of SLA: https://openfreemap.org/.
+  M04 can proceed on the reviewed design independently of these geographic
+  questions. M05 still needs accepted contract incorporation by CONTEXT's
+  owner. No application code or acceptance statuses changed in this review.
+
+- 2026-09-21 · Codex (GPT-6) · M01/M03 handoff: PLANNER-CONTRACTS.md proposes
+  POST /api/v1/planner/budget and later geographic endpoints. CONTEXT section 5
+  must incorporate accepted additions before implementation; section 2 must
+  approve the map dependency before M09. No existing API is changed by these
+  proposals. CONTEXT's Docker/structure drift remains owner work. README and
+  DEPLOY still describe the running application, so no feature/deploy claims
+  were changed for this documentation-only delivery. M04–M06 can follow core
+  spec/design review; M07–M11 require independent M02 source/terms review.
 
 - 2026-09-21 · deepseek-flash (opencode) · M02 findings that need an
   orchestrator decision before any map/search feature is briefed:

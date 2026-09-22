@@ -14,6 +14,10 @@ class Settings(BaseSettings):
         default=["http://localhost:3000"],
         validation_alias="CORS_ORIGINS",
     )
+    address_search_user_agent: str = Field(
+        default="EestiHub-address-search/1.0",
+        validation_alias="ADDRESS_SEARCH_USER_AGENT",
+    )
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

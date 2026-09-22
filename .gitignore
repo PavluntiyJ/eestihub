@@ -42,3 +42,5 @@ postgres_data/
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+# Generated from the pinned package during frontend build/dev.
+frontend/public/maplibre/

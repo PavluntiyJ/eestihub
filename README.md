@@ -20,9 +20,13 @@ Web service for expats and entrepreneurs in Estonia. Moving to Estonia (or openi
 - **Tallinn rent dashboard** — average 1/2/3-room rents and utilities across eight districts, table + chart. Values are midpoints of published district rent ranges from a public Tallinn market report, cited with retrieval date in [`backend/scripts/data/SOURCES.md`](backend/scripts/data/SOURCES.md); a trends endpoint serves the snapshot history.
 - **Affordability link** — after a calculation, which districts you could actually rent in, matched on rent plus utilities against an adjustable share of net income.
 - **e-Residency cost calculator** — setup fees, monthly running cost, first-year total and break-even revenue for an e-resident OÜ, every constant traced to an official source.
+- **Budget planner** — employment salary (converted with the 2026 tax engine, never the highest-net regime) or manual net, explicit spending and savings including zero, and an editable housing share. The API returns net income, both budget limits, the final allowance and machine-readable warnings; the UI aborts obsolete requests, marks edited results stale, preserves inputs on errors, and never puts salaries in URLs or storage.
+- **Tallinn address search** — a debounced, keyboard-operable combobox on the planner page backed by the In-AKS gazetteer: up to eight Tallinn candidates with coordinates and match quality, selectable as location context only. No persistence, no map dependency; provider outages keep the budget intact.
+- **Apartment assessment** — enter listing rent and summer/winter bills or estimates, see seasonal totals and the remainder after spending and savings, then calculate upfront move-in cash. Unknown costs stay unknown; zero must be entered explicitly.
+- **Map and nearby transport** — opt-in OpenFreeMap/MapLibre map plus individual platforms within 800 m in a straight line. Routes are filtered by today's Tallinn service date from a validated GTFS snapshot, with source dates, freshness and CC BY-SA attribution. The stop list remains usable when tiles fail; this is not live arrival or walking-route data. See [release scope and API](docs/PLANNER-RELEASE.md).
 - **Shareable scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
 - **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with absolute `hreflang` alternates, `x-default`, sitemap, and generated per-locale OG cards. Light, dark and system themes.
-- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 8 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state and the dark theme, and fail CI on any violation.
+- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 12 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state, the planner and address flows and both themes, and fail CI on any violation.
 - **Containerised stack** — `docker compose up --build` builds the frontend and API images, starts Postgres, seeds the sourced housing data and serves the app on :3000. CI builds the images and smoke-tests the running stack.
 
 | Russian locale, live calculation | Housing dashboard |
@@ -40,6 +44,8 @@ Locale-neutral: responses carry machine keys and numbers, human labels come from
 | `GET /api/v1/housing/rents` | Latest rent snapshot per Tallinn district |
 | `GET /api/v1/housing/trends` | Snapshot history per district |
 | `POST /api/v1/calculate-eresidency` | First-year cost of an e-resident OÜ |
+| `POST /api/v1/planner/budget` | Monthly housing allowance from employment or manual net, spending, savings and a housing share |
+| `GET /api/v1/addresses/search` | Up to eight Tallinn address candidates with coordinates and match quality |
 
 The full contract, including the tax logic and its sources, is in [`docs/CONTEXT.md`](docs/CONTEXT.md).
 
@@ -61,7 +67,7 @@ Backend (Python)                  Frontend (TypeScript)
 ────────────────                  ─────────────────────
 FastAPI                           Next.js 15
 ├── api/v1/routes/  thin routes   ├── src/app/           App Router pages
-├── services/       business      ├── features/          calculator, housing
+├── services/       business      ├── features/          calculator, housing, planner
 ├── schemas/        Pydantic      ├── components/ui/     shadcn/ui
 ├── models/         SQLAlchemy    ├── types/             1:1 Pydantic mirrors
 └── core/           config, tax   └── messages/          en, et, ru
@@ -89,6 +95,8 @@ For local processes instead of containers:
 docker compose up -d db                      # Postgres on :5432
 cd backend && python -m scripts.seed_housing # seed baseline housing data
 cd backend && python -m scripts.ingest_rents  # ingest sourced rent snapshots
+cd backend && python -m scripts.import_gtfs --validate-only # validate transit feed (no writes)
+cd backend && python -m scripts.import_gtfs  # import versioned transit snapshot
 cd backend && uvicorn app.main:app --reload  # API on :8000
 cd frontend && npm run dev                   # UI on :3000
 ```
@@ -103,7 +111,7 @@ cd frontend && npm run e2e           # Playwright chromium smokes (needs backend
 cd frontend && npm run lighthouse    # Lighthouse CI assertions (needs a running frontend)
 ```
 
-Backend tests (55) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, and the e-Residency service. The Playwright suite (23 browser tests) covers locale routing and switching, real submits on both calculators, shared scenario URLs, constraint rendering, the affordability panel, the housing table and chart, plus 8 axe accessibility scans. CI runs all of it — pytest, production build, browser e2e against a live Postgres, Lighthouse assertions, and a Docker Compose smoke of the running stack — on every push.
+Backend tests (235, plus Postgres-gated integration checks that run in CI) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, the e-Residency service, the planner budget service (fixtures, allowance boundary, rounding, seasonal logic, move-in cash, employment parity, strict-validation and JSON-safe 422 paths), and the address search adapter (quality mapping, Tallinn filtering, dedup, strict envelopes, malformed rows, cache/limiter behavior, provider-failure and validation envelopes). The Playwright suite (62 browser tests) covers locale routing and switching, real submits on all three calculators, shared scenario URLs, constraint rendering, the affordability panel, the planner flow (employment/manual net, validation, zero amounts, stale-response ordering, retry, keyboard, mobile, draft warning, locales), the address combobox (debounce, keyboard selection, edit invalidation, late responses, timeout retry, empty/unavailable/busy states, locales, mobile, themes), the housing table and chart, plus 12 axe accessibility scans. CI runs all of it — pytest, production build, browser e2e against a live Postgres, Lighthouse assertions, and a Docker Compose smoke of the running stack — on every push.
 
 ## Deployment
 
@@ -115,10 +123,10 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 ├── .github/workflows/          # ci.yml: tests, build, e2e, Lighthouse, Docker
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/routes/      # health, taxes, housing, eresidency
+│   │   ├── api/v1/routes/      # health, taxes, housing, eresidency, planner
 │   │   ├── core/               # config, tax_rates, fees, db
 │   │   ├── schemas/            # Pydantic request/response
-│   │   ├── services/           # tax_service, housing_service, eresidency_service
+│   │   ├── services/           # tax_service, housing_service, eresidency_service, budget_service
 │   │   └── models/             # SQLAlchemy
 │   ├── scripts/                # seed_housing, ingest_rents, data/ + SOURCES.md
 │   ├── tests/
@@ -127,12 +135,12 @@ Live on free tiers: Vercel Hobby (frontend), Render Free (backend — spins down
 │   ├── src/
 │   │   ├── app/[locale]/       # pages + layout
 │   │   ├── components/         # ui kit, header, footer
-│   │   ├── features/           # tax-calculator, housing, eresidency
+│   │   ├── features/           # tax-calculator, housing, eresidency, planner
 │   │   ├── i18n/               # routing, request config
 │   │   ├── lib/                # API client, utils
 │   │   ├── messages/           # en, et, ru dictionaries
 │   │   └── types/              # 1:1 Pydantic mirrors
-│   ├── e2e/                    # smoke.spec.ts + a11y.spec.ts (axe)
+│   ├── e2e/                    # smoke.spec.ts, planner.spec.ts + a11y.spec.ts (axe)
 │   ├── scripts/                # screenshots.ts (manual)
 │   ├── lighthouserc.json       # Lighthouse CI assertions
 │   └── Dockerfile

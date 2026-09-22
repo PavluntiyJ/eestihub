@@ -25,14 +25,15 @@
     "home": "Home",
     "calculator": "Calculator",
     "housing": "Rent",
-    "eresidency": "e-Residency"
+    "eresidency": "e-Residency",
+    "planner": "Planner"
   },
   "home": {
     "hero": {
       "eyebrow": "Built for Tallinn",
       "title": "Make your move to Tallinn add up.",
       "description": "See what a salary is worth after Estonian taxes, what rent costs across Tallinn's districts, and what an e-resident company takes to run — in English, Estonian or Russian.",
-      "primaryCta": "Compare tax regimes",
+      "primaryCta": "Plan my budget",
       "secondaryCta": "Explore Tallinn rents"
     },
     "example": {
@@ -49,9 +50,8 @@
           "title": "What you keep",
           "text": "Compare four ways of getting paid in Estonia: net income, payer cost and the effective tax rate.",
           "cta": "Compare regimes"
-    }
-  },
-  "housing": {
+        },
+        "housing": {
           "title": "What rent costs",
           "text": "Published 1–3-room rent midpoints for Tallinn's eight districts, with capture dates; utilities are shown as a separate estimate.",
           "cta": "View district prices"
@@ -66,7 +66,8 @@
     "transparency": {
       "title": "Sources and estimates",
       "text": "Tax rates follow EMTA's 2026 table and e-Residency fees come from the official knowledge base. District rents are midpoints of published Tallinn ranges, each with its capture date. Utility costs are our own estimate, not a published figure, and the rent dashboard labels them separately."
-    },
+    }
+  },
   "housing": {
     "metadata": {
       "title": "Tallinn rent dashboard - EestiHub",
@@ -278,5 +279,208 @@
     "budget": "Monthly housing budget",
     "rentAndUtilities": "rent {rent} + utilities {utilities}",
     "none": "No district average fits this budget. Try a larger share, or treat the districts as a floor rather than a target — these are averages, and individual listings go lower."
+  },
+  "planner": {
+    "metadata": {
+      "title": "Monthly budget planner - EestiHub",
+      "description": "Turn an Estonian salary into a monthly housing allowance: net income, spending, savings and a housing share."
+    },
+    "hero": {
+      "eyebrow": "Budget planner",
+      "title": "From salary to housing allowance.",
+      "description": "Enter employment income or a manual net, protect everyday spending and savings, and see what is left for rent and utilities — every number is calculated fresh from your inputs."
+    },
+    "progress": {
+      "income": "Income",
+      "budget": "Budget",
+      "explore": "Apartment & location",
+      "exploreSoon": "Coming later"
+    },
+    "incomeKind": {
+      "label": "Income source",
+      "employment": "Employment salary",
+      "manual": "Manual net income"
+    },
+    "form": {
+      "incomeTitle": "Income",
+      "incomeDescription": "An Estonian employment salary is converted with the 2026 tax engine. Choose manual net when those assumptions do not fit.",
+      "grossLabel": "Monthly gross salary, EUR",
+      "grossPlaceholder": "3000.00",
+      "invalidGross": "Enter a gross salary greater than 0 and at most 1,000,000.",
+      "pensionLabel": "II pension pillar contribution",
+      "pensionPlaceholder": "Choose a rate",
+      "invalidPension": "Choose a pension contribution rate.",
+      "pensionOptions": {
+        "zero": "0%",
+        "two": "2%",
+        "four": "4%",
+        "six": "6%"
+      },
+      "netLabel": "Monthly net income, EUR",
+      "netPlaceholder": "2400.00",
+      "invalidNet": "Enter a net income of 0 or more and at most 1,000,000.",
+      "budgetTitle": "Budget",
+      "budgetDescription": "Explicit choices, including zero. Rent and utilities share one allowance.",
+      "spendingLabel": "Monthly non-housing spending, EUR",
+      "invalidSpending": "Enter spending of 0 or more and at most 1,000,000.",
+      "savingsLabel": "Monthly savings target, EUR",
+      "invalidSavings": "Enter a savings target of 0 or more and at most 1,000,000.",
+      "shareLabel": "Maximum housing share, % of net",
+      "invalidShare": "Enter a share from 0 to 100.",
+      "submit": "Calculate budget",
+      "loading": "Calculating...",
+      "retry": "Retry calculation"
+    },
+    "empty": {
+      "title": "No budget yet",
+      "description": "Submit the form to see net income, both limits and the final housing allowance."
+    },
+    "stale": {
+      "title": "Outdated result",
+      "text": "Inputs changed after this calculation. Submit again for current numbers."
+    },
+    "errors": {
+      "title": "Calculation failed",
+      "api": "The calculation was rejected. Check the input and try again.",
+      "network": "The calculation service is unavailable. Check your connection and try again.",
+      "validationTitle": "Check the highlighted fields, then submit again."
+    },
+    "results": {
+      "title": "Your housing budget",
+      "netIncome": "Net income, monthly",
+      "employmentKind": "Employment estimate",
+      "manualKind": "Entered manually",
+      "taxYear": "Tax engine year",
+      "noTaxYear": "Not applicable",
+      "available": "Left after spending and savings",
+      "shareLimit": "Housing share limit",
+      "allowance": "Housing allowance, monthly",
+      "deficitTitle": "Spending and savings exceed income",
+      "announced": "Budget calculation complete.",
+      "warnings": {
+        "commitments_exceed_income": "Monthly spending plus savings are higher than net income, so the allowance is €0.00. Amounts stay visible — nothing was reduced silently.",
+        "utilities_incomplete": "Some utility amounts are unknown, so seasonal totals cannot be completed.",
+        "move_in_incomplete": "Some move-in costs are unknown, so the cash total is incomplete."
+      },
+      "housingContext": "See Tallinn district averages as general context",
+      "housingNote": "District figures are monthly averages, not listings."
+    },
+    "assumptions": {
+      "title": "Calculation assumptions",
+      "employment": "Employment salary uses the existing employment-contract calculation with equal gross, never the highest-net regime.",
+      "allowance": "Allowance is the smaller of money left after commitments and the share limit; a negative remainder stays visible.",
+      "estimate": "Estimates only, not financial advice."
+    },
+    "unsaved": {
+      "confirm": "Budget inputs are not saved. Leave this page without calculating?"
+    },
+    "disclaimer": {
+      "title": "An estimate, not financial advice",
+      "text": "The allowance follows your own spending and savings choices, not an official cost-of-living recommendation. Tax figures use Estonia's 2026 rates."
+    }
+  },
+  "addresses": {
+    "title": "Check a Tallinn address",
+    "description": "Find a street address as location context for the budget above. It never changes the numbers.",
+    "searchLabel": "Street address in Tallinn",
+    "searchPlaceholder": "Mustamäe tee 5",
+    "searchButton": "Search addresses",
+    "minLength": "Type at least 3 characters to search.",
+    "loading": "Searching addresses…",
+    "resultsAnnounced": "{count} matching addresses found.",
+    "empty": "No Tallinn addresses match. Check the spelling or try a nearby street.",
+    "unavailable": "Address search is unavailable right now. Your text is kept — retry in a moment.",
+    "busy": "Address search is busy. Wait a moment and retry.",
+    "retry": "Retry search",
+    "clear": "Clear selected address",
+    "contextNote": "Location context only — it does not change the budget above and is not an available apartment.",
+    "coordinates": "Coordinates",
+    "quality": {
+      "exact": "Exact match",
+      "partial": "Partial match",
+      "unknown": "Unverified match"
+    },
+    "attributionLink": "Source data"
+  },
+  "apartment": {
+    "step": "Next · Your apartment",
+    "title": "Would this apartment fit?",
+    "description": "Enter costs from a listing or your own estimate. Check both seasons before deciding.",
+    "fields": {
+      "rent": "Monthly rent, EUR",
+      "summer": "Summer utilities, EUR / month",
+      "winter": "Winter utilities, EUR / month",
+      "first_rent": "First month's rent",
+      "deposit": "Refundable deposit, EUR",
+      "broker_fee": "Broker fee, EUR",
+      "setup": "Other move-in costs, EUR"
+    },
+    "utilities": "Utilities in each season",
+    "unknownHint": "Leave unknown amounts blank. Enter 0 only if the cost is included or does not apply.",
+    "basis": "Where do the utility amounts come from?",
+    "estimate": "My estimate",
+    "bill": "Previous bills",
+    "moveInTitle": "Cash needed to move in",
+    "moveInHint": "The first month's rent is included automatically. Add the other costs below; leave unknown amounts blank.",
+    "unknown": "Unknown",
+    "invalid": "Enter an amount from 0 to 1,000,000, with at most two decimals.",
+    "budgetStale": "Recalculate your budget above before assessing this apartment.",
+    "error": "The calculation is unavailable. Your inputs are kept; please retry.",
+    "loading": "Calculating…",
+    "retry": "Retry assessment",
+    "calculate": "Assess this apartment",
+    "stale": "Inputs changed. Recalculate to update this assessment.",
+    "fit": {
+      "within_budget": "Fits in both seasons",
+      "seasonal_risk": "Fits in one season only",
+      "over_budget": "Above your housing allowance",
+      "unknown": "Utility costs are still missing"
+    },
+    "fitHint": "Compared with the housing allowance you chose above. This is a budget estimate, not a recommendation to rent.",
+    "summer": "Summer",
+    "winter": "Winter",
+    "total": "Rent + utilities, monthly",
+    "remainder": "Left after housing, spending and savings",
+    "incomplete": "Both seasonal utility amounts are needed to assess the full year. Unknown costs are never treated as zero.",
+    "subtotal": "Known costs so far: {amount}",
+    "missing": "Still needed",
+    "depositHint": "The refundable deposit is cash you need upfront, not a monthly expense.",
+    "empty": "Your seasonal costs and remaining budget will appear here.",
+    "privacy": "Your figures are used for this calculation and are not saved as a profile.",
+    "addressHint": "Optional: choose an address to see its location and nearby public transport. No live rental listings or commute estimates."
+  },
+  "transit": {
+    "title": "Around this address",
+    "description": "Up to 20 stops within 800 m in a straight line. Platforms are shown separately; walking routes may be longer.",
+    "showMap": "Show map",
+    "hideMap": "Hide map",
+    "approximate": "This address is approximate. Check its position before relying on the distances.",
+    "unavailable": "Transport data is temporarily unavailable. Your budget and address are still here.",
+    "retry": "Retry transport",
+    "loading": "Finding nearby stops…",
+    "scheduled": "Routes scheduled for {date} (Tallinn time). These are not live arrivals or a guarantee of service at this hour.",
+    "freshness": {
+      "stale": "This timetable snapshot is old or outside its service dates. Confirm service with the transport operator.",
+      "unknown": "We cannot confirm the age of this timetable. Check current service with the transport operator."
+    },
+    "empty": "No stops found within 800 m in this dataset.",
+    "distance": "{distance} m",
+    "platform": "Stop ID: {id}",
+    "noRoutes": "No routes scheduled for today in this snapshot",
+    "mode": {
+      "bus": "Bus",
+      "tram": "Tram",
+      "trolleybus": "Trolleybus",
+      "other": "Route"
+    },
+    "sourceDate": "Source updated",
+    "checkedDate": "Last checked",
+    "unknownDate": "Unknown",
+    "source": "Download source timetable",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "mapLabel": "Map of the selected address and nearby stops",
+    "mapUnavailable": "The map could not fully load. The address and stop list remain available.",
+    "mapPrivacy": "Map tiles load from OpenFreeMap when you open this map. Your salary and budget are not sent to the map provider."
   }
 }

@@ -1,8 +1,11 @@
 import type {
+  AddressSearchResponse,
   EResidencyCalculationRequest,
   EResidencyCalculationResponse,
   HealthResponse,
   HousingRentsResponse,
+  PlannerBudgetRequest,
+  PlannerBudgetResponse,
   TaxCalculationRequest,
   TaxCalculationResponse,
 } from "@/types/api";
@@ -51,6 +54,16 @@ export function getHousingRents(init?: RequestInit): Promise<HousingRentsRespons
   return fetchJson<HousingRentsResponse>("/api/v1/housing/rents", init);
 }
 
+export function searchAddresses(
+  query: string,
+  init: RequestInit = {}
+): Promise<AddressSearchResponse> {
+  return fetchJson<AddressSearchResponse>(
+    `/api/v1/addresses/search?${new URLSearchParams({ q: query })}`,
+    init
+  );
+}
+
 export function calculateTaxes(
   request: TaxCalculationRequest,
   init: RequestInit = {}
@@ -59,6 +72,21 @@ export function calculateTaxes(
   headers.set("Content-Type", "application/json");
 
   return fetchJson<TaxCalculationResponse>("/api/v1/calculate-taxes", {
+    ...init,
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  });
+}
+
+export function calculateBudget(
+  request: PlannerBudgetRequest,
+  init: RequestInit = {}
+): Promise<PlannerBudgetResponse> {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+
+  return fetchJson<PlannerBudgetResponse>("/api/v1/planner/budget", {
     ...init,
     method: "POST",
     headers,

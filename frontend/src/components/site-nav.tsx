@@ -6,6 +6,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 
 const navItems = [
   { href: "/", key: "home" },
+  { href: "/planner", key: "planner" },
   { href: "/calculator", key: "calculator" },
   { href: "/housing", key: "housing" },
   { href: "/eresidency", key: "eresidency" },
