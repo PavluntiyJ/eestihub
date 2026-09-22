@@ -86,22 +86,34 @@ public contract for them was found in this pass **[open]**.
 
 ### Terms and limits
 
-- The Maa- ja Ruumiamet map-service terms **[docs]** (page
-  `.../maa-ja-ruumiameti-kaarditeenuste-kasutustingimused-p24.html`, last
-  modified 2026-06-16) state: services are free for everyone for lawful use
-  (point 3); extracts and derivatives are allowed, may be combined with own
-  products, used commercially or non-commercially, and redistributed with
-  attribution of the data name, extraction date and Maa- ja Ruumiamet
-  (point 7). Abusive request volume may be blocked by IP (point 13).
-- Whether those exact terms cover the address gazetteer is **[open]**; the
-  integration documentation lives at
-  `https://geoportaal.maaamet.ee/est/ruumiandmed/aadressiandmed/ads-iga-liidestumine-p497.html`
-  and `https://geoportaal.maaamet.ee/est/teenused/geokodeerimise-teenus-p440.html`.
-  Confirm with Maa- ja Ruumiamet before a production integration.
-- **Recommendation:** use the In-AKS gazetteer for search and reverse
-  geocoding, cache responses, send a descriptive `User-Agent`, and keep the
-  `ads_oid` as the stable reference. Do not build on the `/aks-api/ava/...`
-  routes without a documented agreement.
+- Current provider terms, v1.2, 24 April 2026
+  (`https://geoportaal.maaruum.ee/docs/aadress/In-AKS_kasutustingimused.pdf`,
+  reviewed for M07): definition 1 and section 2.1.3 explicitly cover direct
+  gazetteer requests; 2.2 permits free use and 2.3 permits automation.
+  Section 3 concerns open data; section 4 separately retains rights in the
+  service/software/materials. Use returned address data in our own UI; do not
+  copy provider software/UI.
+- Limits are per outbound IP: 5000 requests/10 minutes inside Estonia,
+  2500/10 minutes outside Estonia — our Frankfurt backend uses the latter.
+  Higher usage needs a provider agreement. Obsolete In-ADS limits do not apply.
+- The official migration notice
+  (`https://geoportaal.maaamet.ee/index.php?lang_id=1&page_id=1038`) keeps the
+  legacy host temporarily redirected until end-2026: it is not an independent
+  failover service, so the adapter must not fall back to it automatically.
+- Current developer manual, v3.3.0, 23 April 2026
+  (`https://aks.geoportaal.ee/inaks/inaadress/js/pdf/et/in_aadress_developer_manual.pdf`),
+  sections 7.1/7.2: search, coordinates, quality and error envelopes.
+- The earlier question whether any terms cover the gazetteer is resolved by
+  these sources for ordinary use within the limits above; no agency contact
+  was needed. The `.../kaarditeenuste-kasutustingimused-p24.html` map-service
+  terms and the ADS X-tee integration pages remain background reading, not
+  the basis for this integration.
+- **M07 implementation (2026-09-22):** the backend adapter calls only the
+  fixed gazetteer URL with a descriptive `User-Agent`, a five-second bound
+  and <=1 MiB body; application-level budget (<=1000 calls/10 min, <=4 in
+  flight, documented as single-process assumptions) stays inside the
+  provider's per-IP limits. No `/aks-api/ava/...` routes, no reverse
+  endpoint, no retry, no legacy fallback.
 
 ## 2. Tallinn public transport — GTFS
 
@@ -265,8 +277,9 @@ python -m scripts.probes.probe_basemap
 
 ## Open questions for the next iteration
 
-- Confirm with Maa- ja Ruumiamet whether the public address gazetteer falls
-  under the published map-service terms, and at what request volume.
+- Address gazetteer terms resolved for M07 (In-AKS v1.2 terms, per-IP
+  limits above); re-check only if usage approaches the limits or leaves
+  ordinary direct-request use.
 - Publish/confirm the GTFS update cadence; the registry metadata
   (2026-05-22) lags the file's Last-Modified (2026-09-18).
 - Decide how CC BY-SA 3.0 share-alike affects a derived district layer or a

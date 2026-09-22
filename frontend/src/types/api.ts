@@ -187,3 +187,31 @@ export type PlannerBudgetResponse = {
   apartment: PlannerApartmentResult | null;
   warnings: PlannerWarning[];
 };
+
+export type AddressMatchQuality = "exact" | "partial" | "unknown";
+
+export type AddressCandidate = {
+  id: string;
+  label: string;
+  short_label: string;
+  longitude: number;
+  latitude: number;
+  district_id: null;
+  quality: AddressMatchQuality;
+};
+
+export type AddressAttribution = {
+  provider: "maa_ja_ruumiamet";
+  label: string;
+  source_url: string;
+};
+
+export type AddressSearchResponse = {
+  query: string;
+  candidates: AddressCandidate[];
+  attribution: AddressAttribution;
+};
+
+export type AddressProviderErrorCode =
+  | "address_provider_unavailable"
+  | "address_search_busy";

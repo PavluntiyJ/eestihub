@@ -81,6 +81,48 @@ test("has no axe violations with a budget result", async ({ page }) => {
   expect(await scan(page)).toEqual([]);
 });
 
+test("has no axe violations with a selected address", async ({ page }) => {
+  await page.route("**/api/v1/addresses/search**", async (route) => {
+    await route.fulfill({
+      json: {
+        query: "Mustamäe tee 5",
+        candidates: [
+          {
+            id: "ME02092715",
+            label: "Harju maakond, Tallinn, Kristiine linnaosa, Mustamäe tee 5",
+            short_label: "Mustamäe tee 5",
+            longitude: 24.7034,
+            latitude: 59.426593,
+            district_id: null,
+            quality: "exact",
+          },
+        ],
+        attribution: {
+          provider: "maa_ja_ruumiamet",
+          label: "Maa- ja Ruumiamet / In-AKS",
+          source_url: "https://geoportaal.maaamet.ee/est/teenused/integreeritav-aadressiotsing-in-aks-p504.html",
+        },
+      },
+    });
+  });
+  await page.goto("/en/planner");
+
+  await page.getByLabel("Monthly gross salary, EUR").fill("3000");
+  await page.getByLabel("II pension pillar contribution").selectOption("0.02");
+  await page.getByLabel("Monthly non-housing spending, EUR").fill("700");
+  await page.getByLabel("Monthly savings target, EUR").fill("300");
+  await page.getByLabel("Maximum housing share, % of net").fill("30");
+  await page.getByRole("button", { name: "Calculate budget" }).click();
+  await expect(page.getByTestId("planner-results")).toBeVisible();
+
+  await page.getByLabel("Street address in Tallinn").fill("Mustamäe tee 5");
+  await page.getByRole("listbox").getByRole("option").first().click();
+  await expect(page.getByTestId("address-selected")).toBeVisible();
+  await page.mouse.move(0, 0);
+
+  expect(await scan(page)).toEqual([]);
+});
+
 test("has no axe violations on the planner in the dark theme", async ({ page }) => {
   await page.addInitScript((key) => {
     window.localStorage.setItem(key, "dark");

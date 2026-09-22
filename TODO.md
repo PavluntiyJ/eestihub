@@ -121,9 +121,58 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 |---|------|-------|--------|--------|
 | M05 | Backend budget calculation: POST /api/v1/planner/budget | docs/PLANNER-M05-M06-HANDOFF.md (M05); contracts docs/PLANNER-CONTRACTS.md, formulae docs/PLANNER-PRODUCT.md | `[R]` | muse-spark (opencode) |
 | M06 | Guided income and budget UI: planner page and flow | docs/PLANNER-M05-M06-HANDOFF.md (M06); screens/states docs/PLANNER-DESIGN.md; reviewed M05 contract | `[R]` | muse-spark (opencode) |
+| M07 | Verified Tallinn address search: adapter, combobox, docs | docs/PLANNER-M07-HANDOFF.md (frozen address contract, In-AKS v1.2 terms) | `[R]` | muse-spark (opencode) |
 
 
 ## Journal (newest first)
+
+- 2026-09-22 · muse-spark (opencode) · **M07 done — `[R]`.** Verified
+  Tallinn address search per docs/PLANNER-M07-HANDOFF.md; scope only, no
+  transit/polygon/tile work, no new page, no production deploy.
+  · **Backend:** `GET /api/v1/addresses/search` (schemas/addresses.py,
+  services/address_service.py, routes/addresses.py) over fixed In-AKS
+  gazetteer URL via stdlib urllib in a sync route: q trimmed, 3–200 chars,
+  controls and repeated q → 422 with no provider call; exact contract
+  response with attribution; ≤8 deduped Tallinn-only candidates
+  (`omavalitsus == Tallinn`, `district_id` null); quality exact/partial/
+  unknown; missing in-area fields, error key, malformed/arbitrary JSON,
+  non-200, timeout and >1 MiB body → 503 `address_provider_unavailable`;
+  host-only envelope or empty array → 200 `[]`. Thread-safe 60s/256-entry
+  success cache, rolling ≤1000/10min + ≤4 in-flight limiter with
+  `Retry-After` (`address_search_busy`); every response `no-store`; no
+  retry/fallback/reverse, no query logging. One setting
+  (`ADDRESS_SEARCH_USER_AGENT`) + `.env.example`.
+  · **Frontend:** `features/addresses` combobox mounted below the planner
+  result only — 500ms debounce, auto from 4 chars, explicit from 3,
+  listbox keyboard (arrows/Enter/Escape, activedescendant), live
+  announcements, explicit selection as location context with coordinates
+  and visible attribution; edits clear the selection, failures preserve
+  query and budget, retry offered; empty/unavailable/busy distinct.
+  · **Tests:** 31 backend tests on mocked sourced fixtures (no live CI
+  dependency); 11 mocked browser tests + 1 axe scan with selection;
+  budget tests untouched and still real-backend.
+  · **Defects caught verifying (fixed):** three `_InvalidRow`/transport/
+  limiter-0 escapes became 500s instead of 503s; shared-module test
+  pollution isolated with an autouse fixture; Playwright
+  `route.request().url()` API shape learned the hard way; a stale foreign
+  `next start` and a stale pre-M07 uvicorn were squatting on :3000/:8000
+  again and had to be replaced before green runs; the live-region
+  announcement read "0 matching" after selection because it counted the
+  cleared dropdown — now uses the stored search hit count, with a
+  regression test.
+  · Verified: `pytest` → 137 passed; `npm run build` clean;
+  `npm run lint` + `tsc` clean; `npm run e2e` → 58 passed (15 smoke + 20
+  planner + 11 addresses + 12 axe, seeded SQLite backend); i18n parity
+  257/257/257; desktop/mobile address screenshots inspected; modest live
+  search (Mustamäe tee 5 → 7 Tallinn candidates, Pärnu filtered) and
+  no-match (`[]`) checked 2026-09-22 outside CI against the real gazetteer
+  through the shipped adapter.
+  · Docs: DATA-SOURCES gazetteer terms/open-question updated to the v1.2
+  sources (other sources left open), README feature + endpoint + counts.
+  Commit: `feat(addresses): add Tallinn address search`. Only my hunks
+  staged; Codex planning docs, dictionary repairs and board entries stay
+  uncommitted. M08 not started.
+
 
 - 2026-09-22 · muse-spark (opencode) · **M06 review fixes done — `[R]`.**
   Addressed all four Codex corrections plus the listed follow-ups; existing

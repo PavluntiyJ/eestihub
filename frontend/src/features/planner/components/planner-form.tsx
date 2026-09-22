@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { ApiError, calculateBudget } from "@/lib/api";
+import { AddressSearch } from "@/features/addresses/components/address-search";
 import type {
   PlannerBudgetRequest,
   PlannerBudgetResponse,
@@ -501,11 +502,14 @@ export function PlannerForm({ locale }: PlannerFormProps) {
         ) : null}
 
         {result ? (
-          <PlannerResults
-            isStale={isStale}
-            locale={locale}
-            result={result}
-          />
+          <>
+            <PlannerResults
+              isStale={isStale}
+              locale={locale}
+              result={result}
+            />
+            <AddressSearch />
+          </>
         ) : (
           <Card
             className="border-dashed bg-background/80 shadow-sm"

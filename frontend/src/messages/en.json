@@ -378,5 +378,28 @@
       "title": "An estimate, not financial advice",
       "text": "The allowance follows your own spending and savings choices, not an official cost-of-living recommendation. Tax figures use Estonia's 2026 rates."
     }
+  },
+  "addresses": {
+    "title": "Check a Tallinn address",
+    "description": "Find a street address as location context for the budget above. It never changes the numbers.",
+    "searchLabel": "Street address in Tallinn",
+    "searchPlaceholder": "Mustamäe tee 5",
+    "searchButton": "Search addresses",
+    "minLength": "Type at least 3 characters to search.",
+    "loading": "Searching addresses…",
+    "resultsAnnounced": "{count} matching addresses found.",
+    "empty": "No Tallinn addresses match. Check the spelling or try a nearby street.",
+    "unavailable": "Address search is unavailable right now. Your text is kept — retry in a moment.",
+    "busy": "Address search is busy. Wait a moment and retry.",
+    "retry": "Retry search",
+    "clear": "Clear selected address",
+    "contextNote": "Location context only — it does not change the budget above and is not an available apartment.",
+    "coordinates": "Coordinates",
+    "quality": {
+      "exact": "Exact match",
+      "partial": "Partial match",
+      "unknown": "Unverified match"
+    },
+    "attributionLink": "Source data"
   }
 }

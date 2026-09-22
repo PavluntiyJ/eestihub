@@ -1,4 +1,5 @@
 import type {
+  AddressSearchResponse,
   EResidencyCalculationRequest,
   EResidencyCalculationResponse,
   HealthResponse,
@@ -51,6 +52,16 @@ export function getHealth(init?: RequestInit): Promise<HealthResponse> {
 
 export function getHousingRents(init?: RequestInit): Promise<HousingRentsResponse> {
   return fetchJson<HousingRentsResponse>("/api/v1/housing/rents", init);
+}
+
+export function searchAddresses(
+  query: string,
+  init: RequestInit = {}
+): Promise<AddressSearchResponse> {
+  return fetchJson<AddressSearchResponse>(
+    `/api/v1/addresses/search?${new URLSearchParams({ q: query })}`,
+    init
+  );
 }
 
 export function calculateTaxes(

@@ -21,9 +21,10 @@ Web service for expats and entrepreneurs in Estonia. Moving to Estonia (or openi
 - **Affordability link** — after a calculation, which districts you could actually rent in, matched on rent plus utilities against an adjustable share of net income.
 - **e-Residency cost calculator** — setup fees, monthly running cost, first-year total and break-even revenue for an e-resident OÜ, every constant traced to an official source.
 - **Budget planner** — employment salary (converted with the 2026 tax engine, never the highest-net regime) or manual net, explicit spending and savings including zero, and an editable housing share. The API returns net income, both budget limits, the final allowance and machine-readable warnings; the UI aborts obsolete requests, marks edited results stale, preserves inputs on errors, and never puts salaries in URLs or storage.
+- **Tallinn address search** — a debounced, keyboard-operable combobox on the planner page backed by the In-AKS gazetteer: up to eight Tallinn candidates with coordinates and match quality, selectable as location context only. No persistence, no map dependency; provider outages keep the budget intact.
 - **Shareable scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
 - **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with absolute `hreflang` alternates, `x-default`, sitemap, and generated per-locale OG cards. Light, dark and system themes.
-- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 11 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state, the planner flow and both themes, and fail CI on any violation.
+- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 12 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state, the planner and address flows and both themes, and fail CI on any violation.
 - **Containerised stack** — `docker compose up --build` builds the frontend and API images, starts Postgres, seeds the sourced housing data and serves the app on :3000. CI builds the images and smoke-tests the running stack.
 
 | Russian locale, live calculation | Housing dashboard |
@@ -42,6 +43,7 @@ Locale-neutral: responses carry machine keys and numbers, human labels come from
 | `GET /api/v1/housing/trends` | Snapshot history per district |
 | `POST /api/v1/calculate-eresidency` | First-year cost of an e-resident OÜ |
 | `POST /api/v1/planner/budget` | Monthly housing allowance from employment or manual net, spending, savings and a housing share |
+| `GET /api/v1/addresses/search` | Up to eight Tallinn address candidates with coordinates and match quality |
 
 The full contract, including the tax logic and its sources, is in [`docs/CONTEXT.md`](docs/CONTEXT.md).
 
@@ -105,7 +107,7 @@ cd frontend && npm run e2e           # Playwright chromium smokes (needs backend
 cd frontend && npm run lighthouse    # Lighthouse CI assertions (needs a running frontend)
 ```
 
-Backend tests (106) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, the e-Residency service, and the planner budget service (fixtures, allowance boundary, rounding, seasonal logic, move-in cash, employment parity, strict-validation and JSON-safe 422 paths). The Playwright suite (40 browser tests) covers locale routing and switching, real submits on all three calculators, shared scenario URLs, constraint rendering, the affordability panel, the planner flow (employment/manual net, validation, zero amounts, stale-response ordering, retry, keyboard, mobile, draft warning, locales), the housing table and chart, plus 11 axe accessibility scans. CI runs all of it — pytest, production build, browser e2e against a live Postgres, Lighthouse assertions, and a Docker Compose smoke of the running stack — on every push.
+Backend tests (137) cover the health endpoint, both comparison bases, the FIE social-tax bounds, the statutory constraints, a golden-file regression suite of hand-derived net incomes, the housing snapshot fallback and ingest idempotency, the e-Residency service, the planner budget service (fixtures, allowance boundary, rounding, seasonal logic, move-in cash, employment parity, strict-validation and JSON-safe 422 paths), and the address search adapter (quality mapping, Tallinn filtering, dedup, cache/limiter behavior, provider-failure and validation envelopes). The Playwright suite (58 browser tests) covers locale routing and switching, real submits on all three calculators, shared scenario URLs, constraint rendering, the affordability panel, the planner flow (employment/manual net, validation, zero amounts, stale-response ordering, retry, keyboard, mobile, draft warning, locales), the address combobox (debounce, keyboard selection, late responses, retry, empty/unavailable/busy states, locales, mobile, themes), the housing table and chart, plus 12 axe accessibility scans. CI runs all of it — pytest, production build, browser e2e against a live Postgres, Lighthouse assertions, and a Docker Compose smoke of the running stack — on every push.
 
 ## Deployment
 

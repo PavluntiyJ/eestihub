@@ -378,5 +378,28 @@
       "title": "Hinnang, mitte finantsnõuanne",
       "text": "Toetus järgib sinu enda kulu- ja säästuvalikuid, mitte ametlikku elukalliduse soovitust. Maksuarvud kasutavad Eesti 2026. aasta määrasid."
     }
+  },
+  "addresses": {
+    "title": "Kontrolli Tallinna aadressi",
+    "description": "Leia tänava-aadress ülaloleva eelarve asukohataustaks. See ei muuda numbreid kunagi.",
+    "searchLabel": "Tallinna tänava-aadress",
+    "searchPlaceholder": "Mustamäe tee 5",
+    "searchButton": "Otsi aadresse",
+    "minLength": "Otsimiseks kirjuta vähemalt 3 tähemärki.",
+    "loading": "Otsin aadresse…",
+    "resultsAnnounced": "Leitud {count} sobivat aadressi.",
+    "empty": "Ükski Tallinna aadress ei sobi. Kontrolli õigekirja või proovi lähedal asuvat tänavat.",
+    "unavailable": "Aadressiotsing pole praegu kättesaadav. Sinu tekst on alles — proovi hetke pärast uuesti.",
+    "busy": "Aadressiotsing on hõivatud. Oota hetk ja proovi uuesti.",
+    "retry": "Proovi otsingut uuesti",
+    "clear": "Tühjenda valitud aadress",
+    "contextNote": "Ainult asukohataust — see ei muuda ülalolevat eelarvet ega ole vaba korter.",
+    "coordinates": "Koordinaadid",
+    "quality": {
+      "exact": "Täpne vaste",
+      "partial": "Osaline vaste",
+      "unknown": "Kinnitamata vaste"
+    },
+    "attributionLink": "Lähteandmed"
   }
 }
