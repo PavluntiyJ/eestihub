@@ -151,6 +151,13 @@ _DEFAULT_LIMITER = OutboundLimiter()
 
 
 def _fetch_upstream(url: str, timeout_s: float, user_agent: str) -> tuple[int, bytes]:
+    # Note on the five-second bound: urllib applies the timeout to each
+    # blocking socket operation (connect and every read — i.e. inactivity),
+    # not to the total operation. A strict total deadline would need an
+    # async client or a worker thread, both outside this stdlib-only sync
+    # adapter. In practice the total stays small: responses observed
+    # at ~0.3s, bodies are capped at 1 MiB, and the browser additionally
+    # aborts silently-hanging calls with its own finite timeout.
     request = Request(
         url, headers={"User-Agent": user_agent, "Accept": "application/json"}
     )
@@ -170,8 +177,14 @@ def _fetch_upstream(url: str, timeout_s: float, user_agent: str) -> tuple[int, b
 def _finite_number(value: object) -> float | None:
     if isinstance(value, bool):
         return None
-    if isinstance(value, (int, float)):
-        number = float(value)
+    if isinstance(value, int):
+        try:
+            number = float(value)
+        except OverflowError:
+            # 10**400 and friends: not a usable coordinate, never a 500.
+            return None
+    elif isinstance(value, float):
+        number = value
     elif isinstance(value, str):
         try:
             number = float(value.strip())
@@ -185,6 +198,10 @@ def _finite_number(value: object) -> float | None:
 
 
 def _match_quality(value: object) -> str:
+    # Only exact string codes map; lists, dicts, numbers and anything else
+    # stay unknown instead of raising TypeError in set membership.
+    if not isinstance(value, str):
+        return "unknown"
     if value in _EXACT_QUALITIES:
         return "exact"
     if value == "osaline":
@@ -215,6 +232,14 @@ def _candidate_from_row(row: object) -> AddressCandidate | None:
         raise _InvalidRow("in-area row misses required fields")
     if row.get("omavalitsus") != "Tallinn":
         return None
+    # A missing quality stays unknown; a present non-string quality is a
+    # malformed row rather than an unrecognized code.
+    if "kvaliteet" in row:
+        if not isinstance(row["kvaliteet"], str):
+            raise _InvalidRow("non-string match quality")
+        quality = _match_quality(row["kvaliteet"])
+    else:
+        quality = "unknown"
     return AddressCandidate(
         id=identifier,
         label=label,
@@ -222,7 +247,7 @@ def _candidate_from_row(row: object) -> AddressCandidate | None:
         longitude=longitude,
         latitude=latitude,
         district_id=None,
-        quality=_match_quality(row.get("kvaliteet")),  # type: ignore[arg-type]
+        quality=quality,  # type: ignore[arg-type]
     )
 
 
@@ -231,14 +256,21 @@ def _response_from_payload(payload: Any, query: str) -> AddressSearchResponse:
         raise AddressProviderError("address_provider_unavailable")
     if "error" in payload:
         raise AddressProviderError("address_provider_unavailable")
+    # Only the documented envelope shape is accepted: extra keys mean the
+    # provider changed its contract, which is a failure, not a silent pass.
+    if any(key not in ("addresses", "host") for key in payload):
+        raise AddressProviderError("address_provider_unavailable")
     addresses = payload.get("addresses")
     if addresses is None:
-        # A valid host-only envelope is the provider's no-match shape;
-        # arbitrary JSON without it is a schema failure, not an empty search.
-        if "host" in payload:
-            return AddressSearchResponse(
-                query=query, candidates=[], attribution=ATTRIBUTION
-            )
+        # A missing addresses key in a valid host-only envelope is the
+        # provider's no-match shape. Explicit null is a schema failure;
+        # the upfront key check already rejected anything but host here.
+        if "addresses" not in payload and set(payload) == {"host"}:
+            host = payload["host"]
+            if isinstance(host, str) and host:
+                return AddressSearchResponse(
+                    query=query, candidates=[], attribution=ATTRIBUTION
+                )
         raise AddressProviderError("address_provider_unavailable")
     if not isinstance(addresses, list):
         raise AddressProviderError("address_provider_unavailable")

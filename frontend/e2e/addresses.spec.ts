@@ -103,7 +103,114 @@ test("searches explicitly from three characters", async ({ page }) => {
   await page.getByRole("button", { name: "Search addresses" }).click();
 
   await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
+  // The pending debounce must not fire the same search a second time.
+  await page.waitForTimeout(800);
   expect(calls).toHaveLength(1);
+});
+
+test("clearing a pending input drops the late response", async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/v1/addresses/search**", async (route) => {
+    try {
+      await gate;
+      await route.fulfill({ json: TARTU_FIXTURE });
+    } catch {
+      // The edit aborts the held request; nothing left to answer.
+    }
+  });
+  await page.goto("/en/planner");
+  await calculateBudget(page);
+
+  await fillStable(page.getByLabel("Street address in Tallinn"), "Tartu mnt 1");
+  await page.waitForRequest("**/api/v1/addresses/search**");
+  await fillStable(page.getByLabel("Street address in Tallinn"), "");
+
+  release();
+  await page.waitForTimeout(300);
+
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByTestId("address-selected")).toHaveCount(0);
+  await expect(page.getByLabel("Street address in Tallinn")).toHaveValue("");
+});
+
+test("shortening a pending input below threshold drops the late response", async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/v1/addresses/search**", async (route) => {
+    try {
+      await gate;
+      await route.fulfill({ json: TARTU_FIXTURE });
+    } catch {
+      // The edit aborts the held request; nothing left to answer.
+    }
+  });
+  await page.goto("/en/planner");
+  await calculateBudget(page);
+
+  await fillStable(page.getByLabel("Street address in Tallinn"), "Tartu mnt 1");
+  await page.waitForRequest("**/api/v1/addresses/search**");
+  await fillStable(page.getByLabel("Street address in Tallinn"), "Tar");
+
+  release();
+  await page.waitForTimeout(300);
+
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByTestId("address-selected")).toHaveCount(0);
+});
+
+test("selecting an option schedules no follow-up search", async ({ page }) => {
+  const calls: string[] = [];
+  await mockAddresses(page, MUSTAMAE_FIXTURE, calls);
+  await page.goto("/en/planner");
+  await calculateBudget(page);
+
+  await fillStable(page.getByLabel("Street address in Tallinn"), "Mustam");
+  await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(2);
+  await page.getByRole("listbox").getByRole("option").nth(1).click();
+
+  await expect(page.getByTestId("address-selected")).toContainText("Mustamäe tee 5a");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+
+  // The rewritten label must not schedule a search of its own text.
+  await page.waitForTimeout(900);
+  expect(calls).toHaveLength(1);
+});
+
+test("a held request times out with retry", async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/v1/addresses/search**", async (route) => {
+    try {
+      await gate;
+      await route.fulfill({ json: MUSTAMAE_FIXTURE });
+    } catch {
+      // The client timeout aborts the held request; nothing left to answer.
+    }
+  });
+  await page.goto("/en/planner");
+  await calculateBudget(page);
+
+  await fillStable(page.getByLabel("Street address in Tallinn"), "Mustamäe tee 5");
+
+  // The 10-second client bound surfaces the retry state on a hanging call.
+  await expect(page.getByText("Address search is unavailable right now.")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByLabel("Street address in Tallinn")).toHaveValue("Mustamäe tee 5");
+  await expect(page.getByTestId("planner-allowance")).toHaveText("€722.93");
+
+  release();
+  await page.waitForTimeout(300);
+
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retry search" })).toBeVisible();
 });
 
 test("selects an address with the keyboard and shows context", async ({ page }) => {

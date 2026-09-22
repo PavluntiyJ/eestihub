@@ -126,6 +126,47 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-22 · muse-spark (opencode) · **M07 review fixes done — `[R]`.**
+  Addressed all three Codex corrections plus the small contract items;
+  existing checks kept strict, backend precision validation unchanged.
+  · **(1) Edit lifecycle:** every keystroke now aborts the pending request,
+  bumps the request id and clears options/active state (dropdown closes,
+  announcement resets) — including below-threshold text; explicit search
+  cancels the pending debounce (no duplicate), and selection suppresses
+  re-searching its own rewritten label. New browser tests: clearing and
+  shortening a held request (no options after release), no follow-up
+  request or reopening after selecting the 5a option, single request on
+  immediate explicit search.
+  · **(2) Normalization hardening:** non-string `kvaliteet` (list/dict) is a
+  malformed row → 503 while missing/unrecognized strings stay unknown;
+  integer overflow coordinates (`10**400`) and `1e400` strings → 503;
+  explicit-null `addresses`, null/invalid `host` and unexpected envelope
+  keys → 503 (only the exact `{host: non-empty-string}` shape is a
+  no-match); failures verified uncached at HTTP level (503 then 200).
+  · **(3) Client timeout and docs:** search combines a finite 10s bound
+  with cancellation; a real 10s held-request test proves the
+  unavailable/retry state, preserved query and budget, and ignores the
+  late response. urllib timeout documented as per-operation inactivity
+  bound (stdlib-only sync adapter; 1 MiB cap, ~0.3s observed, browser-side
+  finite bound on top).
+  · **Contract corrections:** manual 422s carry `Cache-Control: no-store`;
+  framework 422s (missing q) go through a route-scoped handler with the
+  same header; raw `max_length` dropped so padded 200-char queries pass
+  (trim-before-length, covered by test).
+  · **Defect caught verifying (fixed):** after selection the live region
+  read "0 matching" because it counted the cleared dropdown — now uses
+  the stored search hit count ("7 matching addresses found." in the
+  inspected screenshot), with a regression assertion.
+  · Verified: `pytest` → 150 passed; `npm run build` clean;
+  `npm run lint` + `tsc` clean; `npm run e2e` → 62 passed (15 smoke + 20
+  planner + 15 addresses + 12 axe, seeded SQLite backend); desktop/mobile
+  address screenshots reinspected. One stale `next start` killed before
+  the final runs; the suite twice exposed a stale server before that.
+  · Commit: `fix(addresses): review corrections for validation lifecycle`.
+  Only my hunks staged; Codex planning docs, dictionary repairs and board
+  entries stay uncommitted. M08 not started.
+
+
 - 2026-09-22 · muse-spark (opencode) · **M07 done — `[R]`.** Verified
   Tallinn address search per docs/PLANNER-M07-HANDOFF.md; scope only, no
   transit/polygon/tile work, no new page, no production deploy.

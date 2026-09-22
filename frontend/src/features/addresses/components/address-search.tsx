@@ -51,7 +51,7 @@ function providerErrorCode(body: unknown): AddressProviderErrorCode | null {
 // Optional Tallinn address lookup mounted below a calculated budget. It only
 // selects location context: results never touch budget arithmetic, nothing
 // is persisted, and the query never leaves the client except to the API.
-export function AddressSearch() {
+export function AddressSearch({ requestTimeoutMs = 10_000 }: { requestTimeoutMs?: number }) {
   const t = useTranslations("addresses");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -66,7 +66,26 @@ export function AddressSearch() {
   const [attribution, setAttribution] = useState<AddressAttribution | null>(null);
   const requestIdRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<number | null>(null);
+  const suppressDebounceRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  function cancelDebounce() {
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+  }
+
+  function invalidatePending() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    requestIdRef.current += 1;
+    setCandidates([]);
+    setActiveIndex(-1);
+    setOpen(false);
+    setStatus("idle");
+  }
 
   const runSearch = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -85,7 +104,9 @@ export function AddressSearch() {
     setOpen(true);
 
     try {
-      const response = await searchAddresses(trimmed, { signal: controller.signal });
+      const response = await searchAddresses(trimmed, {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(requestTimeoutMs)]),
+      });
 
       if (requestIdRef.current !== requestId) {
         return;
@@ -96,6 +117,7 @@ export function AddressSearch() {
       setAttribution(response.attribution);
       setActiveIndex(-1);
       setStatus(response.candidates.length === 0 ? "empty" : "results");
+      setOpen(true);
     } catch (caughtError) {
       if (requestIdRef.current !== requestId) {
         return;
@@ -112,17 +134,26 @@ export function AddressSearch() {
         caughtError instanceof ApiError ? providerErrorCode(caughtError.body) : null;
       setStatus(code === "address_search_busy" ? "busy" : "unavailable");
     }
-  }, []);
+  }, [requestTimeoutMs]);
 
   // Automatic search only from four characters; explicit search accepts three.
   useEffect(() => {
+    if (suppressDebounceRef.current) {
+      // A selection just rewrote the field: never re-search its own label.
+      suppressDebounceRef.current = false;
+      return;
+    }
+
     if (query.trim().length < AUTO_SEARCH_MIN_LENGTH) {
       return;
     }
 
-    const timer = window.setTimeout(() => void runSearch(query), SEARCH_DEBOUNCE_MS);
+    debounceRef.current = window.setTimeout(() => {
+      debounceRef.current = null;
+      void runSearch(query);
+    }, SEARCH_DEBOUNCE_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => cancelDebounce();
   }, [query, runSearch]);
 
   useEffect(() => {
@@ -130,23 +161,23 @@ export function AddressSearch() {
 
     return () => {
       pending.current?.abort();
+      cancelDebounce();
     };
   }, []);
 
   function clearAll() {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    requestIdRef.current += 1;
+    cancelDebounce();
+    invalidatePending();
     setQuery("");
     setSelected(null);
-    setCandidates([]);
-    setActiveIndex(-1);
-    setStatus("idle");
     setHint(null);
-    setOpen(false);
+    setStatus("idle");
   }
 
   function selectCandidate(candidate: AddressCandidate) {
+    // The rewritten label must not schedule a search of its own text.
+    suppressDebounceRef.current = true;
+    cancelDebounce();
     setSelected(candidate);
     setQuery(candidate.short_label);
     setCandidates([]);
@@ -154,12 +185,28 @@ export function AddressSearch() {
     setOpen(false);
   }
 
+  function explicitSearch() {
+    if (query.trim().length >= EXPLICIT_SEARCH_MIN_LENGTH) {
+      // A pending debounce would duplicate this search half a second later.
+      cancelDebounce();
+      void runSearch(query);
+    } else {
+      setHint(t("minLength"));
+      inputRef.current?.focus();
+    }
+  }
+
   function onQueryChange(value: string) {
-    // Any edit immediately drops the previous selection: it no longer
-    // describes what the field contains.
+    // Every edit immediately invalidates the pending request and the stale
+    // dropdown: the selection no longer describes the field, and a late
+    // response must never render under new text. The debounce effect below
+    // schedules the follow-up search; queries below the auto threshold
+    // simply stay idle until an explicit search.
     setSelected(null);
     setQuery(value);
     setHint(null);
+    suppressDebounceRef.current = false;
+    invalidatePending();
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -182,12 +229,9 @@ export function AddressSearch() {
       if (open && activeIndex >= 0 && activeIndex < candidates.length) {
         event.preventDefault();
         selectCandidate(candidates[activeIndex]);
-      } else if (query.trim().length >= EXPLICIT_SEARCH_MIN_LENGTH) {
-        event.preventDefault();
-        void runSearch(query);
       } else {
         event.preventDefault();
-        setHint(t("minLength"));
+        explicitSearch();
       }
     } else if (event.key === "Escape") {
       if (open) {
@@ -274,14 +318,7 @@ export function AddressSearch() {
               ) : null}
             </div>
             <Button
-              onClick={() => {
-                if (query.trim().length >= EXPLICIT_SEARCH_MIN_LENGTH) {
-                  void runSearch(query);
-                } else {
-                  setHint(t("minLength"));
-                  inputRef.current?.focus();
-                }
-              }}
+              onClick={explicitSearch}
               type="button"
               variant="outline"
             >

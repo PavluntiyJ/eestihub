@@ -436,10 +436,18 @@ def test_http_invalid_queries_return_422_without_provider_call(
     response = client.get(ENDPOINT, params={"q": query})
 
     assert response.status_code == 422
+    assert response.headers["cache-control"] == "no-store"
     assert calls == []
 
 
-def test_http_repeated_query_returns_422_without_provider_call(
+def test_http_missing_query_returns_422_with_no_store() -> None:
+    response = client.get(ENDPOINT)
+
+    assert response.status_code == 422
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_http_repeated_query_returns_422_with_no_store(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list = []
@@ -450,4 +458,84 @@ def test_http_repeated_query_returns_422_without_provider_call(
     response = client.get(ENDPOINT, params=[("q", "Tartu mnt 1"), ("q", "Tartu mnt 1")])
 
     assert response.status_code == 422
+    assert response.headers["cache-control"] == "no-store"
     assert calls == []
+
+
+def test_http_padded_max_length_query_is_valid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        address_service, "_fetch_upstream", transport_with({"addresses": []})
+    )
+
+    response = client.get(ENDPOINT, params={"q": "  " + "e" * 200 + "  "})
+
+    assert response.status_code == 200
+    assert response.json()["query"] == "e" * 200
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"addresses": [{"x": 1}], "unexpected": True},
+        {"addresses": None, "host": "inaks-api-test"},
+        {"host": None},
+        {"host": "inaks-api-test", "unexpected": True},
+        {"host": ""},
+        {"addresses": [], "host": "inaks-api-test", "unexpected": True},
+    ],
+)
+def test_http_strict_envelope_failures_return_503(
+    monkeypatch: pytest.MonkeyPatch, payload: Any
+) -> None:
+    monkeypatch.setattr(address_service, "_fetch_upstream", transport_with(payload))
+
+    response = client.get(ENDPOINT, params={"q": "Tartu mnt 1"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": {"code": "address_provider_unavailable"}}
+
+
+@pytest.mark.parametrize(
+    "row_overrides",
+    [
+        {"kvaliteet": []},
+        {"kvaliteet": {}},
+        {"viitepunkt_l": 10**400},
+        {"viitepunkt_b": "1e400"},
+    ],
+)
+def test_http_malformed_rows_return_json_safe_503(
+    monkeypatch: pytest.MonkeyPatch, row_overrides: dict
+) -> None:
+    monkeypatch.setattr(
+        address_service,
+        "_fetch_upstream",
+        transport_with({"addresses": [tallinn_row(**row_overrides)]}),
+    )
+
+    response = client.get(ENDPOINT, params={"q": "Tartu mnt 1"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": {"code": "address_provider_unavailable"}}
+
+
+def test_http_failure_then_success_is_not_negatively_cached(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list = []
+
+    def flaky(url: str, timeout_s: float, user_agent: str):
+        calls.append(url)
+        if len(calls) == 1:
+            raise TimeoutError("timed out")
+        return 200, json.dumps({"addresses": []}).encode()
+
+    monkeypatch.setattr(address_service, "_fetch_upstream", flaky)
+
+    assert client.get(ENDPOINT, params={"q": "Tartu mnt 1"}).status_code == 503
+    failing = client.get(ENDPOINT, params={"q": "Tartu mnt 1"})
+    assert failing.status_code == 200
+    assert failing.json()["candidates"] == []
+    assert len(calls) == 2
