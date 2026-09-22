@@ -13,8 +13,10 @@ the earlier sequential M09–M13 delivery gates for this release only.
   budget service. Blank means unknown; explicit zero means no cost. First rent
   is included in move-in cash and the refundable deposit is not monthly spending.
 - Optional In-AKS Tallinn address selection, independent of apartment costs.
-- Opt-in MapLibre map using OpenFreeMap Liberty. Salary/budget never enter map
-  requests. The map has a list fallback, keyboard controls and attribution.
+- Address search is visible at the top of the planner before any income or
+  budget entry. Selecting an address opens the MapLibre map automatically,
+  using OpenFreeMap Liberty. Salary/budget never enter map requests. The map
+  has a hide/show control, list fallback, keyboard controls and attribution.
 - Nearby individual GTFS platforms and routes scheduled for today's Tallinn
   date. No grouping by stop name, walking-time estimate, live arrival claim,
   rental listing feed or district recommendation.

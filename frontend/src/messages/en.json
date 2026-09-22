@@ -381,7 +381,7 @@
   },
   "addresses": {
     "title": "Check a Tallinn address",
-    "description": "Find a street address as location context for the budget above. It never changes the numbers.",
+    "description": "Search for an address, then select a suggestion to see it on the map.",
     "searchLabel": "Street address in Tallinn",
     "searchPlaceholder": "Mustamäe tee 5",
     "searchButton": "Search addresses",
@@ -481,6 +481,8 @@
     "zoomOut": "Zoom out",
     "mapLabel": "Map of the selected address and nearby stops",
     "mapUnavailable": "The map could not fully load. The address and stop list remain available.",
-    "mapPrivacy": "Map tiles load from OpenFreeMap when you open this map. Your salary and budget are not sent to the map provider."
+    "mapPrivacy": "Selecting an address loads map tiles from OpenFreeMap. Your salary and budget are not sent to the map provider.",
+    "explorerTitle": "Map & nearby transport",
+    "explorerDescription": "Choose a Tallinn address to open the map and see nearby stops. You can explore before entering your income."
   }
 }

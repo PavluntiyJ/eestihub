@@ -48,7 +48,7 @@ function providerErrorCode(body: unknown): AddressProviderErrorCode | null {
   return null;
 }
 
-// Optional Tallinn address lookup mounted below a calculated budget. It only
+// Independent Tallinn address lookup. It only
 // selects location context: results never touch budget arithmetic, nothing
 // is persisted, and the query never leaves the client except to the API.
 export function AddressSearch({ requestTimeoutMs = 10_000, onSelect }: { requestTimeoutMs?: number; onSelect?: (address: AddressCandidate | null) => void }) {

@@ -161,6 +161,14 @@ M01 and M03 are being prepared by Codex; M04 was explicitly out of scope
 
 ## Journal (newest first)
 
+- 2026-09-22 · Codex · **Map discoverability correction requested by owner.**
+  Moved address/map exploration above the budget form so it is available before
+  income entry; choosing an address opens the map automatically. Updated all
+  three locales and the no-budget browser regression. Removed a duplicate map
+  landmark found by axe and excluded generated vendor modules from ESLint.
+  Build/lint passed; full browser run had 69 passes and the landmark finding,
+  then all 20 apartment/accessibility checks passed after the correction.
+
 - 2026-09-22 · Codex · **Planner release published and M05–M08 accepted.**
   Merged PR #1 as `25d1389` after green CI; 245 backend tests including all five
   PostgreSQL cases, 70 browser tests, build, Lighthouse and Docker smoke passed.

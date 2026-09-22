@@ -381,7 +381,7 @@
   },
   "addresses": {
     "title": "Kontrolli Tallinna aadressi",
-    "description": "Leia tänava-aadress ülaloleva eelarve asukohataustaks. See ei muuda numbreid kunagi.",
+    "description": "Otsi aadressi ja vali soovitus, et näha seda kaardil.",
     "searchLabel": "Tallinna tänava-aadress",
     "searchPlaceholder": "Mustamäe tee 5",
     "searchButton": "Otsi aadresse",
@@ -481,6 +481,8 @@
     "zoomOut": "Vähenda",
     "mapLabel": "Valitud aadressi ja lähedal asuvate peatuste kaart",
     "mapUnavailable": "Kaarti ei õnnestunud täielikult laadida. Aadress ja peatuste loend on endiselt saadaval.",
-    "mapPrivacy": "Kaardi avamisel laaditakse kaardipaanid OpenFreeMapist. Sinu palka ega eelarvet kaarditeenusele ei saadeta."
+    "mapPrivacy": "Aadressi valimisel laaditakse kaardipaanid OpenFreeMapist. Sinu palka ja eelarvet kaardipakkujale ei saadeta.",
+    "explorerTitle": "Kaart ja läheduses olev transport",
+    "explorerDescription": "Vali Tallinna aadress, et avada kaart ja näha lähedal asuvaid peatusi. Sissetulekut ei pea enne sisestama."
   }
 }

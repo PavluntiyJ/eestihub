@@ -91,7 +91,7 @@ test("editing income invalidates the apartment assessment and preserves entered 
   await expect(page.getByTestId("winter-remainder")).toHaveText("€350.00");
 });
 
-test("map loads only on request, synchronizes platforms and survives address clearing", async ({page}) => {
+test("map is discoverable without a budget, opens on address selection and synchronizes platforms", async ({page}) => {
   let tileRequests = 0;
   await page.route("https://tiles.openfreemap.org/**", route => {
     tileRequests++;
@@ -103,16 +103,22 @@ test("map loads only on request, synchronizes platforms and survives address cle
         {id: "worker-fixture", source: "fixture", type: "circle", paint: {"circle-radius": 5}}]}});
   });
   await page.route("**/api/v1/transit/nearby**", route => route.fulfill({json: nearby}));
-  await budget(page);
+  await page.goto("/en/planner");
+  await expect(page.getByRole("heading", {name: "Map & nearby transport", exact: true})).toBeVisible();
+  await expect(page.getByTestId("apartment-assessment")).toHaveCount(0);
+  expect(tileRequests).toBe(0);
   await address(page);
   await expect(page.getByText("Bus 16", {exact: true})).toBeVisible();
-  expect(tileRequests).toBe(0);
-  await page.getByRole("button", {name: "Show map", exact: true}).click();
   await expect(page.getByTestId("transit-map").locator("canvas")).toBeVisible();
   await expect(page.getByTestId("transit-map").getByRole("button", {name: "Marja, 52 m", exact: true})).toBeVisible();
   await page.getByTestId("location-context").getByRole("button", {name: /Marja 52 m Stop ID/}).click();
   await expect(page.getByTestId("transit-map").getByRole("button", {name: "Marja, 52 m", exact: true})).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("map-unavailable")).toHaveCount(0);
+  expect(tileRequests).toBeGreaterThan(0);
+  await page.getByRole("button", {name: "Hide map", exact: true}).click();
+  await expect(page.getByTestId("transit-map")).toHaveCount(0);
+  await page.getByRole("button", {name: "Show map", exact: true}).click();
+  await expect(page.getByTestId("transit-map")).toBeVisible();
   await page.getByRole("button", {name: "Clear selected address"}).click();
   await expect(page.getByTestId("location-context")).toHaveCount(0);
 });
@@ -128,7 +134,6 @@ test("transport and tile failure preserve the usable budget and allow retry", as
   await expect(page.getByTestId("summer-total")).toHaveText("€750.00");
   await page.getByRole("button", {name: "Retry transport"}).click();
   await expect(page.getByTestId("transit-freshness")).toBeVisible();
-  await page.getByRole("button", {name: "Show map", exact: true}).click();
   await expect(page.getByTestId("map-unavailable")).toBeVisible({timeout: 15_000});
   await expect(page.getByText("Bus 16", {exact: true})).toBeVisible();
 });

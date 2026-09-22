@@ -74,7 +74,7 @@ export function TransitMap({address, stops, selected, onSelect}: {
   }, [selected, stops, loaded]);
 
   return <div className="overflow-hidden rounded-2xl border bg-card" data-testid="transit-map">
-    <div ref={container} role="region" aria-label={t("mapLabel")} className="h-72 w-full sm:h-96" />
+    <div ref={container} className="h-72 w-full sm:h-96" />
     <div className="space-y-1 border-t p-3 text-xs text-muted-foreground">
       {failed && <p role="status" data-testid="map-unavailable">{t("mapUnavailable")}</p>}
       <p>{t("mapPrivacy")}</p>

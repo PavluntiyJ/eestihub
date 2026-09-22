@@ -12,7 +12,7 @@ export function LocationContext({address, locale}: {address: AddressCandidate; l
   const [response, setResponse] = useState<NearbyTransitResponse | null>(null);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [showMap, setShowMap] = useState(false);
+  const [showMap, setShowMap] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();

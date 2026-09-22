@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated vendor modules copied by prebuild/predev.
+    "public/maplibre/**",
   ]),
 ]);
 

@@ -3,10 +3,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { AddressSearch } from "@/features/addresses/components/address-search";
-import { LocationContext } from "./location-context";
 import { calculateBudget } from "@/lib/api";
-import type { AddressCandidate, PlannerBudgetRequest, PlannerBudgetResponse } from "@/types/api";
+import type { PlannerBudgetRequest, PlannerBudgetResponse } from "@/types/api";
 
 type AmountKey = "rent" | "summer" | "winter" | "deposit" | "broker_fee" | "setup";
 const FIELDS: AmountKey[] = ["rent", "summer", "winter", "deposit", "broker_fee", "setup"];
@@ -21,7 +19,6 @@ export function ApartmentAssessment({ budgetSnapshot, budgetStale, locale }: {
   const t = useTranslations("apartment");
   const [values, setValues] = useState<Record<AmountKey, string>>({rent: "", summer: "", winter: "", deposit: "", broker_fee: "", setup: ""});
   const [basis, setBasis] = useState<"user_estimate" | "user_bill">("user_estimate");
-  const [address, setAddress] = useState<AddressCandidate | null>(null);
   const [submitted, setSubmitted] = useState<{snapshot: string; response: PlannerBudgetResponse} | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -152,10 +149,5 @@ export function ApartmentAssessment({ budgetSnapshot, budgetStale, locale }: {
         <p className="text-sm text-muted-foreground">{t("privacy")}</p>
       </div>
     </div>
-    <div className="grid items-start gap-6 lg:grid-cols-2">
-      <AddressSearch onSelect={setAddress} />
-      <p className="self-center text-sm text-muted-foreground">{t("addressHint")}</p>
-    </div>
-    {address && <LocationContext key={address.id} address={address} locale={locale} />}
   </section>;
 }

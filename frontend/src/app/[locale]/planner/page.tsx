@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PlannerForm } from "@/features/planner/components/planner-form";
+import { LocationExplorer } from "@/features/apartments/components/location-explorer";
 import { defaultLocale, locales, type Locale } from "@/i18n/routing";
 
 type PlannerPageParams = {
@@ -66,6 +67,7 @@ export default async function PlannerPage({ params }: PlannerPageParams) {
           </div>
         </section>
 
+        <LocationExplorer locale={currentLocale} />
         <PlannerForm locale={currentLocale} />
 
         <Card className="border-dashed bg-background/80 shadow-sm">
