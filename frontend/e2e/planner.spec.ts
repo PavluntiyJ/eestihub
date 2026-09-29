@@ -321,45 +321,22 @@ test("renders the planner in Estonian and Russian", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });
 
-test("warns before locale navigation discards an unsaved draft", async ({ page }) => {
+test("preserves unsaved budget inputs across locale navigation", async ({ page }) => {
   await page.goto("/en/planner");
-
   await fillStable(page.getByLabel("Monthly gross salary, EUR"), "3000");
-
-  // Dismissing the confirm keeps the draft in place.
-  page.once("dialog", (dialog) => void dialog.dismiss());
-  await page.getByRole("link", { name: "ET", exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/planner$/);
-  await expect(page.locator("#planner-gross-income")).toHaveValue("3000");
-
-  // Accepting the confirm navigates; client state is reset by design.
-  page.once("dialog", (dialog) => void dialog.accept());
   await page.getByRole("link", { name: "ET", exact: true }).click();
   await expect(page).toHaveURL(/\/et\/planner$/);
+  await expect(page.locator("#planner-gross-income")).toHaveValue("3000");
 });
 
-test("warns on locale navigation even after a fresh result", async ({ page }) => {
+test("preserves a calculated budget across locale navigation", async ({ page }) => {
   await page.goto("/en/planner");
-
-  await page.getByLabel("Manual net income").check();
-  await fillStable(page.getByLabel("Monthly net income, EUR"), "2400");
-  await fillStable(page.getByLabel("Monthly non-housing spending, EUR"), "700");
-  await fillStable(page.getByLabel("Monthly savings target, EUR"), "300");
-  await fillStable(page.getByLabel("Maximum housing share, % of net"), "35");
-  await page.getByRole("button", { name: "Calculate budget" }).click();
-  await expect(page.getByTestId("planner-allowance")).toHaveText("€840.00");
-
-  // Dismissing keeps the calculated draft: inputs and result stay intact.
-  page.once("dialog", (dialog) => void dialog.dismiss());
-  await page.getByRole("link", { name: "ET", exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/planner$/);
-  await expect(page.locator("#planner-net-income")).toHaveValue("2400");
-  await expect(page.getByTestId("planner-allowance")).toHaveText("€840.00");
-
-  // Accepting navigates; client state resets by design.
-  page.once("dialog", (dialog) => void dialog.accept());
+  await fillEmploymentBudget(page);
+  await expect(page.getByTestId("planner-results")).toBeVisible();
   await page.getByRole("link", { name: "ET", exact: true }).click();
   await expect(page).toHaveURL(/\/et\/planner$/);
+  await expect(page.locator("#planner-gross-income")).toHaveValue("3000");
+  await expect(page.getByTestId("planner-results")).toBeVisible();
 });
 
 test("lets the second response win while the first is held", async ({ page }) => {

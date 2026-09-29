@@ -17,7 +17,10 @@ export function LanguageSwitcher() {
   const [hash, setHash] = useState("");
 
   useEffect(() => {
-    setHash(window.location.hash);
+    const sync = () => setHash(window.location.hash);
+    sync();
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
   }, [pathname, query]);
 
   const href = `${pathname}${query ? `?${query}` : ""}${hash}`;

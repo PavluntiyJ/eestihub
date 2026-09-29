@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { calculateBudget } from "@/lib/api";
+import { addCandidate, useWorkspace } from "@/features/scenarios/store";
+import { Link } from "@/i18n/navigation";
 import type { PlannerBudgetRequest, PlannerBudgetResponse } from "@/types/api";
 
 type AmountKey = "rent" | "summer" | "winter" | "deposit" | "broker_fee" | "setup";
@@ -17,6 +19,9 @@ export function ApartmentAssessment({ budgetSnapshot, budgetStale, locale }: {
   budgetSnapshot: string; budgetStale: boolean; locale: string;
 }) {
   const t = useTranslations("apartment");
+  const compare = useTranslations("compare");
+  const workspace = useWorkspace();
+  const [added, setAdded] = useState(false);
   const [values, setValues] = useState<Record<AmountKey, string>>({rent: "", summer: "", winter: "", deposit: "", broker_fee: "", setup: ""});
   const [basis, setBasis] = useState<"user_estimate" | "user_bill">("user_estimate");
   const [submitted, setSubmitted] = useState<{snapshot: string; response: PlannerBudgetResponse} | null>(null);
@@ -37,6 +42,7 @@ export function ApartmentAssessment({ budgetSnapshot, budgetStale, locale }: {
     controller.current?.abort();
     setLoading(false);
     setError(false);
+    setAdded(false);
     // This is a request generation counter, not a DOM ref. Invalidate the
     // latest request on cleanup, including unmount while a response is pending.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,6 +133,14 @@ export function ApartmentAssessment({ budgetSnapshot, budgetStale, locale }: {
         {result ? <div className="space-y-5 rounded-2xl border border-primary/30 bg-primary/5 p-5 sm:p-6" data-testid="apartment-result">
           {stale && <p className="font-medium text-warning" data-testid="apartment-stale">{t("stale")}</p>}
           <h3 className="text-xl font-semibold">{t(`fit.${result.fit}`)}</h3>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" disabled={stale || added || workspace.candidates.length >= 3} onClick={() => {
+              if (stale) return;
+              const summer=amount(values.summer), winter=amount(values.winter);
+              if(addCandidate({id:crypto.randomUUID(),name:compare('defaultName',{count:workspace.candidates.length+1}),address:null,costs:{rent:amount(values.rent)!,utilities:{summer,winter,basis:summer===null&&winter===null?'unknown':basis},move_in:{first_rent:amount(values.rent),deposit:amount(values.deposit),broker_fee:amount(values.broker_fee),setup:amount(values.setup)}}}))setAdded(true);
+            }}>{added?compare('added'):compare('pin')}</Button>
+            <Link href="/compare" className="text-sm underline">{compare('open')}</Link>
+          </div>
           <p className="text-sm text-muted-foreground">{t("fitHint")}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {(["summer", "winter"] as const).map((season) => <div key={season} className="space-y-2 rounded-xl bg-card p-4">

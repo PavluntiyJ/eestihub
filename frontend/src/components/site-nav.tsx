@@ -7,6 +7,8 @@ import { Link, usePathname } from "@/i18n/navigation";
 const navItems = [
   { href: "/", key: "home" },
   { href: "/planner", key: "planner" },
+  { href: "/explore", key: "explore" },
+  { href: "/compare", key: "compare" },
   { href: "/calculator", key: "calculator" },
   { href: "/housing", key: "housing" },
   { href: "/eresidency", key: "eresidency" },
@@ -23,7 +25,7 @@ export function SiteNav() {
   return (
     <nav
       aria-label={a11y("mainNavigation")}
-      className="flex w-full min-w-0 flex-wrap items-center gap-1 rounded-2xl border border-border bg-background p-1 sm:w-auto sm:flex-nowrap sm:rounded-full"
+      className="flex w-full min-w-0 flex-wrap items-center gap-1 rounded-2xl border border-border bg-background p-1 sm:w-auto"
     >
       {navItems.map((item) => {
         const isActive =
