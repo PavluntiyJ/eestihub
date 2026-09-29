@@ -294,6 +294,34 @@ test("budget failure preserves candidates and retry restores comparison", async 
   await expect(page.getByTestId("comparison-result")).toHaveCount(2);
 });
 
+test('Russian layout keeps navigation, controls and comparison cards within bounds', async ({ page }) => {
+  await importPlan(page, 'ru');
+  for (const width of [320, 390, 768, 1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const navigation = await page.getByRole('navigation', { name: ru.a11y.mainNavigation }).boundingBox();
+    const languages = await page.getByRole('navigation', { name: ru.languageSwitcher.label }).boundingBox();
+    expect(navigation!.y, `menu below language controls at ${width}px`).toBeGreaterThanOrEqual(languages!.y + languages!.height);
+    const overflowing = await page.locator('header, main').evaluateAll((roots) =>
+      roots.flatMap((root) => [...root.querySelectorAll('button, a, article, input:not(.sr-only), select')])
+        .filter((el) => {
+          const rect = el.getBoundingClientRect();
+          if (!rect.width || el.classList.contains('sr-only')) return false;
+          return rect.right > document.documentElement.clientWidth + 1 || rect.left < -1 || el.scrollWidth > el.clientWidth + 2;
+        }).map((el) => el.textContent?.trim() || el.tagName),
+    );
+    expect(overflowing, `unclipped Russian controls at ${width}px`).toEqual([]);
+  }
+  await page.screenshot({ path: 'test-results/ru-comparison-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.screenshot({ path: 'test-results/ru-comparison-mobile.png', fullPage: true });
+  for (const path of ['', '/planner', '/explore', '/calculator', '/housing', '/eresidency']) {
+    await page.goto(`/ru${path}`);
+    await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.locator('main')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `page width /ru${path}`).toBe(true);
+  }
+});
+
 for (const [locale, messages] of Object.entries({ en, et, ru }))
   test(`comparison mobile accessibility and translations (${locale})`, async ({
     page,

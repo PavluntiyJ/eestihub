@@ -1,5 +1,11 @@
 # TODO — EestiHub task board
 
+2026-09-29 · Codex · Fixed the Russian header wrapping reported by the owner:
+navigation now occupies its own row, with language/theme controls beside the
+brand where space permits. Verified comparison controls at 320/390/768/1024/
+1280/1440px and all seven Russian page widths at 320px; the other 15 scenario
+tests, production build and lint passed. Map gesture guidance is localized too.
+
 ## Completion release — owner-directed scope, 2026-09-29
 
 The owner requested completion of all remaining planner modules on the existing

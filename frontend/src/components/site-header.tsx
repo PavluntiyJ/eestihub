@@ -32,10 +32,10 @@ export async function SiteHeader() {
           </Link>
           <p className="text-xs text-muted-foreground">{t("tagline")}</p>
         </div>
-        <div className="order-3 w-full sm:order-none sm:w-auto">
+        <div className="order-3 w-full min-w-0">
           <SiteNav />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
           <ThemeToggle />
           {/* The switcher reads the query string so it can carry a scenario
               across locales; that keeps the pages themselves static. */}
