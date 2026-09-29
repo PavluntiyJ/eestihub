@@ -46,6 +46,9 @@ export function DistrictMap({
           cooperativeGestures: true,
           locale: {
             "Map.Title": t("mapTitle"),
+            "CooperativeGesturesHandler.WindowsHelpText": transit("gestureWindows"),
+            "CooperativeGesturesHandler.MacHelpText": transit("gestureMac"),
+            "CooperativeGesturesHandler.MobileHelpText": transit("gestureMobile"),
             "NavigationControl.ZoomIn": transit("zoomIn"),
             "NavigationControl.ZoomOut": transit("zoomOut"),
           },

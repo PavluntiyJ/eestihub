@@ -485,7 +485,10 @@
     "mapUnavailable": "The map could not fully load. The address and stop list remain available.",
     "mapPrivacy": "Selecting an address loads map tiles from OpenFreeMap. Your salary and budget are not sent to the map provider.",
     "explorerTitle": "Map & nearby transport",
-    "explorerDescription": "Choose a Tallinn address to open the map and see nearby stops. You can explore before entering your income."
+    "explorerDescription": "Choose a Tallinn address to open the map and see nearby stops. You can explore before entering your income.",
+    "gestureWindows": "Use Ctrl + scroll to zoom the map",
+    "gestureMac": "Use ⌘ + scroll to zoom the map",
+    "gestureMobile": "Use two fingers to move the map"
   },
   "explore": {
     "title": "Find your part of Tallinn",

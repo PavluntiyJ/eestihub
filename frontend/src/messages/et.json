@@ -485,7 +485,10 @@
     "mapUnavailable": "Kaarti ei õnnestunud täielikult laadida. Aadress ja peatuste loend on endiselt saadaval.",
     "mapPrivacy": "Aadressi valimisel laaditakse kaardipaanid OpenFreeMapist. Sinu palka ja eelarvet kaardipakkujale ei saadeta.",
     "explorerTitle": "Kaart ja läheduses olev transport",
-    "explorerDescription": "Vali Tallinna aadress, et avada kaart ja näha lähedal asuvaid peatusi. Sissetulekut ei pea enne sisestama."
+    "explorerDescription": "Vali Tallinna aadress, et avada kaart ja näha lähedal asuvaid peatusi. Sissetulekut ei pea enne sisestama.",
+    "gestureWindows": "Kaardi suumimiseks kasuta Ctrl-klahvi ja kerimist",
+    "gestureMac": "Kaardi suumimiseks kasuta ⌘-klahvi ja kerimist",
+    "gestureMobile": "Kaardi liigutamiseks kasuta kahte sõrme"
   },
   "explore": {
     "title": "Leia oma koht Tallinnas",

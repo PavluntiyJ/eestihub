@@ -27,7 +27,7 @@ export function TransitMap({address, stops, selected, onSelect}: {
       lib.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       map = new lib.Map({container: container.current, style: "https://tiles.openfreemap.org/styles/liberty",
         center: [address.longitude, address.latitude], zoom: 14.5, attributionControl: false,
-        cooperativeGestures: true, locale: {"NavigationControl.ZoomIn": t("zoomIn"), "NavigationControl.ZoomOut": t("zoomOut"), "Map.Title": t("mapLabel")}});
+        cooperativeGestures: true, locale: {"NavigationControl.ZoomIn": t("zoomIn"), "NavigationControl.ZoomOut": t("zoomOut"), "Map.Title": t("mapLabel"), "CooperativeGesturesHandler.WindowsHelpText": t("gestureWindows"), "CooperativeGesturesHandler.MacHelpText": t("gestureMac"), "CooperativeGesturesHandler.MobileHelpText": t("gestureMobile")}});
       mapRef.current = map;
       map.addControl(new lib.NavigationControl({showCompass: false}), "top-right");
       map.on("load", () => { clearTimeout(timeout); if (!disposed) {setLoaded(true); setFailed(false);} });
