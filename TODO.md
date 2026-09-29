@@ -3,22 +3,28 @@
 ## Completion release — owner-directed scope, 2026-09-29
 
 The owner requested completion of all remaining planner modules on the existing
-Vercel + Render + Neon hosting. Codex implemented the following and is completing
-CI and production verification:
+Vercel + Render + Neon hosting. Codex implemented the following and verified
+CI and production:
 
 | Module | Delivery | Status | Worker |
 |---|---|---|---|
-| M09 + M11 | Official EHAK district map, all eight districts, per-row rent provenance and affordability | `[R]` | Codex |
-| M12 | Three-candidate comparison under one shared budget, seasonal and move-in costs | `[R]` | Codex |
-| M13 | In-memory drafts across locales, explicit local save, reviewed JSON import/export and private fragment sharing | `[R]` | Codex |
-| M14 | Full journeys, outages, privacy, EN/ET/RU and mobile/dark accessibility | `[R]` | Codex |
-| M15 | Current release/data contracts, operations runbooks and screenshots | `[R]` | Codex |
+| M09 + M11 | Official EHAK district map, all eight districts, per-row rent provenance and affordability | `[x]` | Codex |
+| M12 | Three-candidate comparison under one shared budget, seasonal and move-in costs | `[x]` | Codex |
+| M13 | In-memory drafts across locales, explicit local save, reviewed JSON import/export and private fragment sharing | `[x]` | Codex |
+| M14 | Full journeys, outages, privacy, EN/ET/RU and mobile/dark accessibility | `[x]` | Codex |
+| M15 | Current release/data contracts, operations runbooks and screenshots | `[x]` | Codex |
 
 2026-09-29 · Codex · Completed district, comparison and scenario modules;
 local verification: 251 backend tests passed, five PostgreSQL cases deferred to
 CI; 85 Playwright tests passed, build/lint/TypeScript clean. Reviewed real map
-rendering and mobile layout. Final CI and production outcome recorded below
-when verified. No paid hosting changes.
+rendering and mobile layout. Release `b227a91` (PR #2) passed all five CI jobs: 256 backend tests including
+all five PostgreSQL cases, 85 browser tests, build, Lighthouse and Docker.
+Render deploy `dep-datnvqhsrm7s739f5m60` is live; Vercel deployment
+`dpl_86MGB51A5nFpaV4Bbvby3FGfsb1m` was promoted after new API verification.
+Production smoke: all six new locale routes return 200, eight attributed
+polygons and eight district rows, budget calculation, shortlist transfer and
+shared budget in the actual browser. The refreshed live GTFS has 1118 stops
+and 80 routes; 14 nearby platforms remain available at the test address. No paid hosting changes.
 
 ## Previous published release — owner-directed scope, 2026-09-22
 

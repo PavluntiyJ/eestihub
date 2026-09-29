@@ -5,7 +5,31 @@ and services are reused for the September planner release; no paid upgrade
 is required. Initial setup is described below; transit data also needs the
 maintenance CLI described in section 6.
 
-## Current production release — 2026-09-22
+## Current production release — 2026-09-29
+
+Release `b227a91` (PR #2) completes district exploration, apartment comparison and
+explicit saved/shared scenarios. All five PR CI jobs passed: 256 backend tests
+(including all five PostgreSQL tests), 85 browser tests, frontend build,
+Lighthouse and Docker Compose.
+
+- Render: `dep-datnvqhsrm7s739f5m60`, manually triggered from the dashboard;
+  status **Deploy succeeded / Live**. Build imported the updated GTFS snapshot
+  (1118 stops, 80 routes); the two-stop reduction was reported by the importer,
+  and the test location still returns 14 nearby platforms with current metadata.
+- Vercel: `dpl_86MGB51A5nFpaV4Bbvby3FGfsb1m`, built from `frontend/` using
+  `vercel deploy --prod --skip-domain --yes`, then promoted with `vercel promote`
+  after both new backend endpoints returned 200 with eight records each.
+- Public smoke: EN/ET/RU explore and compare pages return 200; compare is
+  noindex. Real browser verification covered district-to-shortlist transfer,
+  employment budget and comparison under that same budget.
+- Current free Render hosting still has cold starts: a first health request
+  took 54.4 seconds during this release, then subsequent API calls were fast.
+  No paid upgrade, keep-alive workaround or new scheduled job was added.
+
+See [district data operations](DISTRICT-DATA.md) for boundary refresh and source
+terms, and [planner release](PLANNER-RELEASE.md) for persistence/privacy limits.
+
+## Previous production release — 2026-09-22
 
 Release commit `25d1389` (PR #1) is live at
 [EestiHub](https://eestihub.vercel.app/en/planner) and
