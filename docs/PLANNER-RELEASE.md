@@ -1,6 +1,6 @@
 # Planner release — September 2026
 
-The owner approved a shorter release path: finish M08, ship apartment cost
+The first release followed an owner-approved shorter path: finish M08, ship apartment cost
 assessment and an address map with nearby public transport, verify and release
 on the existing Vercel + Render + Neon infrastructure. This decision supersedes
 the earlier sequential M09–M13 delivery gates for this release only.
@@ -22,9 +22,37 @@ the earlier sequential M09–M13 delivery gates for this release only.
   rental listing feed or district recommendation.
 - EN/ET/RU, stale-result handling, abort/retry, mobile layout and axe checks.
 
-District polygons, area scoring, multi-apartment comparison, persistence and
-shareable planner scenarios are deferred. The existing tax calculator's shared
-URLs are unchanged. `district_id` on address candidates remains null.
+## Completion release — 2026-09-29
+
+The owner subsequently authorized completing all remaining planner modules.
+This supersedes the earlier deferral of district polygons, comparison and saved
+scenarios. The original tax calculator's URLs remain unchanged.
+
+- **M09/M11:** dedicated `/explore` route, official EHAK polygons for all eight
+  districts, keyboard-accessible list, total-room selector and per-row rent
+  source/date/basis/freshness. Optional explicit utility assumptions feed the
+  existing budget calculator. See [district operations](DISTRICT-DATA.md).
+- **M12:** `/compare`, up to three editable candidates, one shared budget,
+  summer/winter totals/remainders and move-in cash. No automatic winner.
+  Candidates can come from apartment assessment, district context or manual
+  entry. Missing costs remain unknown; source context survives pinning.
+- **M13:** in-memory workspace across planner/explore/compare and locale
+  switches, including unfinished budget and candidate edit drafts. Explicit
+  browser save/load/delete, input-only JSON export/import, review before
+  replacing current state and recalculation on load. No account or automatic
+  salary persistence. A page reload clears unsaved working state.
+- **Sharing:** version 1 EUR payload, <=3 candidates, <=16 KiB decoded JSON and
+  <=6000-character share URL. The fragment is readable, not encrypted. Default
+  share uses calculated net income and anonymised labels, omits addresses and
+  district origin metadata; gross/pension and names/addresses are opt-in.
+  Unknown keys/versions, invalid amounts and malformed files are rejected.
+  Shared plans are reviewed before applying and never automatically saved.
+  Compare has noindex and a base-route canonical; it is excluded from sitemap.
+- **M14/M15:** cross-feature failure/accessibility/privacy tests, EN/ET/RU,
+  mobile/dark verification, updated screenshots and deployment/data runbooks.
+
+`district_id` on address candidates remains null. There is no claimed live rental
+listing feed, district quality score, real-time arrival or walking-time model.
 
 ## Additive API: GET /api/v1/transit/nearby
 

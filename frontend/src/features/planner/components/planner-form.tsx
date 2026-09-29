@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { getWorkspace, updateWorkspace } from "@/features/scenarios/store";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -85,8 +86,7 @@ type PlannerFormProps = {
 };
 
 // Warns before an unsaved draft is discarded: reloads and tab closes via
-// beforeunload, in-app navigation (including locale switches, which remount
-// this client state) via a capture-phase click guard with a native confirm.
+// beforeunload and navigation outside the shared planner workspace.
 function useUnsavedDraftWarning(active: boolean, message: string) {
   useEffect(() => {
     if (!active) {
@@ -118,6 +118,8 @@ function useUnsavedDraftWarning(active: boolean, message: string) {
         return;
       }
 
+      // These routes share the in-memory planner workspace, including locale changes.
+      if (/^\/(en|et|ru)\/(planner|explore|compare)$/.test(url.pathname)) return;
       if (!window.confirm(message)) {
         event.preventDefault();
         event.stopPropagation();
@@ -136,15 +138,16 @@ function useUnsavedDraftWarning(active: boolean, message: string) {
 
 export function PlannerForm({ locale }: PlannerFormProps) {
   const t = useTranslations("planner");
-  const [incomeKind, setIncomeKind] = useState<PlannerIncomeKind>("employment");
-  const [grossIncome, setGrossIncome] = useState("");
-  const [pensionRate, setPensionRate] = useState<"" | PensionRate>("");
-  const [netIncome, setNetIncome] = useState("");
-  const [spending, setSpending] = useState("");
-  const [savings, setSavings] = useState("");
-  const [sharePercent, setSharePercent] = useState(DEFAULT_SHARE_PERCENT);
-  const [result, setResult] = useState<PlannerBudgetResponse | null>(null);
-  const [submittedPayload, setSubmittedPayload] = useState<string | null>(null);
+  const initial = getWorkspace();
+  const [incomeKind, setIncomeKind] = useState<PlannerIncomeKind>(initial.draft?.incomeKind ?? initial.budget?.income.kind ?? "employment");
+  const [grossIncome, setGrossIncome] = useState(initial.draft?.grossIncome ?? (initial.budget?.income.kind === "employment" ? String(initial.budget.income.gross_monthly_income) : ""));
+  const [pensionRate, setPensionRate] = useState<"" | PensionRate>(initial.draft?.pensionRate ?? (initial.budget?.income.kind === "employment" ? initial.budget.income.pension_pillar_rate : ""));
+  const [netIncome, setNetIncome] = useState(initial.draft?.netIncome ?? (initial.budget?.income.kind === "manual_net" ? String(initial.budget.income.net_monthly_income) : ""));
+  const [spending, setSpending] = useState(initial.draft?.spending ?? (initial.budget ? String(initial.budget.monthly_non_housing) : ""));
+  const [savings, setSavings] = useState(initial.draft?.savings ?? (initial.budget ? String(initial.budget.monthly_savings) : ""));
+  const [sharePercent, setSharePercent] = useState(initial.draft?.sharePercent ?? (initial.budget ? String(initial.budget.housing_share * 100) : DEFAULT_SHARE_PERCENT));
+  const [result, setResult] = useState<PlannerBudgetResponse | null>(initial.result);
+  const [submittedPayload, setSubmittedPayload] = useState<string | null>(initial.budget ? JSON.stringify(initial.budget) : null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -219,6 +222,9 @@ export function PlannerForm({ locale }: PlannerFormProps) {
     savings,
     sharePercent,
   });
+  useEffect(() => {
+    updateWorkspace({draft: JSON.parse(inputsKey), ...(isStale ? {budget: null, result: null} : {})});
+  }, [inputsKey, isStale]);
   const didMountRef = useRef(false);
   useEffect(() => {
     if (!didMountRef.current) {
@@ -286,6 +292,7 @@ export function PlannerForm({ locale }: PlannerFormProps) {
         return;
       }
 
+      updateWorkspace({budget: payload, result: response});
       setResult(response);
       setSubmittedPayload(JSON.stringify(payload));
       setShowErrors(false);

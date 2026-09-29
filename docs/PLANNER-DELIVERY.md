@@ -1,3 +1,8 @@
+> Delivery update, 2026-09-29: the owner explicitly authorized Codex to finish
+> the remaining modules and publish on the existing hosting. The historical
+> worker handoff gates below are retained as planning history; current scope
+> and accepted contracts are in [PLANNER-RELEASE.md](PLANNER-RELEASE.md).
+
 # Planner delivery and ownership
 
 Status: proposed implementation handoff, 2026-09-21. M01/M03 are owner-assigned

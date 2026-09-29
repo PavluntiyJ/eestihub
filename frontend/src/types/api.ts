@@ -228,3 +228,11 @@ export type NearbyTransitResponse = {
     transformation: string; fetched_at: string; checked_at: string; source_last_modified: string | null;
     calendar_start: string | null; calendar_end: string | null; freshness: "current" | "stale" | "unknown"};
 };
+
+export type DistrictContext = {
+  id: string; name: string; longitude: number; latitude: number; rent: number | null;
+  observed_on: string | null; source_url: string | null;
+  basis: "published_aggregate" | "legacy_estimate" | "unknown";
+  freshness: "current" | "stale" | "unknown"; legacy_utilities: number | null;
+};
+export type DistrictsResponse = {rooms: 1 | 2 | 3; districts: DistrictContext[]};

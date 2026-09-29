@@ -3,10 +3,10 @@ import type { MetadataRoute } from "next";
 import { locales } from "@/i18n/routing";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const LAST_MODIFIED = new Date("2026-09-02");
+const LAST_MODIFIED = new Date("2026-09-29");
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages = ["", "/planner", "/calculator", "/housing", "/eresidency"];
+  const pages = ["", "/planner", "/explore", "/calculator", "/housing", "/eresidency"];
 
   return pages.flatMap((page) =>
     locales.map((locale) => ({

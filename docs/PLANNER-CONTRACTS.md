@@ -1,3 +1,8 @@
+> Implementation update, 2026-09-29: the budget contract below is unchanged.
+> For the shipped geographic and scenario details, use
+> [PLANNER-RELEASE.md](PLANNER-RELEASE.md) and [DISTRICT-DATA.md](DISTRICT-DATA.md).
+> The provisional geographic examples below are historical design inputs.
+
 # Planner contracts — M01 proposed additive API
 
 Status: review-ready design, not an active API contract. CONTEXT.md remains

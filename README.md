@@ -20,13 +20,15 @@ Web service for expats and entrepreneurs in Estonia. Moving to Estonia (or openi
 - **Tallinn rent dashboard** — average 1/2/3-room rents and utilities across eight districts, table + chart. Values are midpoints of published district rent ranges from a public Tallinn market report, cited with retrieval date in [`backend/scripts/data/SOURCES.md`](backend/scripts/data/SOURCES.md); a trends endpoint serves the snapshot history.
 - **Affordability link** — after a calculation, which districts you could actually rent in, matched on rent plus utilities against an adjustable share of net income.
 - **e-Residency cost calculator** — setup fees, monthly running cost, first-year total and break-even revenue for an e-resident OÜ, every constant traced to an official source.
-- **Budget planner** — employment salary (converted with the 2026 tax engine, never the highest-net regime) or manual net, explicit spending and savings including zero, and an editable housing share. The API returns net income, both budget limits, the final allowance and machine-readable warnings; the UI aborts obsolete requests, marks edited results stale, preserves inputs on errors, and never puts salaries in URLs or storage.
+- **Budget planner** — employment salary (converted with the 2026 tax engine, never the highest-net regime) or manual net, explicit spending and savings including zero, and an editable housing share. The API returns net income, both budget limits, the final allowance and machine-readable warnings; the UI aborts obsolete requests, marks edited results stale, preserves inputs on errors, and keeps working inputs in memory. Saving or sharing requires an explicit action.
 - **Tallinn address search** — a debounced, keyboard-operable combobox on the planner page backed by the In-AKS gazetteer: up to eight Tallinn candidates with coordinates and match quality, selectable as location context only. No persistence, no map dependency; provider outages keep the budget intact.
 - **Apartment assessment** — enter listing rent and summer/winter bills or estimates, see seasonal totals and the remainder after spending and savings, then calculate upfront move-in cash. Unknown costs stay unknown; zero must be entered explicitly.
-- **Map and nearby transport** — opt-in OpenFreeMap/MapLibre map plus individual platforms within 800 m in a straight line. Routes are filtered by today's Tallinn service date from a validated GTFS snapshot, with source dates, freshness and CC BY-SA attribution. The stop list remains usable when tiles fail; this is not live arrival or walking-route data. See [release scope and API](docs/PLANNER-RELEASE.md).
-- **Shareable scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
+- **Map and nearby transport** — OpenFreeMap/MapLibre map opened on explicit address selection, plus individual platforms within 800 m in a straight line. Routes are filtered by today's Tallinn service date from a validated GTFS snapshot, with source dates, freshness and CC BY-SA attribution. The stop list remains usable when tiles fail; this is not live arrival or walking-route data. See [release scope and API](docs/PLANNER-RELEASE.md).
+- **District explorer** — [eight official district polygons](https://eestihub.vercel.app/en/explore), room selector, per-row price source/date and current/stale/unknown labels. Published aggregate rents are distinguished from old illustrative estimates; utility assumptions require explicit adoption.
+- **Apartment comparison** — [up to three editable options](https://eestihub.vercel.app/en/compare) using one shared budget, seasonal bills and move-in cash, with explicit browser save, JSON export/import and review before replacing a plan. Share links use a versioned fragment and privacy preview; gross income, names and addresses are excluded by default. All amounts are recalculated on import.
+- **Shareable tax scenarios** — calculator state lives in the URL, and a shared link arrives with its numbers already rendered server-side.
 - **Trilingual by design** — every UI string comes from en/et/ru dictionaries; locale-prefixed routing with absolute `hreflang` alternates, `x-default`, sitemap, and generated per-locale OG cards. Light, dark and system themes.
-- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; 12 axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state, the planner and address flows and both themes, and fail CI on any violation.
+- **Accessibility as a gate** — skip link, real landmarks, labelled controls and error associations; axe scans (WCAG 2.0/2.1/2.2 A/AA plus best practices) cover every page, calculated results, a negative-net state, the planner and address flows and both themes, and fail CI on any violation.
 - **Containerised stack** — `docker compose up --build` builds the frontend and API images, starts Postgres, seeds the sourced housing data and serves the app on :3000. CI builds the images and smoke-tests the running stack.
 
 | Russian locale, live calculation | Housing dashboard |
@@ -46,8 +48,18 @@ Locale-neutral: responses carry machine keys and numbers, human labels come from
 | `POST /api/v1/calculate-eresidency` | First-year cost of an e-resident OÜ |
 | `POST /api/v1/planner/budget` | Monthly housing allowance from employment or manual net, spending, savings and a housing share |
 | `GET /api/v1/addresses/search` | Up to eight Tallinn address candidates with coordinates and match quality |
+| `GET /api/v1/transit/nearby` | Individual platforms and scheduled routes within 800 m, from an imported snapshot |
+| `GET /api/v1/planner/districts?rooms=1` | Eight district rents with row-level provenance and nullable unknowns |
+| `GET /api/v1/planner/district-boundaries` | Attributed official EHAK polygons, EPSG:4326 |
 
-The full contract, including the tax logic and its sources, is in [`docs/CONTEXT.md`](docs/CONTEXT.md).
+The tax contract and sources are in [`docs/CONTEXT.md`](docs/CONTEXT.md).
+The completed planner's contract and data operations are in
+[`docs/PLANNER-RELEASE.md`](docs/PLANNER-RELEASE.md) and
+[`docs/DISTRICT-DATA.md`](docs/DISTRICT-DATA.md).
+
+| District explorer | Apartment comparison |
+|---|---|
+| ![Official Tallinn district polygons](docs/screenshots/explore.png) | ![Two apartments under one budget](docs/screenshots/compare.png) |
 
 ## How this repo was built
 
