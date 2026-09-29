@@ -1,11 +1,31 @@
 # TODO — EestiHub task board
 
-## Published release — owner-directed scope, 2026-09-22
+## Completion release — owner-directed scope, 2026-09-29
+
+The owner requested completion of all remaining planner modules on the existing
+Vercel + Render + Neon hosting. Codex implemented the following and is completing
+CI and production verification:
+
+| Module | Delivery | Status | Worker |
+|---|---|---|---|
+| M09 + M11 | Official EHAK district map, all eight districts, per-row rent provenance and affordability | `[R]` | Codex |
+| M12 | Three-candidate comparison under one shared budget, seasonal and move-in costs | `[R]` | Codex |
+| M13 | In-memory drafts across locales, explicit local save, reviewed JSON import/export and private fragment sharing | `[R]` | Codex |
+| M14 | Full journeys, outages, privacy, EN/ET/RU and mobile/dark accessibility | `[R]` | Codex |
+| M15 | Current release/data contracts, operations runbooks and screenshots | `[R]` | Codex |
+
+2026-09-29 · Codex · Completed district, comparison and scenario modules;
+local verification: 251 backend tests passed, five PostgreSQL cases deferred to
+CI; 85 Playwright tests passed, build/lint/TypeScript clean. Reviewed real map
+rendering and mobile layout. Final CI and production outcome recorded below
+when verified. No paid hosting changes.
+
+## Previous published release — owner-directed scope, 2026-09-22
 
 Codex completed the release after Muse's M08 handoff. The owner approved
 **M08 → apartment costs + map/nearby transit → verification → release**, keeping
 Vercel + Render + Neon. This supersedes historical sequential M09–M13 gates;
-district polygons, comparisons and saved scenarios are deferred. Current scope
+district polygons, comparisons and saved scenarios were deferred at that time. Current scope
 and additive API: [PLANNER-RELEASE.md](docs/PLANNER-RELEASE.md).
 
 Release `25d1389` passed CI: **245 backend tests, 70 browser tests**,
